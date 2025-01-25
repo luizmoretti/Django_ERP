@@ -54,6 +54,9 @@ INSTALLED_APPS = [
     'custom_settings',
     'custom_settings.custom_middlewares',
     
+    # Base Models
+    'basemodels',
+    
     # API
     'api',
     
