@@ -173,20 +173,20 @@ class PaymentService:
                 logger.warning(f"[SERVICE] No payment business day configured for HR {hr_instance.id}")
                 return None
                 
-            # Determinar a data base para o cálculo
+            # Determine the base date for the calculation
             reference_date = None
             
-            # Se force_today=True, usar a data atual
+            # If force_today=True, use the current date
             if force_today:
                 reference_date = timezone.now().date()
             else:
-                # Primeiro tenta usar a última data registrada
+                # Try using the last registered date
                 if hr_instance.payd_by_hour and hr_instance.last_hours_registered:
                     reference_date = hr_instance.last_hours_registered.date()
                 elif hr_instance.payd_by_day and hr_instance.last_day_registered:
                     reference_date = hr_instance.last_day_registered
                 
-                # Se não houver data registrada, usar a data atual
+                # If no registered date, use the current date
                 if not reference_date:
                     reference_date = timezone.now().date()
             
@@ -197,59 +197,59 @@ class PaymentService:
             
             next_date = None
             
-            # Calcular próxima data de pagamento baseado no intervalo
+            # Calculate next payment date based on interval
             if hr_instance.payment_interval == 'daily':
-                # Para pagamento diário, próximo dia útil após o último dia trabalhado
+                # For daily payment, next date is the next business day
                 next_date = reference_date + timedelta(days=1)
-                # Se cair no fim de semana, pula para segunda
-                while next_date.weekday() >= 5:  # 5 = Sábado, 6 = Domingo
+                # If it's the end of the week, move to the next Monday
+                while next_date.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
                     next_date += timedelta(days=1)
                     
             elif hr_instance.payment_interval == 'weekly':
-                # payment_business_day é 1-based (1 = segunda, 2 = terça, etc)
-                # weekday() é 0-based (0 = segunda, 1 = terça, etc)
+                # payment_business_day is 1-based (1 = Monday, 2 = Tuesday, etc)
+                # weekday() is 0-based (0 = Monday, 1 = Tuesday, etc)
                 target_weekday = hr_instance.payment_business_day - 1
                 
-                # Calcular quantos dias faltam para o próximo dia alvo
+                # Calculate how many days until the target day
                 days_ahead = target_weekday - reference_date.weekday()
-                if days_ahead <= 0:  # Se já passou do dia alvo esta semana, ir para próxima
+                if days_ahead <= 0:  # If already passed the target day this week, move to next
                     days_ahead += 7
                 next_date = reference_date + timedelta(days=days_ahead)
                 
-                # Se a data calculada for anterior à data de referência, adiciona uma semana
+                # If the calculated date is before the reference date, add a week
                 if next_date <= reference_date:
                     next_date += timedelta(days=7)
                 
-                # Se cair no fim de semana, move para segunda
+                # If it's the end of the week, move to the next Monday
                 while next_date.weekday() >= 5:
                     next_date += timedelta(days=1)
                     
             elif hr_instance.payment_interval == 'biweekly':
-                # payment_business_day é 1-based (1 = segunda, 2 = terça, etc)
-                # weekday() é 0-based (0 = segunda, 1 = terça, etc)
+                # payment_business_day is 1-based (1 = Monday, 2 = Tuesday, etc)
+                # weekday() is 0-based (0 = Monday, 1 = Tuesday, etc)
                 target_weekday = hr_instance.payment_business_day - 1
                 
-                # Calcular quantos dias faltam para o próximo dia alvo
+                # Calculate how many days until the target day
                 days_ahead = target_weekday - reference_date.weekday()
-                if days_ahead <= 0:  # Se já passou do dia alvo esta semana, ir para próxima quinzena
+                if days_ahead <= 0:  # If already passed the target day this week, move to next week
                     days_ahead += 14
                 next_date = reference_date + timedelta(days=days_ahead)
                 
-                # Se a data calculada for anterior à data de referência, adiciona duas semanas
+                # If the calculated date is before the reference date, add a week
                 if next_date <= reference_date:
                     next_date += timedelta(days=14)
                 
-                # Verifica se estamos na semana correta (par ou ímpar)
+                # Check if we're in the correct week (even or odd)
                 if (next_date.isocalendar()[1] % 2) == (reference_date.isocalendar()[1] % 2):
                     next_date += timedelta(days=0)
                 
-                # Se cair no fim de semana, move para segunda
+                # If it's the end of the week, move to the next Monday
                 while next_date.weekday() >= 5:
                     next_date += timedelta(days=1)
                     
             else:  # monthly
-                # Encontrar a próxima ocorrência do payment_business_day no mês
-                if reference_date.day >= hr_instance.payment_business_day:  # Se já passou do dia de pagamento
+                # Find the next occurrence of payment_business_day in the month
+                if reference_date.day >= hr_instance.payment_business_day:  # If already passed the payment day
                     if reference_date.month == 12:
                         next_date = reference_date.replace(year=reference_date.year + 1, month=1, day=1)
                     else:
@@ -257,30 +257,30 @@ class PaymentService:
                 else:
                     next_date = reference_date.replace(day=1)
                 
-                # Ajustar para o dia de pagamento
+                # Adjust for payday
                 try:
                     next_date = next_date.replace(day=hr_instance.payment_business_day)
-                except ValueError:  # Se o dia não existe neste mês
+                except ValueError:  # If the day doesn't exist in this month
                     if next_date.month == 12:
                         next_date = next_date.replace(year=next_date.year + 1, month=1, day=1)
                     else:
                         next_date = next_date.replace(month=next_date.month + 1, day=1)
                     next_date -= timedelta(days=1)
                 
-                # Se cair no fim de semana, move para segunda
+                # If it's the end of the week, move to the next Monday
                 while next_date.weekday() >= 5:
                     next_date += timedelta(days=1)
             
-            # Se a data calculada for anterior à data atual e não estamos forçando data atual,
-            # recalcular a partir de hoje
+            # If the calculated date is before the current date and we're not forcing today,
+            # recalculate from today
             today = timezone.now().date()
             if next_date <= today:
                 if not force_today:
-                    # Recalcular usando a data atual como referência
+                    # Recalculate using the current date as a reference
                     next_date = PaymentService.calculate_next_payment_date(hr_instance, force_today=True)
                 else:
-                    # Se já estamos usando a data atual e ainda assim a data calculada é antiga,
-                    # adicionar um intervalo
+                    # If we're already using the current date and the calculated date is still in the past,
+                    # add an interval
                     if hr_instance.payment_interval == 'daily':
                         next_date += timedelta(days=1)
                     elif hr_instance.payment_interval == 'weekly':
@@ -331,13 +331,13 @@ class PaymentService:
         from django.db import transaction
         
         try:
-            # Validar se tem valor para pagar
+            # Validate if there's amount to pay
             if hr_instance.current_period_amount <= 0:
                 logger.warning(f"[SERVICE] No amount to pay for HR {hr_instance.id}")
                 return False
             
             with transaction.atomic():
-                # Determinar o tipo de pagamento
+                # Determine payment type
                 payment_type = None
                 if hr_instance.payd_by_day:
                     payment_type = 'Daily'
@@ -349,7 +349,7 @@ class PaymentService:
                     logger.error(f"[SERVICE] Invalid payment type for HR {hr_instance.id}")
                     return False
                 
-                # 1. Criar registro de pagamento
+                # 1. Create payment history record
                 payment_history = PaymentHistory.objects.create(
                     hr=hr_instance,
                     amount_paid=hr_instance.current_period_amount,
@@ -357,9 +357,9 @@ class PaymentService:
                 )
                 logger.info(f"[SERVICE] Created payment history for HR {hr_instance.id}")
                 
-                # 2. Armazenar histórico de trabalho
+                # 2. Store work history
                 if hr_instance.payd_by_day:
-                    # Obter todos os dias trabalhados
+                    # Get all worked days
                     worked_days = hr_instance.worked_days.all()
                     for day in worked_days:
                         WorkHistory.objects.create(
@@ -369,7 +369,7 @@ class PaymentService:
                     logger.info(f"[SERVICE] Stored {worked_days.count()} days in work history")
                     
                 elif hr_instance.payd_by_hour:
-                    # Obter todas as horas trabalhadas
+                    # Get all worked hours
                     worked_hours = hr_instance.worked_hours.all()
                     for hour in worked_hours:
                         WorkHistory.objects.create(
@@ -381,11 +381,11 @@ class PaymentService:
                         )
                     logger.info(f"[SERVICE] Stored {worked_hours.count()} hours in work history")
                 
-                # 3. Atualizar HR e limpar registros
-                # Atualizar total pago
+                # 3. Update HR and clear records
+                # Update total paid
                 hr_instance.total_paid = F('total_paid') + hr_instance.current_period_amount
                 
-                # Limpar registros atuais
+                # Clear current records
                 if hr_instance.payd_by_day:
                     hr_instance.worked_days.all().delete()
                     hr_instance.days_worked = 0
@@ -393,7 +393,7 @@ class PaymentService:
                     hr_instance.worked_hours.all().delete()
                     hr_instance.hours_worked = 0
                 
-                # 4. Atualizar datas de pagamento
+                # 4. Update payment dates
                 hr_instance.last_payment_date = timezone.now().date()
                 hr_instance.next_payment_date = PaymentService.calculate_next_payment_date(hr_instance)
                 hr_instance.current_period_amount = 0
@@ -423,7 +423,7 @@ class HRService:
             hr_instance.next_payment_date = next_payment
             hr_instance.save(update_fields=['hours_worked', 'current_period_amount', 'next_payment_date'])
             
-            # Atualizar last_hours_registered
+            # Update last_hours_registered
             WorkHourService.update_last_worked_dates(hr_instance)
             
             logger.info(f"[SERVICE] Updated worked hours to {total_hours} and amount to {current_amount} for HR {hr_instance.id}")
