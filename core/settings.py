@@ -15,7 +15,7 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
-# Carrega as variáveis de ambiente do arquivo .env
+# Loads the environment variables from the .env file
 load_dotenv()
 
 ################################
@@ -90,6 +90,7 @@ INSTALLED_APPS = [
 ######### MIDDLEWARE ##########
 ################################
 MIDDLEWARE = [ 
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -102,7 +103,7 @@ MIDDLEWARE = [
     'custom_settings.custom_middlewares.middleware.JSONResponse404Middleware',
 ]
 
-# Adicione SecurityMiddleware apenas em produção
+# Add SecurityMiddleware in production only
 if not DEBUG:
     MIDDLEWARE.insert(0, 'django.middleware.security.SecurityMiddleware')
 
@@ -111,38 +112,10 @@ if not DEBUG:
 ################################
 AUTH_USER_MODEL = 'accounts.NormalUser'
 
-# Configurações de SSL/HTTPS
-if DEBUG: # Em desenvolvimento
+# SSL/HTTPS settings
+if DEBUG: # In development
     pass
-    # SECURE_SSL_REDIRECT = False
-    # SESSION_COOKIE_SECURE = False
-    # CSRF_COOKIE_SECURE = False
-    # SECURE_BROWSER_XSS_FILTER = False
-    # SECURE_CONTENT_TYPE_NOSNIFF = False
-    # SECURE_HSTS_SECONDS = 0
-    # SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    # SECURE_HSTS_PRELOAD = False
-    # SECURE_PROXY_SSL_HEADER = None
-    # X_FRAME_OPTIONS = 'SAMEORIGIN'
-    
-    # # CORS para desenvolvimento
-    # CORS_ALLOWED_ORIGINS = [
-    #     "http://localhost:8000",
-    #     "http://127.0.0.1:8000",
-    # ]
-    # CORS_ALLOW_ALL_ORIGINS = True
-    # CORS_URLS_REGEX = r'^/api/.*$'
-    
-    # # Outras configurações de segurança para desenvolvimento
-    # SESSION_COOKIE_HTTPONLY = True
-    # CSRF_COOKIE_HTTPONLY = True
-    # CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
-    
-    # # Desativa qualquer configuração que possa forçar HTTPS
-    # USE_X_FORWARDED_HOST = False
-    # USE_X_FORWARDED_PORT = False
-    # SECURE_PROXY_SSL_HEADER = None
-else:  # Em produção
+else:  # In production
     # SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -154,19 +127,19 @@ else:  # Em produção
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     X_FRAME_OPTIONS = 'DENY'
     
-    # CORS para produção
+    # CORS for production
     CORS_ALLOWED_ORIGINS = [
         "https://seu-dominio.com",
     ]
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_URLS_REGEX = r'^/api/.*$'
     
-    # Outras configurações de segurança
+    # Other security settings
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
     CSRF_TRUSTED_ORIGINS = ['https://seu-dominio.com']
 
-# Configurações comuns de segurança
+# Common security settings
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -462,6 +435,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 
 # Ensure static directories exist
 if not os.path.exists(STATIC_ROOT):
