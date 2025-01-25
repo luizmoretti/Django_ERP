@@ -30,7 +30,7 @@ class BaseModel(models.Model):
         if user and not isinstance(user, AnonymousUser):
             try:
                 employeer = Employeer.objects.get(user=user)
-                if not self.pk: # Only set created_by if it's a new instance
+                if not self.created_by: # Only set created_by if it's a new instance
                     self.created_by = employeer
                 self.updated_by = employeer
                 
