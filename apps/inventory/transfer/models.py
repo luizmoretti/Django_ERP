@@ -34,7 +34,7 @@ class Transfer(BaseModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return self.origin.name + ' -> ' + self.destiny.name
+        return str(self.id)
     
 class TransferItems(BaseModel):
     """Transfer Items model is responsible for storing the each product that is part of a transfer
@@ -59,7 +59,7 @@ class TransferItems(BaseModel):
             updated_by: ForeignKey to Employeer
         }
     """
-    transfer = models.ForeignKey(Transfer, on_delete=models.SET_NULL, null=True, blank=True, related_name='transfer_items', help_text='id of the transfer the item is part of')
+    transfer = models.ForeignKey(Transfer, on_delete=models.SET_NULL, null=True, blank=True, related_name='items', help_text='id of the transfer the item is part of')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='transfer_items', help_text='the products that are coming into stock')
     quantity = models.PositiveIntegerField(default=0, help_text='The quantity of that will be transfered')
     
@@ -67,6 +67,3 @@ class TransferItems(BaseModel):
         verbose_name = 'Transfer Item'
         verbose_name_plural = 'Transfer Items'
         ordering = ['-created_at']
-        
-    def __str__(self):
-        return self.transfer.origin.name + ' -> ' + self.transfer.destiny.name + ' - ' + self.product.name + ' - ' + str(self.quantity)

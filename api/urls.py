@@ -29,6 +29,13 @@ urlpatterns = [
     
     # HR endpoints
     path('hr/', include('apps.companies.hr.urls')),
+    
+    
+    # Inventory Management endpoints
+    path('transfers/', include('apps.inventory.transfer.urls')),
+    path('inflows/', include('apps.inventory.inflows.urls')),
+    path('outflows/', include('apps.inventory.outflows.urls')),
+    path('warehouse/', include('apps.inventory.warehouse.urls')),
 ]
 
 

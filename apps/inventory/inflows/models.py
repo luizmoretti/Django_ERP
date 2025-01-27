@@ -49,7 +49,7 @@ class InflowItems(BaseModel):
             updated_by: ForeignKey to Employeer
         }
     """
-    inflow = models.ForeignKey(Inflow, on_delete=models.CASCADE, related_name='inflow_items', help_text='id of the inflow the item is part of')
+    inflow = models.ForeignKey(Inflow, on_delete=models.CASCADE, related_name='items', help_text='id of the inflow the item is part of')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inflow_items', help_text='The products that are coming into stock')
     quantity = models.PositiveIntegerField(default=0, help_text='The quantity of this product coming in')
     

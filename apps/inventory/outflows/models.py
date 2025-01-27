@@ -30,15 +30,13 @@ class Outflow(BaseModel):
     """
     origin = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='outflows_origin', help_text='The warehouse of the outflow')
     destiny = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='outflows_destiny', help_text='The customer of the outflow')
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='outflows', help_text='The product of the outflow')
-    quantity = models.PositiveIntegerField(default=0, help_text='The quantity of the product that is being removed from the warehouse')
     
     verbose_name = 'Outflow'
     verbose_name_plural = 'Outflows'
     ordering = ['-created_at']
     
     def __str__(self):
-        return f'{self.origin.name} - {self.destiny.name} - {self.product.name} - {self.quantity}'
+        return f'{self.origin.name} -> {self.destiny.full_name}'
     
 class OutflowItems(BaseModel):
     """ Outflow Items model is responsible for storing the each product that is part of a outflow
@@ -62,7 +60,7 @@ class OutflowItems(BaseModel):
             updated_by: ForeignKey to Employeer
         }
     """
-    outflow = models.ForeignKey(Outflow, on_delete=models.CASCADE, related_name='outflow_items', help_text='id of the outflow the item is part of')
+    outflow = models.ForeignKey(Outflow, on_delete=models.CASCADE, related_name='items', help_text='id of the outflow the item is part of')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='outflow_items', help_text='the products that are going out of the warehouse')
     quantity = models.PositiveIntegerField(default=0, help_text='The quantity of that will be transfered')
     
@@ -71,4 +69,4 @@ class OutflowItems(BaseModel):
     ordering = ['-created_at']
     
     def __str__(self):
-        return f'{self.outflow.origin.name} -> {self.outflow.destiny.name} - {self.product.name} - {self.quantity}'
+        return f'{self.outflow.origin.name} -> {self.outflow.destiny.full_name} - {self.product.name} - {self.quantity}'

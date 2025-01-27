@@ -51,45 +51,37 @@ def update_quantities_on_transfer(sender, instance, created, **kwargs):
             if created:
                 # Subtract from origin
                 origin_warehouse_product.current_quantity -= instance.quantity
-                origin_warehouse.quantity -= instance.quantity
-                
                 # Add to destiny
                 destiny_warehouse_product.current_quantity += instance.quantity
-                destiny_warehouse.quantity += instance.quantity
-                
             else:
-                # Calculate difference from previous quantity
+                # Calculate difference and update
                 difference = instance.quantity - getattr(instance, '_previous_quantity', 0)
-                
-                # Update origin
                 origin_warehouse_product.current_quantity -= difference
-                origin_warehouse.quantity -= difference
-                
-                # Update destiny
                 destiny_warehouse_product.current_quantity += difference
-                destiny_warehouse.quantity += difference
             
             # Validate quantities
             if origin_warehouse_product.current_quantity < 0:
-                raise ValueError("Origin warehouse quantity cannot be negative")
+                raise ValueError("Origin warehouse product quantity cannot be negative")
                 
             if destiny_warehouse_product.current_quantity < 0:
-                raise ValueError("Destiny warehouse quantity cannot be negative")
+                raise ValueError("Destiny warehouse product quantity cannot be negative")
             
-            # Save all changes
-            origin_warehouse_product.save(update_fields=['current_quantity'])
-            destiny_warehouse_product.save(update_fields=['current_quantity'])
-            origin_warehouse.save(update_fields=['quantity'])
-            destiny_warehouse.save(update_fields=['quantity'])
+            # Save changes
+            origin_warehouse_product.save()
+            destiny_warehouse_product.save()
+            
+            # Update total quantities
+            origin_warehouse.update_total_quantity()
+            destiny_warehouse.update_total_quantity()
             
             logger.info(
-                f"TransferItems {instance.id}: Product {product} transferred. "
-                f"Origin warehouse {origin_warehouse}: {origin_warehouse_product.current_quantity}, "
-                f"Destiny warehouse {destiny_warehouse}: {destiny_warehouse_product.current_quantity}"
+                f"Updated quantities for transfer item {instance.id}. "
+                f"Origin warehouse ({origin_warehouse.name}) quantity: {origin_warehouse_product.current_quantity}, "
+                f"Destiny warehouse ({destiny_warehouse.name}) quantity: {destiny_warehouse_product.current_quantity}"
             )
             
         except Exception as e:
-            logger.error(f"Error updating quantities in TransferItems {instance.id}: {str(e)}")
+            logger.error(f"Error updating quantities for transfer item {instance.id}: {str(e)}")
             raise
 
 @receiver(post_delete, sender=TransferItems)

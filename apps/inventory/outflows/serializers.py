@@ -1,0 +1,210 @@
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from .models import Outflow, OutflowItems
+from django.db import transaction
+from ..warehouse.models import Warehouse
+from ..product.models import Product
+from apps.companies.customers.models import Customer
+import logging
+
+logger = logging.getLogger(__name__)
+
+class OutflowItemSerializer(serializers.ModelSerializer):
+    """Serializer for OutflowItems model
+    
+    Fields:
+        product (SlugRelatedField): Product name, maps to Product model
+        quantity (IntegerField): Quantity to send out, must be positive
+        
+    Meta:
+        model: OutflowItems
+        fields: ['product', 'quantity']
+    """
+    product = serializers.SlugRelatedField(slug_field='name', queryset=Product.objects.all())
+    quantity = serializers.IntegerField(min_value=1)
+    
+    class Meta:
+        model = OutflowItems
+        fields = ['product', 'quantity']
+
+class OutflowSerializer(serializers.ModelSerializer):
+    """Serializer for Outflow model
+    
+    This serializer handles the creation and retrieval of Outflow instances with their
+    associated OutflowItems. It uses separate fields for write operations (UUIDs) and
+    read operations (names) for warehouse and customer references.
+    
+    Fields:
+        id (UUIDField): Read-only unique identifier
+        companie (UUIDField): Read-only company identifier
+        origin (PrimaryKeyRelatedField): Write-only field for origin warehouse UUID
+        destiny (PrimaryKeyRelatedField): Write-only field for destiny customer UUID
+        origin_name (CharField): Read-only field for origin warehouse name
+        destiny_name (CharField): Read-only field for destiny customer name
+        items (OutflowItemSerializer): Read-only nested serializer for outflow items
+        items_data (ListField): Write-only field for creating outflow items
+        created_at (DateTimeField): Read-only timestamp
+        updated_at (DateTimeField): Read-only timestamp
+        created_by (SerializerMethodField): Read-only creator name
+        updated_by (SerializerMethodField): Read-only updater name
+        
+    Validation:
+        - Origin warehouse must exist
+        - Destiny customer must exist
+        - At least one item must be provided
+        - Each item must have valid product and positive quantity
+        - Product quantity must be available in warehouse
+    """
+    id = serializers.UUIDField(read_only=True)
+    companie = serializers.UUIDField(read_only=True)
+    
+    # Write-only fields for UUIDs
+    origin = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.all(),
+        required=True,
+        write_only=True
+    )
+    destiny = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.all(),
+        required=True,
+        write_only=True
+    )
+    
+    # Read-only fields for names
+    origin_name = serializers.CharField(source='origin.name', read_only=True)
+    destiny_name = serializers.CharField(source='destiny.full_name', read_only=True)
+    
+    items = OutflowItemSerializer(many=True, read_only=True)
+    items_data = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=True
+    )
+    
+    created_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
+    updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
+    created_by = serializers.SerializerMethodField()
+    updated_by = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Outflow
+        fields = [
+            'id',
+            'companie',
+            'origin',
+            'origin_name',
+            'destiny',
+            'destiny_name',
+            'items',
+            'items_data',
+            'created_at',
+            'updated_at',
+            'created_by',
+            'updated_by'
+        ]
+        
+    def get_created_by(self, obj):
+        """Get the name of the user who created the outflow"""
+        if obj.created_by:
+            return obj.created_by.user.get_full_name()
+        return None
+    
+    def get_updated_by(self, obj):
+        """Get the name of the user who last updated the outflow"""
+        if obj.updated_by:
+            return obj.updated_by.user.get_full_name()
+        return None
+    
+    def get_origin_name(self, obj):
+        """Get the name of the origin warehouse"""
+        return obj.origin.name
+    
+    def get_destiny_name(self, obj):
+        """Get the name of the destiny customer"""
+        return obj.destiny.full_name
+        
+    def validate(self, attrs):
+        """Validate the outflow data
+        
+        Checks:
+            - At least one item is provided
+            - All items have valid products and quantities
+            - Origin warehouse exists
+            - Destiny customer exists
+            - Product quantities are available in warehouse
+        """
+        if not attrs.get('items_data'):
+            raise ValidationError({'items_data': 'At least one item is required'})
+            
+        items = attrs.get('items_data')
+        warehouse = attrs.get('origin')
+        
+        for item in items:
+            if not all(k in item for k in ('product', 'quantity')):
+                raise ValidationError({
+                    'items_data': 'Each item must have product and quantity'
+                })
+            if item['quantity'] < 1:
+                raise ValidationError({
+                    'items_data': 'Quantity must be positive'
+                })
+            
+            # Check if product quantity is available in warehouse
+            product_name = item['product']
+            product = Product.objects.get(name=product_name)
+            try:
+                warehouse_product = warehouse.warehouseproduct_set.get(product=product)
+                if warehouse_product.current_quantity < item['quantity']:
+                    raise ValidationError({
+                        'items_data': f'Not enough quantity for product {product_name} in warehouse'
+                    })
+            except warehouse.warehouseproduct_set.model.DoesNotExist:
+                raise ValidationError({
+                    'items_data': f'Product {product_name} not found in warehouse'
+                })
+                
+        return attrs
+        
+    @transaction.atomic
+    def create(self, validated_data):
+        """Create an outflow with its items
+        
+        Creates the outflow and its associated items in a single transaction.
+        Updates the warehouse and product quantities through signals.
+        """
+        items_data = validated_data.pop('items_data')
+        outflow = Outflow.objects.create(**validated_data)
+        
+        for item_data in items_data:
+            product_name = item_data.pop('product')
+            product = Product.objects.get(name=product_name)
+            OutflowItems.objects.create(
+                outflow=outflow,
+                product=product,
+                quantity=item_data['quantity'],
+                **item_data
+            )
+            
+        return outflow
+        
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Update an outflow and its items
+        
+        Updates the outflow and recreates all its items.
+        Previous quantities are restored through signals before the update.
+        """
+        if 'items_data' in validated_data:
+            items_data = validated_data.pop('items_data')
+            instance.items.all().delete()
+            
+            for item_data in items_data:
+                product_name = item_data.pop('product')
+                product = Product.objects.get(name=product_name)
+                OutflowItems.objects.create(
+                    outflow=instance,
+                    product=product,
+                    **item_data
+                )
+                
+        return super().update(instance, validated_data)

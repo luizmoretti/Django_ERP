@@ -356,31 +356,13 @@ LOGGING = {
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
-        'apps.inventory.inflows.signals': {
-            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
-            'level': 'INFO',
-            'propagate': True,
-            'filters': ['ignore_repeated_errors'],
-        },
         'apps.inventory.outflows': {
             'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
             'level': 'INFO',
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
-        'apps.inventory.outflows.signals': {
-            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
-            'level': 'INFO',
-            'propagate': True,
-            'filters': ['ignore_repeated_errors'],
-        },
         'apps.inventory.transfer': {
-            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
-            'level': 'INFO',
-            'propagate': True,
-            'filters': ['ignore_repeated_errors'],
-        },
-        'apps.inventory.transfer.signals': {
             'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
             'level': 'INFO',
             'propagate': True,
@@ -406,7 +388,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
     'NON_FIELD_ERRORS_KEY': 'detail',
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -576,7 +557,10 @@ SPECTACULAR_SETTINGS = {
         {'name': 'JWT - Auth', 'description': 'JWT authentication endpoints'},
         
         # Inventory Management
-        
+        {'name': 'Inventory - Transfers', 'description': 'Transfer management endpoints'},
+        {'name': 'Inventory - Inflows', 'description': 'Inflow management endpoints'},
+        {'name': 'Inventory - Outflows', 'description': 'Outflow management endpoints'},
+        {'name': 'Inventory - Warehouse', 'description': 'Warehouse management endpoints'},
         
         # Reports
         

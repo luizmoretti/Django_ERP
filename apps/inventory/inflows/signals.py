@@ -44,37 +44,27 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
                 # New inflow
                 warehouse_product.current_quantity += instance.quantity
                 product.quantity += instance.quantity
-                warehouse.quantity += instance.quantity
-                
-                logger.info(
-                    f"New InflowItems: Added {instance.quantity} to product {product}. "
-                    f"Current warehouse quantity: {warehouse_product.current_quantity}"
-                )
             else:
-                # Update existing inflow
+                # Update - calculate difference
                 difference = instance.quantity - getattr(instance, '_previous_quantity', 0)
                 warehouse_product.current_quantity += difference
                 product.quantity += difference
-                warehouse.quantity += difference
-                
-                logger.info(
-                    f"Updated InflowItems: Adjusted product {product} by {difference}. "
-                    f"Current warehouse quantity: {warehouse_product.current_quantity}"
-                )
             
-            if warehouse_product.current_quantity < 0:
-                raise ValueError("Warehouse product quantity cannot be negative")
+            # Save changes
+            warehouse_product.save()
+            product.save()
             
-            if product.quantity < 0:
-                raise ValueError("Product quantity cannot be negative")
+            # Update total warehouse quantity
+            warehouse.update_total_quantity()
             
-            # Save all changes
-            warehouse_product.save(update_fields=['current_quantity'])
-            product.save(update_fields=['quantity'])
-            warehouse.save(update_fields=['quantity'])
+            logger.info(
+                f"Updated quantities for inflow item {instance.id}. "
+                f"Product: {product.name}, New quantity: {product.quantity}, "
+                f"Warehouse product quantity: {warehouse_product.current_quantity}"
+            )
             
         except Exception as e:
-            logger.error(f"Error updating quantities in InflowItems {instance.id}: {str(e)}")
+            logger.error(f"Error updating quantities for inflow item {instance.id}: {str(e)}")
             raise
 
 @receiver(post_delete, sender=InflowItems)
