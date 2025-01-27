@@ -356,13 +356,31 @@ LOGGING = {
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
+        'apps.inventory.inflows.signals': {
+            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+            'filters': ['ignore_repeated_errors'],
+        },
         'apps.inventory.outflows': {
             'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
             'level': 'INFO',
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
+        'apps.inventory.outflows.signals': {
+            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+            'filters': ['ignore_repeated_errors'],
+        },
         'apps.inventory.transfer': {
+            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+            'filters': ['ignore_repeated_errors'],
+        },
+        'apps.inventory.transfer.signals': {
             'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
             'level': 'INFO',
             'propagate': True,
