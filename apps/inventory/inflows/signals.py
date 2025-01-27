@@ -14,13 +14,13 @@ def store_previous_quantity(sender, instance, **kwargs):
         try:
             previous = InflowItems.objects.get(pk=instance.pk)
             instance._previous_quantity = previous.quantity
-            logger.debug(f"InflowItems ID {instance.pk}: Previous quantity stored: {previous.quantity}")
+            logger.info(f"InflowItems ID {instance.pk}: Previous quantity stored: {previous.quantity}")
         except InflowItems.DoesNotExist:
             instance._previous_quantity = 0
-            logger.debug(f"InflowItems ID {instance.pk}: New record, previous quantity set to 0")
+            logger.info(f"InflowItems ID {instance.pk}: New record, previous quantity set to 0")
     else:
         instance._previous_quantity = 0
-        logger.debug("New InflowItems: previous quantity set to 0")
+        logger.info("New InflowItems: previous quantity set to 0")
 
 @receiver(post_save, sender=InflowItems)
 def update_quantities_on_inflow(sender, instance, created, **kwargs):
@@ -33,49 +33,45 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             return
         
         try:
-            # Update product quantity
-            if created:
-                product.quantity += instance.quantity
-            else:
-                difference = instance.quantity - getattr(instance, '_previous_quantity', 0)
-                product.quantity += difference
-            
-            if product.quantity < 0:
-                logger.error(f"Attempt to set negative quantity for product {str(product)}")
-                raise ValueError("Product quantity cannot be negative")
-            
-            # Update or create WarehouseProduct
-            warehouse_product, created = WarehouseProduct.objects.get_or_create(
+            # Get or create WarehouseProduct
+            warehouse_product, wp_created = WarehouseProduct.objects.get_or_create(
                 warehouse=warehouse,
                 product=product,
                 defaults={'current_quantity': 0}
             )
             
             if created:
-                warehouse_product.current_quantity = instance.quantity
+                # New inflow
+                warehouse_product.current_quantity += instance.quantity
+                product.quantity += instance.quantity
+                warehouse.quantity += instance.quantity
+                
+                logger.info(
+                    f"New InflowItems: Added {instance.quantity} to product {product}. "
+                    f"Current warehouse quantity: {warehouse_product.current_quantity}"
+                )
             else:
-                if instance._previous_quantity:
-                    difference = instance.quantity - instance._previous_quantity
-                    warehouse_product.current_quantity += difference
-                else:
-                    warehouse_product.current_quantity += instance.quantity
+                # Update existing inflow
+                difference = instance.quantity - getattr(instance, '_previous_quantity', 0)
+                warehouse_product.current_quantity += difference
+                product.quantity += difference
+                warehouse.quantity += difference
+                
+                logger.info(
+                    f"Updated InflowItems: Adjusted product {product} by {difference}. "
+                    f"Current warehouse quantity: {warehouse_product.current_quantity}"
+                )
             
             if warehouse_product.current_quantity < 0:
-                raise ValueError("Warehouse quantity cannot be negative")
+                raise ValueError("Warehouse product quantity cannot be negative")
             
-            # Update total warehouse quantity
-            warehouse.quantity += instance.quantity if created else difference
+            if product.quantity < 0:
+                raise ValueError("Product quantity cannot be negative")
             
             # Save all changes
-            product.save(update_fields=['quantity'])
             warehouse_product.save(update_fields=['current_quantity'])
+            product.save(update_fields=['quantity'])
             warehouse.save(update_fields=['quantity'])
-            
-            logger.info(
-                f"InflowItems {instance.id}: Product {product} updated. "
-                f"Total quantity: {product.quantity}, "
-                f"Quantity in warehouse {warehouse}: {warehouse_product.current_quantity}"
-            )
             
         except Exception as e:
             logger.error(f"Error updating quantities in InflowItems {instance.id}: {str(e)}")
@@ -92,40 +88,37 @@ def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
                 logger.warning(f"InflowItems ID {instance.id} has no associated product or warehouse.")
                 return
 
-            # Update product quantity
-            product.quantity -= instance.quantity
-            if product.quantity < 0:
-                logger.error(f"Attempt to set negative quantity for product {str(product)}")
-                raise ValueError("Product quantity cannot be negative")
-            
-            # Update WarehouseProduct
             try:
+                # Get WarehouseProduct
                 warehouse_product = WarehouseProduct.objects.get(
                     warehouse=warehouse,
                     product=product
                 )
+                
+                # Update quantities
                 warehouse_product.current_quantity -= instance.quantity
+                product.quantity -= instance.quantity
+                warehouse.quantity -= instance.quantity
                 
                 if warehouse_product.current_quantity < 0:
-                    raise ValueError("Warehouse quantity cannot be negative")
+                    raise ValueError("Warehouse product quantity cannot be negative")
                 
+                if product.quantity < 0:
+                    raise ValueError("Product quantity cannot be negative")
+                
+                # Save all changes
                 warehouse_product.save(update_fields=['current_quantity'])
-                
-                # Update total warehouse quantity
-                warehouse.quantity -= instance.quantity
+                product.save(update_fields=['quantity'])
                 warehouse.save(update_fields=['quantity'])
+                
+                logger.info(
+                    f"InflowItems deleted: Removed {instance.quantity} from product {product}. "
+                    f"Current warehouse quantity: {warehouse_product.current_quantity}"
+                )
                 
             except WarehouseProduct.DoesNotExist:
                 logger.error(f"WarehouseProduct not found for product {product} in warehouse {warehouse}")
                 raise
-            
-            product.save(update_fields=['quantity'])
-            
-            logger.info(
-                f"InflowItems deleted: Product {product} updated. "
-                f"Total quantity: {product.quantity}, "
-                f"Quantity in warehouse {warehouse}: {warehouse_product.current_quantity}"
-            )
                 
         except Exception as e:
             logger.error(f"Error updating quantities on InflowItems {instance.id} deletion: {str(e)}")
