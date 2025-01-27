@@ -40,7 +40,7 @@ class Outflow(BaseModel):
     def __str__(self):
         return f'{self.origin.name} - {self.destiny.name} - {self.product.name} - {self.quantity}'
     
-class OutflowItems(models.Model):
+class OutflowItems(BaseModel):
     """ Outflow Items model is responsible for storing the each product that is part of a outflow
     fields:
         outflow: ForeignKey to Outflow : id of the outflow the item is part of

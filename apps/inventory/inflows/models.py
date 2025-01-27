@@ -29,7 +29,7 @@ class Inflow(BaseModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return self.origin.name + ' - ' + self.destiny.name
+        return self.origin.name + ' -> ' + self.destiny.name
     
     
 class InflowItems(BaseModel):
