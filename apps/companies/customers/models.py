@@ -28,12 +28,9 @@ class Customer(BaseAddressWithBaseModel):
         phone (CharField): Contact phone number
         email (EmailField): Contact email address
         is_active (BooleanField): Indicates if the customer is active, defaults to True
-        companie (ForeignKey): Associated company
-        created_by (ForeignKey): Employee who created the record
-        updated_by (ForeignKey): Employee who last updated the record
-        created_at (DateTimeField): Timestamp of record creation
-        updated_at (DateTimeField): Timestamp of last update
-    
+        another_billing_address (BooleanField): Indicates if the customer has another billing address, defaults to False
+        another_shipping_address (BooleanField): Indicates if the customer has another shipping address, defaults to False
+        
     Relationships:
         - Belongs to one Companie (many-to-one through companie field)
         - Created by one Employeer (many-to-one through created_by field)

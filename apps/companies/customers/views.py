@@ -15,7 +15,7 @@ from drf_spectacular.utils import (
 from apps.companies.customers.services import CustomerService
 from apps.companies.customers.models import Customer
 from apps.companies.customers.serializers import (
-    CustomerSerializer, ListAllCustomersSerializer
+    CustomerSerializer
 )
 import logging
 
@@ -60,29 +60,67 @@ class BaseCustomerView:
         description="""
         Creates a new customer record with the provided information.
         
-        The creating user must be associated with an employee record.
-        Both created_by and updated_by will be set to the creating employee.
+        Company association and user tracking (created_by, updated_by) are handled automatically.
+        
+        Address Handling:
+        - If another_billing_address=True, _billing_address_data will be used to create a custom billing address
+        - If another_shipping_address=True, _shipping_address_data will be used to create a custom shipping address
+        - If either is False, the corresponding address will be created using the customer's main address
+        
+        Note:
+        - The response will include billing_address_data and shipping_address_data
+        - For creation, use _billing_address_data and _shipping_address_data (with underscore)
         """,
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
-                    'name': {'type': 'string', 'minLength': 1},
-                    'address': {'type': 'string'},
-                    'city': {'type': 'string'},
-                    'zip_code': {'type': 'string'},
-                    'country': {'type': 'string'},
-                    'phone': {'type': 'string'},
-                    'email': {'type': 'string', 'format': 'email'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
+                    'first_name': {'type': 'string', 'minLength': 1, 'required': True},
+                    'last_name': {'type': 'string', 'minLength': 1, 'required': True},
+                    'address': {'type': 'string', 'required': True},
+                    'city': {'type': 'string', 'required': True},
+                    'state': {'type': 'string', 'required': True},
+                    'zip_code': {'type': 'string', 'required': True},
+                    'country': {'type': 'string', 'default': 'USA', 'required': False},
+                    'phone': {'type': 'string', 'required': False},
+                    'email': {'type': 'string', 'format': 'email', 'required': False},
+                    'another_billing_address': {'type': 'boolean', 'default': False, 'required': False},
+                    '_billing_address_data': {
+                        'type': 'object',
+                        'properties': {
+                            'address': {'type': 'string'},
+                            'city': {'type': 'string'},
+                            'state': {'type': 'string'},
+                            'zip_code': {'type': 'string'},
+                            'country': {'type': 'string'},
+                            'phone': {'type': 'string'},
+                            'email': {'type': 'string', 'format': 'email'}
+                        },
+                        'required': False
+                    },
+                    'another_shipping_address': {'type': 'boolean', 'default': False, 'required': False},
+                    '_shipping_address_data': {
+                        'type': 'object',
+                        'properties': {
+                            'address': {'type': 'string'},
+                            'city': {'type': 'string'},
+                            'state': {'type': 'string'},
+                            'zip_code': {'type': 'string'},
+                            'country': {'type': 'string'},
+                            'phone': {'type': 'string'},
+                            'email': {'type': 'string', 'format': 'email'}
+                        },
+                        'required': False
+                    },
+                    'is_active': {'type': 'boolean', 'default': True, 'required': False}
                 },
-                'required': ['name', 'companie_id']
+                'required': ['first_name', 'last_name', 'address', 'city', 'state', 'zip_code']
             }
         },
         responses={
             201: CustomerSerializer,
             400: {
-                'description': 'Invalid input data or user not associated with employee',
+                'description': 'Invalid input data',
                 'type': 'object',
                 'properties': {
                     'error': {'type': 'string'},
@@ -101,35 +139,6 @@ class CustomerCreateView(BaseCustomerView, CreateAPIView):
     """
     serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        try:
-            employeer = self.request.user.employeer_user
-            instance = serializer.save(
-                created_by=employeer,
-                updated_by=employeer
-            )
-            logger.info(
-                f"Customer created successfully: {instance.name}",
-                extra={
-                    'customer_id': instance.id,
-                    'created_by': employeer.id,
-                    'companie_id': instance.companie_id
-                }
-            )
-        except Exception as e:
-            logger.error(
-                f"Error creating customer: {str(e)}",
-                extra={
-                    'user_id': self.request.user.id,
-                    'error': str(e)
-                },
-                exc_info=True
-            )
-            raise serializer.ValidationError({
-                'error': "User must be associated with an employee to create a customer",
-                'detail': str(e)
-            })
 
 
 @extend_schema_view(
@@ -410,42 +419,86 @@ class CustomerRetrieveByNameView(BaseCustomerView, RetrieveAPIView):
     put=extend_schema(
         tags=["Companies - Customers"],
         operation_id="update_customer",
-        summary="Update customer",
+        summary="Update customer details",
         description="""
-        Updates all customer information.
+        Updates customer information. All fields are optional.
         
-        Requires all fields to be provided, even if unchanged.
-        The updating user must be associated with an employee record.
+        Company association and user tracking (updated_by) are handled automatically.
+        
+        Address Handling:
+        - If another_billing_address=True, _billing_address_data will update the billing address
+        - If another_shipping_address=True, _shipping_address_data will update the shipping address
+        - If either is False, the corresponding address will sync with the customer's main address
+        
+        Note:
+        - The response will include billing_address_data and shipping_address_data
+        - For updates, use _billing_address_data and _shipping_address_data (with underscore)
+        - Validation ensures address data is provided when another_*_address is True
         """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the customer to update',
-                required=True,
-            ),
-        ],
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
-                    'name': {'type': 'string', 'minLength': 1},
+                    'first_name': {'type': 'string', 'minLength': 1},
+                    'last_name': {'type': 'string', 'minLength': 1},
                     'address': {'type': 'string'},
                     'city': {'type': 'string'},
+                    'state': {'type': 'string'},
                     'zip_code': {'type': 'string'},
                     'country': {'type': 'string'},
                     'phone': {'type': 'string'},
                     'email': {'type': 'string', 'format': 'email'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
-                },
-                'required': ['name', 'address', 'city', 'zip_code', 'country', 'phone', 'email', 'companie_id']
+                    'another_billing_address': {'type': 'boolean'},
+                    '_billing_address_data': {
+                        'type': 'object',
+                        'properties': {
+                            'address': {'type': 'string'},
+                            'city': {'type': 'string'},
+                            'state': {'type': 'string'},
+                            'zip_code': {'type': 'string'},
+                            'country': {'type': 'string'},
+                            'phone': {'type': 'string'},
+                            'email': {'type': 'string', 'format': 'email'}
+                        }
+                    },
+                    'another_shipping_address': {'type': 'boolean'},
+                    '_shipping_address_data': {
+                        'type': 'object',
+                        'properties': {
+                            'address': {'type': 'string'},
+                            'city': {'type': 'string'},
+                            'state': {'type': 'string'},
+                            'zip_code': {'type': 'string'},
+                            'country': {'type': 'string'},
+                            'phone': {'type': 'string'},
+                            'email': {'type': 'string', 'format': 'email'}
+                        }
+                    },
+                    'is_active': {'type': 'boolean'}
+                }
             }
         },
         responses={
             200: CustomerSerializer,
-            400: {'description': 'Invalid input data'},
-            404: {'description': 'Customer not found'}
+            400: {
+                'description': 'Invalid input data',
+                'application/json':{
+                    'type': 'object',
+                    'properties': {
+                        'error': {'type': 'string'},
+                        'detail': {'type': 'string'}
+                    }
+                },
+            },
+            404: {
+                'description': 'Customer not found',
+                'application/json':{
+                    'type': 'object',
+                    'properties': {
+                        'detail': {'type': 'string'}
+                    }
+                }
+            }
         }
     ),
     patch=extend_schema(
@@ -453,39 +506,30 @@ class CustomerRetrieveByNameView(BaseCustomerView, RetrieveAPIView):
         operation_id="partial_update_customer",
         summary="Partially update customer",
         description="""
-        Updates specific customer fields.
+        Updates specific fields of a customer record.
         
-        Only provided fields will be updated.
-        The updating user must be associated with an employee record.
+        Company association and user tracking (updated_by) are handled automatically.
+        Changing another_billing_address or another_shipping_address will not affect
+        existing address records.
         """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the customer to update',
-                required=True,
-            ),
-        ],
-        request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'name': {'type': 'string', 'minLength': 1},
-                    'address': {'type': 'string'},
-                    'city': {'type': 'string'},
-                    'zip_code': {'type': 'string'},
-                    'country': {'type': 'string'},
-                    'phone': {'type': 'string'},
-                    'email': {'type': 'string', 'format': 'email'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
-                }
-            }
-        },
+        request=CustomerSerializer,
         responses={
             200: CustomerSerializer,
-            400: {'description': 'Invalid input data'},
-            404: {'description': 'Customer not found'}
+            400: {
+                'description': 'Invalid input data',
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'detail': {'type': 'string'}
+                }
+            },
+            404: {
+                'description': 'Customer not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            }
         }
     )
 )
@@ -497,38 +541,22 @@ class CustomerUpdateView(BaseCustomerView, UpdateAPIView):
     automatic tracking of the updating employee.
     """
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
         try:
-            employeer = self.request.user.employeer_user
-            old_data = {
-                'name': serializer.instance.name,
-                'companie_id': serializer.instance.companie_id
-            }
-            instance = serializer.save(updated_by=employeer)
-            
-            logger.info(
-                f"Customer updated: {instance.name}",
-                extra={
-                    'customer_id': instance.id,
-                    'updated_by': employeer.id,
-                    'old_data': old_data,
-                    'updated_fields': list(serializer.validated_data.keys())
-                }
-            )
+            return super().update(request, *args, **kwargs)
         except Exception as e:
             logger.error(
-                f"Error updating customer: {str(e)}",
+                f"[VIEW] Error updating customer: {str(e)}",
                 extra={
-                    'customer_id': serializer.instance.id,
-                    'user_id': self.request.user.id,
+                    'customer_id': kwargs.get('pk'),
+                    'requester_id': request.user.id,
                     'error': str(e)
                 },
                 exc_info=True
             )
-            raise serializer.ValidationError({
-                'error': "User must be associated with an employee to update a customer",
+            raise ValidationError({
+                'error': "Error updating customer",
                 'detail': str(e)
             })
 
@@ -561,32 +589,22 @@ class CustomerDeleteView(BaseCustomerView, DestroyAPIView):
     Implements permanent deletion of customer records.
     Consider implementing soft delete if record preservation is needed.
     """
-    permission_classes = [IsAuthenticated]
+    serializer_class = CustomerSerializer
     
-    def perform_destroy(self, instance):
+    def destroy(self, request, *args, **kwargs):
         try:
-            customer_id = instance.id
-            customer_name = instance.name
-            instance.delete()
-            
-            logger.info(
-                f"Customer deleted: {customer_name}",
-                extra={
-                    'customer_id': customer_id,
-                    'deleted_by': self.request.user.id
-                }
-            )
+            return super().destroy(request, *args, **kwargs)
         except Exception as e:
             logger.error(
-                f"Error deleting customer: {str(e)}",
+                f"[VIEW] Error deleting customer: {str(e)}",
                 extra={
-                    'customer_id': instance.id,
-                    'user_id': self.request.user.id,
+                    'customer_id': kwargs.get('pk'),
+                    'user_id': request.user.id,
                     'error': str(e)
                 },
                 exc_info=True
             )
-            raise serializers.ValidationError({
+            raise ValidationError({
                 'error': "Error deleting customer",
                 'detail': str(e)
             })
@@ -599,7 +617,7 @@ class CustomerDeleteView(BaseCustomerView, DestroyAPIView):
         summary="List all customers",
         description="Retrieves a paginated list of all customers",
         responses={
-            200: ListAllCustomersSerializer,
+            200: CustomerSerializer,
             401: {'description': 'Authentication credentials not provided'}
         }
     )
@@ -609,9 +627,9 @@ class CustomerListView(BaseCustomerView, ListAPIView):
     View for listing all customers.
     
     Provides a paginated list of all customers with basic information,
-    using the simplified ListAllCustomersSerializer.
+    CustomerSerializer.
     """
-    serializer_class = ListAllCustomersSerializer
+    serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
     
     def list(self, request, *args, **kwargs):
