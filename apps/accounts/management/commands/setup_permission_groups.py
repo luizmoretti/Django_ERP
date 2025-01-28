@@ -14,6 +14,7 @@ Key Features:
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
+from core.constants.choices import USER_TYPE_CHOICES
 from django.apps import apps
 import logging
 
@@ -75,15 +76,17 @@ class Command(BaseCommand):
             
             "CEO": lambda app_label: ["view", "add", "change", "delete"],  # Full access to all apps
             
+            "Admin": lambda app_label: ["view", "add", "change", "delete"],  # Full access to all apps
+            
             "Manager": lambda app_label: (
                 ["view", "add", "change", "delete"] if app_label in [
-                    "teams", "employees", "stores", "inventory", "categories",
-                    "brands", "suppliers", "barcodes", "customers", "projects",
-                    "invoices", "sales"
+                    "employeers", "hr", "warehouse", "inventory", "categories",
+                    "brand", "supplier", "product", "customers"
                 ] else ["view", "add", "change"] if app_label in [
-                    "OrderPurchase", "products", "inflows", "outflows",
-                    "transfers", "deliveries"
-                ] else ["view"]
+                    "inflows", "outflows", "transfer", "vehicles"
+                ] else ["view"] if app_label in [
+                    "deliveries"
+                ] else []
             ),
             
             "Stock controller": lambda app_label: (
@@ -185,13 +188,27 @@ class Command(BaseCommand):
         # App definitions for each user type
         apps_mapping = {
             # Executive Level
-            "Owner": ['accounts', 'companies', 'customers', 'employeers', 'hr'],
-            "CEO": [],
-            "Admin": [],
+            "Owner": [
+            'accounts', 'companies', 'customers', 'employeers', 'hr', 'warehouse',
+            'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 
+            'outflows', 'transfer', 'deliveries', 'vehicles'
+            ],
+            
+            "CEO": ['companies', 'customers', 'employeers', 'hr', 'warehouse',
+                    'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 'outflows', 'transfer', 'deliveries', 'vehicles'],
+            
+            "Admin": ['accounts', 'companies', 'customers', 'employeers', 'hr', 'warehouse',
+                      'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 'outflows', 'transfer', 'deliveries', 'vehicles'],
             
             # Management Level
-            "Manager": [],
+            "Manager": [ "employeers", "hr", "warehouse", "inventory", "categories",
+            "brand", "supplier", "product", "customers", "inflows", "outflows", "transfer", "deliveries", "vehicles"
+            ],
+            
+            # HR Level
             "HR": [],
+            
+            # Accountant Level
             "Accountant": [],
             
             # Operational Level
