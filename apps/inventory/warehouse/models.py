@@ -37,6 +37,16 @@ class Warehouse(BaseModel):
     def __str__(self):
         return self.name
     
+    def update_total_quantity(self):
+        """Recalculate total quantity based on sum of all WarehouseProduct quantities"""
+        total = WarehouseProduct.objects.filter(
+            warehouse=self
+        ).aggregate(
+            total=models.Sum('current_quantity')
+        )['total'] or 0
+        self.quantity = total
+        self.save()
+    
 class WarehouseProduct(BaseModel):
     """
     Fields:
@@ -59,7 +69,7 @@ class WarehouseProduct(BaseModel):
             updated_by: ForeignKey to Employeer
         }
     """
-    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='product_warehouses')
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_warehouses')
     current_quantity = models.BigIntegerField(default=0, blank=True, null=True, help_text='The current quantity of this product in the warehouse')
     
@@ -67,6 +77,3 @@ class WarehouseProduct(BaseModel):
         verbose_name = 'Product Warehouse'
         verbose_name_plural = 'Product Warehouses'
         ordering = ['-created_at']
-        
-    def __str__(self):
-        return self.warehouse.name + ' - ' + self.product.name
