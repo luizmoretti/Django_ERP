@@ -19,14 +19,10 @@ class Vehicle(BaseModel):
         verbose_name = 'Vehicle'
         verbose_name_plural = 'Vehicles'
         ordering = ['-created_at']
-        
-    
-    def __str__(self):
-        return f'{self.type}'
     
     @property
     def driver_name(self) -> str:
-        return self.driver.first_name + ' ' + self.driver.last_name
+        return self.driver.get_full_name()
     
     @property
     def vehicle_type(self) -> str:
@@ -59,6 +55,9 @@ class Vehicle(BaseModel):
     @property
     def vehicle(self) -> str:
         return self.vehicle
+    
+    def __str__(self):
+        return f'{self.plate} - {self.driver.first_name} {self.driver.last_name}'
     
 class VehicleMilageHistory(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='milage_history')

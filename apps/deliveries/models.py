@@ -1,9 +1,12 @@
 from django.db import models
 from core.constants.choices import DELIVERY_STATUS_CHOICES
+from .vehicles.models import Vehicle
 from basemodels.models import BaseModel
+from apps.inventory.product.models import Product
 from apps.inventory.warehouse.models import Warehouse
-from ..companies.customers.models import Customer, CustomerProjectAddress
-from ..companies.models import PickUpCompanieAddress
+from ..companies.customers.models import Customer 
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.db import transaction
 from django.db import IntegrityError
 
@@ -30,37 +33,20 @@ class Delivery(BaseModel):
         related_name='deliveries_destiny', 
         help_text='The customer of the delivery'
     )
-    # vehicle = models.CharField(
-    #     max_length=100, 
-    #     choices=DELIVERY_VEHICLE_CHOICES, 
-    #     null=True, 
-    #     blank=True, 
-    #     help_text='The vehicle of the delivery'
-    # )
+    driver = models.ForeignKey(
+        Vehicle, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='deliveries_driver', 
+        help_text='The vehicle of the delivery'
+    )
     status = models.CharField(
         max_length=100, 
         choices=DELIVERY_STATUS_CHOICES, 
-        null=True, 
+        null=True,
         blank=True,
         help_text='The status of the delivery'
-    )
-    
-    pick_up_address = models.ForeignKey(
-        PickUpCompanieAddress, 
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
-        related_name='deliveries_pick_up_address', 
-        help_text='The pick up address of the delivery'
-    )
-    
-    delivery_address = models.ForeignKey(
-        CustomerProjectAddress, 
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
-        related_name='deliveries_delivery_address', 
-        help_text='The delivery address of the delivery'
     )
     
     class Meta:
@@ -119,4 +105,56 @@ class Delivery(BaseModel):
         """
         self.generate_unique_delivery_number()
         super().save(*args, **kwargs)
+
+class DeliveryItems(BaseModel):
+    """
+    Represents items in a delivery with quantities distributed by floor.
+    
+    This model tracks the quantity of products to be delivered to different floors
+    of a building and automatically calculates the total.
+    
+    Attributes:
+        delivery (ForeignKey): Reference to the Delivery
+        product (ForeignKey): Reference to the Product being delivered
+        total (PositiveIntegerField): Total quantity (automatically calculated)
+    """
+    delivery = models.ForeignKey(Delivery, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    basement = models.PositiveIntegerField(default=0)
+    first_floor = models.PositiveIntegerField(default=0)
+    second_floor = models.PositiveIntegerField(default=0)
+    third_floor = models.PositiveIntegerField(default=0)
+    fourth_floor = models.PositiveIntegerField(default=0)
+    attic = models.PositiveIntegerField(default=0)
+    total = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        verbose_name = 'Delivery Item'
+        verbose_name_plural = 'Delivery Items'
+        ordering = ['-created_at']
+    
+    def sum_total(self):
+        """Calculate the total quantity across all floors."""
+        return (
+            self.basement +
+            self.first_floor +
+            self.second_floor +
+            self.third_floor +
+            self.fourth_floor +
+            self.attic
+        )
+    
+    def save(self, *args, **kwargs):
+        """
+        Override the default save method to calculate the total quantity.
+        
+        This method will be called when saving the DeliveryItems instance.
+        """
+        if self.total != self.sum_total():
+            self.total = self.sum_total()
+        super().save(*args, **kwargs)
+        
+    
+    def __str__(self):
+        return f'{self.product} - Total: {self.total} units'
     
