@@ -33,7 +33,7 @@ class NormalUser(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
     password = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    type = models.CharField(max_length=100, choices=USER_TYPE_CHOICES, blank=True, null=True, default='Employee')
+    user_type = models.CharField(max_length=100, choices=USER_TYPE_CHOICES, blank=True, null=True, default='Employee')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     is_staff = models.BooleanField(default=False)

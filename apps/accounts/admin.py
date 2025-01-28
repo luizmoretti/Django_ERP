@@ -6,7 +6,7 @@ from .models import NormalUser
 class NormalUserAdmin(admin.ModelAdmin):
     list_display = (
         'email',
-        'type',
+        'user_type',
         'is_active',
         'is_staff',
         'is_superuser',
