@@ -103,23 +103,23 @@ class OutflowSerializer(serializers.ModelSerializer):
             'updated_by'
         ]
         
-    def get_created_by(self, obj):
+    def get_created_by(self, obj) -> str:
         """Get the name of the user who created the outflow"""
         if obj.created_by:
             return obj.created_by.user.get_full_name()
         return None
     
-    def get_updated_by(self, obj):
+    def get_updated_by(self, obj) -> str:
         """Get the name of the user who last updated the outflow"""
         if obj.updated_by:
             return obj.updated_by.user.get_full_name()
         return None
     
-    def get_origin_name(self, obj):
+    def get_origin_name(self, obj) -> str:
         """Get the name of the origin warehouse"""
         return obj.origin.name
     
-    def get_destiny_name(self, obj):
+    def get_destiny_name(self, obj) -> str:
         """Get the name of the destiny customer"""
         return obj.destiny.full_name
         
