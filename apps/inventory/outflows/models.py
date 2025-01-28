@@ -38,6 +38,41 @@ class Outflow(BaseModel):
     def __str__(self):
         return f'{self.origin.name} -> {self.destiny.full_name}'
     
+    @property
+    def display_origin_address(self) -> str | None:
+        """
+        Gets the pickup address from the origin warehouse's company.
+        # 
+        Returns:
+            str | None: The full address if available, None otherwise
+    """
+        try:
+            if self.origin and self.origin.companie:
+                # Busca o endereço de coleta através da relação reversa
+                pickup_address = self.origin.companie.pick_up_companie_address_companie.first()
+                if pickup_address:
+                    return pickup_address.full_address
+            return None
+        except AttributeError:
+            return None
+        
+    @property
+    def display_destiny_address(self) -> str | None:
+        """
+        Gets the destiny address based on the customer's address if available.
+        Returns:
+            str | None: The full address if available, None otherwise
+        """
+        try:
+            if self.destiny:
+                project_address = self.destiny.customer_project_address_customer.first()
+                if project_address:
+                    return project_address
+            return f'{self.destiny.address}, {self.destiny.city}, {self.destiny.state}, {self.destiny.zip_code}, {self.destiny.country}'
+        except AttributeError:
+            return "Destiny not setted. Please set the destiny customer first."
+            
+    
 class OutflowItems(BaseModel):
     """ Outflow Items model is responsible for storing the each product that is part of a outflow
     fields:

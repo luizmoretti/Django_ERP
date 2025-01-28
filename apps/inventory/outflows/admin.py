@@ -12,7 +12,7 @@ class OutflowItemsInline(admin.TabularInline):
 @admin.register(Outflow)
 class OutflowAdmin(admin.ModelAdmin):
     inlines = [OutflowItemsInline]
-    list_display = ('origin', 'destiny', 'created_at', 'updated_at', 'get_created_by_full_name', 'get_updated_by_full_name')
+    list_display = ('get_origin_address', 'get_destiny_address', 'created_at', 'updated_at', 'get_created_by_full_name', 'get_updated_by_full_name')
     list_filter = ('origin', 'destiny', 'created_at', 'updated_at')
     search_fields = ('origin__name', 'destiny_full_name')
     readonly_fields = ('id', 'companie', 'created_at', 'updated_at', 'created_by', 'updated_by')
@@ -23,12 +23,19 @@ class OutflowAdmin(admin.ModelAdmin):
         return "-"
     get_created_by_full_name.short_description = "Created By"
     
-    
-    def get_destiny_full_name(self, obj):
-        if obj.destiny:
-            return f"{obj.destiny.first_name} {obj.destiny.last_name}".strip()
+    def get_origin_address(self, obj):
+        if obj.origin:
+            if obj.origin.companie:
+                return obj.origin.companie.pick_up_companie_address_companie.first().full_address
         return "-"
-    get_destiny_full_name.short_description = "Destiny"
+    get_origin_address.short_description = "Origin"
+    
+    def get_destiny_address(self, obj):
+        if obj.destiny:
+            if obj.destiny.another_shipping_address:
+                return obj.destiny.customer_project_address_customer.first()
+        return "-"
+    get_destiny_address.short_description = "Destiny"
     
     def get_updated_by_full_name(self, obj):
         if obj.updated_by:

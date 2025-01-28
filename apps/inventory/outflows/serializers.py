@@ -72,7 +72,10 @@ class OutflowSerializer(serializers.ModelSerializer):
     
     # Read-only fields for names
     origin_name = serializers.CharField(source='origin.name', read_only=True)
+    origin_address = serializers.CharField(source='display_origin_address', read_only=True)
+    
     destiny_name = serializers.CharField(source='destiny.full_name', read_only=True)
+    destiny_address = serializers.CharField(source='display_destiny_address', read_only=True)
     
     items = OutflowItemSerializer(many=True, read_only=True)
     items_data = serializers.ListField(
@@ -90,13 +93,28 @@ class OutflowSerializer(serializers.ModelSerializer):
         model = Outflow
         fields = [
             'id',
-            'companie',
             'origin',
             'origin_name',
+            'origin_address',
             'destiny',
             'destiny_name',
+            'destiny_address',
             'items',
             'items_data',
+            'companie',
+            'created_at',
+            'updated_at',
+            'created_by',
+            'updated_by'
+        ]
+        read_only_fields = [
+            'id',
+            'origin_name',
+            'origin_address',
+            'destiny_name',
+            'destiny_address',
+            'items',
+            'companie',
             'created_at',
             'updated_at',
             'created_by',
@@ -144,6 +162,7 @@ class OutflowSerializer(serializers.ModelSerializer):
                 raise ValidationError({
                     'items_data': 'Each item must have product and quantity'
                 })
+            
             if item['quantity'] < 1:
                 raise ValidationError({
                     'items_data': 'Quantity must be positive'
