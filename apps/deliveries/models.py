@@ -110,4 +110,13 @@ class Delivery(BaseModel):
                         raise IntegrityError(
                             "It was not possible to generate a unique delivery number after several attempts."
                         )
+                        
+    def save(self, *args, **kwargs):
+        """
+        Override the default save method to generate a unique delivery number.
+        
+        This method will be called when saving the Delivery instance.
+        """
+        self.generate_unique_delivery_number()
+        super().save(*args, **kwargs)
     
