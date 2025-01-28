@@ -3,12 +3,13 @@ from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
 from uuid import uuid4
 from core.constants.choices import COUNTRY_CHOICES
+from basemodels.models import BaseAddressWithBaseModel
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Create your models here.
-class Customer(models.Model):
+class Customer(BaseAddressWithBaseModel):
     """
     Customer model representing client entities in the system.
     
@@ -41,25 +42,28 @@ class Customer(models.Model):
     Note:
         All foreign key relationships use SET_NULL on deletion to maintain
         data integrity and history.
+        
+    Inherits:
+        BaseAddressWithBaseModel{
+            id: UUIDField : Inherited from BaseModel
+            address: CharField
+            city: CharField 
+            state: CharField
+            zip_code: CharField 
+            country: CharField 
+            phone: CharField 
+            email: EmailField 
+            created_at: DateTimeField : Inherited from BaseModel
+            updated_at: DateTimeField : Inherited from BaseModel
+            created_by: ForeignKey to Employeer : Inherited from BaseModel
+            updated_by: ForeignKey to Employeer : Inherited from BaseModel
+        }
     """
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100, blank=True, null=True)
-    address = models.CharField(max_length=200, blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    zip_code = models.CharField(max_length=10, blank=True, null=True)
-    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True, default='USA')
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(max_length=254, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     another_billing_address = models.BooleanField(default=False)
     another_shipping_address = models.BooleanField(default=False)
-    companie = models.ForeignKey(Companie, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_companie')
-    created_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_created_by')
-    updated_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_updated_by')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = 'Customer'
@@ -84,18 +88,38 @@ class Customer(models.Model):
         """
         return self.full_name()
     
-class CustomerProjectAddress(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
+class CustomerProjectAddress(BaseAddressWithBaseModel):
+    """
+    Customer project address model representing project addresses associated with
+    customers.
+    
+    Attributes:
+        customer (ForeignKey): Customer to which the project address is associated
+    
+    Relationships:
+        - Belongs to one Customer (many-to-one through customer field)
+    
+    Note:
+        All foreign key relationships use SET_NULL on deletion to maintain
+        data integrity and history.
+        
+    Inherits:
+        BaseAddressWithBaseModel{
+            id: UUIDField : Inherited from BaseModel
+            address: CharField
+            city: CharField 
+            state: CharField
+            zip_code: CharField 
+            country: CharField 
+            phone: CharField 
+            email: EmailField 
+            created_at: DateTimeField : Inherited from BaseModel
+            updated_at: DateTimeField : Inherited from BaseModel
+            created_by: ForeignKey to Employeer : Inherited from BaseModel
+            updated_by: ForeignKey to Employeer : Inherited from BaseModel
+        }
+    """
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address_customer')
-    address = models.CharField(max_length=250, blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    zip_code = models.CharField(max_length=10, blank=True, null=True)
-    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True, default='USA')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address_created_by')
-    updated_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address_updated_by')
     
     class Meta:
         verbose_name = 'Customer Project Address'
@@ -135,7 +159,8 @@ class CustomerProjectAddress(models.Model):
             self.state = customer_instance.state
             self.zip_code = customer_instance.zip_code
             self.country = customer_instance.country
-            
+            self.phone = customer_instance.phone if customer_instance.phone else None
+            self.email = customer_instance.email if customer_instance.email else None
         
     def save(self, *args, **kwargs):
         """
@@ -144,18 +169,39 @@ class CustomerProjectAddress(models.Model):
         self.populate_customer_project_address(self.customer)
         super().save(*args, **kwargs)
         
-class CustomerBillingAddress(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
+class CustomerBillingAddress(BaseAddressWithBaseModel):
+    """
+    Customer billing address model representing billing addresses associated with
+    customers.
+    
+    Attributes:
+        customer (ForeignKey): Customer to which the billing address is associated
+    
+    Relationships:
+        - Belongs to one Customer (many-to-one through customer field)
+    
+    Note:
+        All foreign key relationships use SET_NULL on deletion to maintain
+        data integrity and history.
+        
+    Inherits:
+        BaseAddressWithBaseModel{
+            id: UUIDField : Inherited from BaseModel
+            address: CharField
+            city: CharField 
+            state: CharField
+            zip_code: CharField 
+            country: CharField 
+            phone: CharField 
+            email: EmailField 
+            created_at: DateTimeField : Inherited from BaseModel
+            updated_at: DateTimeField : Inherited from BaseModel
+            created_by: ForeignKey to Employeer : Inherited from BaseModel
+            updated_by: ForeignKey to Employeer : Inherited from BaseModel
+        }
+    """
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address_customer')
-    address = models.CharField(max_length=155, blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    zip_code = models.CharField(max_length=10, blank=True, null=True)
-    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True, default='USA')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address_created_by')
-    updated_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address_updated_by')
+    
     
     class Meta:
         verbose_name = 'Customer Billing Address'
@@ -181,7 +227,7 @@ class CustomerBillingAddress(models.Model):
         """
         return customer_instance.another_billing_address
     
-    @staticmethod
+    
     def populate_customer_billing_address(self, customer_instance:Customer):
         """
         Populates the customer billing address fields with the provided customer instance if another billing address is not set.
@@ -196,6 +242,8 @@ class CustomerBillingAddress(models.Model):
             self.state = customer_instance.state
             self.zip_code = customer_instance.zip_code
             self.country = customer_instance.country
+            self.phone = customer_instance.phone if customer_instance.phone else None
+            self.email = customer_instance.email if customer_instance.email else None
             
     def save(self, *args, **kwargs):
         """
