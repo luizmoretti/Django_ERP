@@ -565,7 +565,7 @@ SPECTACULAR_SETTINGS = {
         'defaultModelsExpandDepth': -1,
         'deepLinking': True,
         'displayRequestDuration': True,
-        'filter': True,
+        'filter': False,
         'persistAuthorization': True,
     },
     
@@ -591,6 +591,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Inflows', 'description': 'Inflow management endpoints'},
         {'name': 'Inventory - Outflows', 'description': 'Outflow management endpoints'},
         {'name': 'Inventory - Warehouse', 'description': 'Warehouse management endpoints'},
+        {'name': 'Inventory - Load Orders', 'description': 'Load order management endpoints'},
         
         # Reports
         
