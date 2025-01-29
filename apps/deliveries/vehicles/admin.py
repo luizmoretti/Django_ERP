@@ -5,7 +5,7 @@ from .models import Vehicle, VehicleMilageHistory, VehicleMaintenance, VehicleMa
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ('plate', 'vehicle_info', 'driver_details', 'type', 'is_active', 'created_at')
+    list_display = ('id', 'plate', 'vehicle_info', 'driver_details', 'type', 'is_active', 'created_at')
     list_filter = ('type', 'created_at', 'companie')
     search_fields = ('plate', 'vehicle', 'driver__first_name', 'driver__last_name', 'drivers_license')
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by', 'companie')
@@ -31,9 +31,9 @@ class VehicleAdmin(admin.ModelAdmin):
     def vehicle_info(self, obj):
         return format_html(
             "<strong>{}</strong> - {} {}",
-            obj.vehicle,
-            obj.maker,
-            obj.model
+            obj.name,
+            obj.vehicle_maker,
+            obj.vehicle_model
         )
     vehicle_info.short_description = "Vehicle Info"
     
@@ -41,8 +41,8 @@ class VehicleAdmin(admin.ModelAdmin):
         if obj.driver:
             return format_html(
                 "<strong>{}</strong><br/>License: {}",
-                obj.driver_name,
-                obj.driver_license
+                obj.driver.get_full_name(),
+                obj.drivers_license
             )
         return "-"
     driver_details.short_description = "Driver Details"

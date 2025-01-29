@@ -20,44 +20,11 @@ class Vehicle(BaseModel):
         verbose_name_plural = 'Vehicles'
         ordering = ['-created_at']
     
-    @property
-    def driver_name(self) -> str:
-        return self.driver.get_full_name()
-    
-    @property
-    def vehicle_type(self) -> str:
-        return self.type
-    
-    @property
-    def maker(self) -> str:
-        return self.maker
-    
-    @property
-    def model(self) -> str:
-        return self.model
-    
-    @property
-    def color(self) -> str:
-        return self.color
-    
-    @property
     def is_active(self) -> bool:
-        return self.is_active
-    
-    @property
-    def tag(self) -> str:
-        return self.tag
-    
-    @property
-    def driver_license(self) -> str:
-        return self.driver_license
-    
-    @property
-    def vehicle(self) -> str:
-        return self.vehicle
+        return self.vehicle_is_active
     
     def __str__(self):
-        return f'{self.plate} - {self.driver.first_name} {self.driver.last_name}'
+        return f'{self.name} | {self.plate} | {self.driver.get_full_name()}'
     
 class VehicleMilageHistory(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='milage_history')
