@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class DeliveryOsConfig(AppConfig):
+class LoadOrderConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.inventory.delivery_os'
+    name = 'apps.inventory.load_order'
