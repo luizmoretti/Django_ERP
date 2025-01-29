@@ -61,7 +61,7 @@ class Vehicle(BaseModel):
     
 class VehicleMilageHistory(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='milage_history')
-    milage = models.BigIntegerField(help_text='The milage of the vehicle')
+    milage = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='The milage of the vehicle')
     
     class Meta:
         verbose_name = 'Vehicle Milage History'
