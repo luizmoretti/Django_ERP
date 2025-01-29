@@ -36,6 +36,7 @@ urlpatterns = [
     path('inflows/', include('apps.inventory.inflows.urls')),
     path('outflows/', include('apps.inventory.outflows.urls')),
     path('warehouse/', include('apps.inventory.warehouse.urls')),
+    path('load-orders/', include('apps.inventory.load_order.urls')),
 ]
 
 
