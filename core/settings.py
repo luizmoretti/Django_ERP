@@ -429,10 +429,6 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ),
-    'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
-    ),
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_VERSIONING_CLASS': None,
     'DEFAULT_VERSION': None,
