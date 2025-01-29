@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    # Security
+    'axes',  # Proteção contra força bruta
+    
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
@@ -85,20 +88,22 @@ INSTALLED_APPS = [
     'apps.inventory.outflows',
     'apps.inventory.transfer',
     'apps.inventory.brand',
-    'apps.inventory.delivery_os',
+    'apps.inventory.load_order',
     
 ]
 
 ################################
 ######### MIDDLEWARE ##########
 ################################
-MIDDLEWARE = [ 
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',  # Deve vir após AuthenticationMiddleware
     'crum.CurrentRequestUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -116,11 +121,28 @@ if not DEBUG:
 ################################
 AUTH_USER_MODEL = 'accounts.NormalUser'
 
+# Django Axes Configuration (Proteção contra força bruta)
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_ENABLED = True
+AXES_FAILURE_LIMIT = 5
+AXES_LOCK_OUT_AT_FAILURE = True
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_TEMPLATE = None  # Returns JSON response instead of template
+AXES_LOCKOUT_URL = None
+AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]] # Adds 'ip_address' and 'user_agent' to the list of parameters checked
+AXES_IPWARE_META_PRECEDENCE_ORDER = [  # Modern configuration for user agent and other metadata
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
+
 # SSL/HTTPS settings
-if DEBUG: # In development
-    pass
+if DEBUG:  # In development
+    SECURE_SSL_REDIRECT = False
 else:  # In production
-    # SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -132,21 +154,23 @@ else:  # In production
     X_FRAME_OPTIONS = 'DENY'
     
     # CORS for production
-    CORS_ALLOWED_ORIGINS = [
-        "https://seu-dominio.com",
-    ]
+    CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_URLS_REGEX = r'^/api/.*$'
     
     # Other security settings
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
-    CSRF_TRUSTED_ORIGINS = ['https://seu-dominio.com']
+    CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
 
 # Common security settings
 CSRF_USE_SESSIONS = True
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
+SECURE_REFERRER_POLICY = 'same-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 
 ################################
 ########## TEMPLATES ###########
@@ -368,6 +392,11 @@ LOGGING = {
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
+        'axes': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
 }
 
@@ -468,10 +497,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ################################
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0'),
     }
 }
+AXES_CACHE = 'default'
 
 ################################
 ########## CELERY CONFIG #######
