@@ -444,6 +444,7 @@ class LoadOrderDestroyView(LoadOrderBaseView, DestroyAPIView):
         try:
             instance = self.get_object()
             self.perform_destroy(instance)
+            logger.info(f"[LOAD ORDER VIEWS] - Load order deleted successfully")
             return Response(
                 {"detail": "Load order deleted successfully"},
                 status=status.HTTP_200_OK
