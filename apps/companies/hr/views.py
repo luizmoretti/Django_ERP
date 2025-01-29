@@ -39,7 +39,7 @@ class BaseHRView:
 # HR Views
 @extend_schema(
     description=_("List all HR records"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     responses={200: HRSerializer(many=True)}
 )
 class HRListView(BaseHRView, generics.ListAPIView):
@@ -60,7 +60,7 @@ class HRListView(BaseHRView, generics.ListAPIView):
 
 @extend_schema(
     description=_("Create a new HR record"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     request=HRSerializer,
     responses={
         201: HRSerializer,
@@ -129,7 +129,7 @@ class HRCreateView(BaseHRView, generics.CreateAPIView):
 
 @extend_schema(
     description=_("Retrieve a specific HR record"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     parameters=[
         OpenApiParameter(
             name="id",
@@ -162,7 +162,7 @@ class HRRetrieveView(BaseHRView, generics.RetrieveAPIView):
 
 @extend_schema(
     description=_("Update a specific HR record"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     parameters=[
         OpenApiParameter(
             name="id",
@@ -215,7 +215,7 @@ class HRUpdateView(BaseHRView, generics.UpdateAPIView):
 
 @extend_schema(
     description=_("Delete a specific HR record"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     parameters=[
         OpenApiParameter(
             name="id",
@@ -246,7 +246,7 @@ class HRDestroyView(BaseHRView, generics.DestroyAPIView):
     
 @extend_schema(
     description=_("Process payment for a specific HR record"),
-    tags=["HR - Human Resources"],
+    tags=["Companie - HR"],
     parameters=[
         OpenApiParameter(
             name="id",
