@@ -71,7 +71,7 @@ INSTALLED_APPS = [
     'apps.companies',
     'apps.companies.customers',
     'apps.companies.employeers',
-    'apps.companies.hr',
+    'apps.companies.attendance',
     
     #Delivery Manegement App
     'apps.deliveries',

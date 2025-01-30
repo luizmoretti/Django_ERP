@@ -27,11 +27,22 @@ USER_TYPE_CHOICES = (
 
 # HR Payment Intervals
 # Constants for payment intervals
-PAYMENT_INTERVAL_CHOICES = [
+PAYROLL_CHOICES = [
     ('Daily', _('Daily')),
     ('Weekly', _('Weekly')),
     ('Biweekly', _('Biweekly')),
     ('Monthly', _('Monthly')),
+]
+
+# Constants for payment types
+PAYMENT_CHOICES = [
+        ('Hour', _('By Hour')),
+        ('Day', _('By Day')),
+    ]
+
+PAYROLL_STATUS_CHOICES = [
+    ('Pending', _('Pending')),
+    ('Paid', _('Paid')),
 ]
 
 # Business Days

@@ -2,7 +2,6 @@ from django.db import models
 from uuid import uuid4
 from apps.companies.models import Companie
 from core.constants.choices import COUNTRY_CHOICES, STATE_CHOICES
-from apps.companies.employeers.models import Employeer
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AnonymousUser
 
@@ -13,8 +12,8 @@ class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     
-    created_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_created_by')
-    updated_by = models.ForeignKey(Employeer, on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_updated_by')
+    created_by = models.ForeignKey('employeers.Employeer', on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_created_by')
+    updated_by = models.ForeignKey('employeers.Employeer', on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_updated_by')
     
     class Meta:
         abstract = True
@@ -26,9 +25,11 @@ class BaseModel(models.Model):
         if not user or isinstance(user, AnonymousUser):
             from crum import get_current_user
             user = get_current_user()
-            
+        
         if user and not isinstance(user, AnonymousUser):
             try:
+                # Importação tardia do Employeer para evitar importação circular
+                from apps.companies.employeers.models import Employeer
                 employeer = Employeer.objects.get(user=user)
                 if not self.created_by: # Only set created_by if it's a new instance
                     self.created_by = employeer

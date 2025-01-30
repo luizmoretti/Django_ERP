@@ -1,9 +1,11 @@
 from django.db import models
 from apps.accounts.models import NormalUser
 from apps.companies.models import Companie
+from basemodels.models import BaseAddressWithBaseModel
+from core.constants.choices import PAYROLL_CHOICES, PAYMENT_CHOICES
 from uuid import uuid4
 
-class Employeer(models.Model):
+class Employeer(BaseAddressWithBaseModel):
     """
     Employee model representing company staff members.
     
@@ -11,47 +13,36 @@ class Employeer(models.Model):
     user accounts and companies. It includes personal details, contact
     information, and automatic data management features.
     
-    Attributes:
-        id (UUIDField): Primary key using UUID4
+    Fields:
         user (OneToOneField): Associated user account
-        first_name (CharField): Employee's first name
-        last_name (CharField): Employee's last name
-        age (PositiveIntegerField): Calculated from date_of_birth
+        name (CharField): Employee's name
         date_of_birth (DateField): Birth date for age calculation
-        email (EmailField): Unique contact email
-        phone (CharField): Contact phone number
-        address (CharField): Physical address
-        city (CharField): City location
-        zip_code (CharField): Postal/ZIP code
-        created_at (DateTimeField): Timestamp of record creation
-        updated_at (DateTimeField): Timestamp of last update
-        created_by (ForeignKey): User who created the record
-        updated_by (ForeignKey): User who last updated the record
-        companie (ForeignKey): Associated company
+        age (PositiveIntegerField): Calculated from date_of_birth
+        hire_date (DateField): Date of employment
+        termination_date (DateField): Date of termination (if applicable)
+        payroll_schedule (CharField): Payroll schedule
+        payment_type (CharField): Payment type
+        rate (DecimalField): Hourly rate or monthly salary
     
-    Relationships:
-        - One-to-One with NormalUser through user field
-        - Many-to-one with Companie through companie field
-        - Created by one NormalUser (many-to-one through created_by)
-        - Updated by one NormalUser (many-to-one through updated_by)
-    
-    Properties:
-        default_contact: Returns a dictionary with email and phone
-        
-    Methods:
-        calculate_age: Computes age from date_of_birth
-        get_user_full_name: Retrieves full name from associated user
-        auto_insert_user: Sets created_by and updated_by fields
-        save: Overridden to handle automatic field population
-    
-    Note:
-        The save method automatically:
-        - Calculates age if not provided
-        - Sets name from user if not provided
-        - Sets email from user if not provided
-        - Sets created_by and updated_by fields
+    Inherits:
+        BaseAddressWithBaseModel{
+            id: UUIDField : Inherited from BaseModel
+            companie: ForeignKey to Companie : Inherited from BaseModel
+            
+            phone: CharField
+            email: EmailField
+            address: CharField
+            city: CharField
+            state: CharField 
+            zip_code: CharField
+            country: CharField
+            
+            created_at: DateTimeField : Inherited from BaseModel
+            updated_at: DateTimeField : Inherited from BaseModel
+            created_by: ForeignKey to Employeer : Inherited from BaseModel
+            updated_by: ForeignKey to Employeer : Inherited from BaseModel
+        }
     """
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
     user = models.OneToOneField(
         NormalUser,
         on_delete=models.CASCADE,
@@ -59,53 +50,24 @@ class Employeer(models.Model):
         blank=True,
         related_name='employeer_user'
     )
-    first_name = models.CharField(max_length=100, blank=True)
-    last_name = models.CharField(max_length=100, blank=True)
-    age = models.PositiveIntegerField(blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
-    email = models.EmailField(unique=True, blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    address = models.CharField(max_length=200, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    zip_code = models.CharField(max_length=10, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        NormalUser,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='employeer_created_by'
-    )
-    updated_by = models.ForeignKey(
-        NormalUser,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='employeer_updated_by'
-    )
-    companie = models.ForeignKey(
-        Companie,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='employeer_companie'
-    )
+    age = models.PositiveIntegerField(blank=True, null=True)
+    hire_date = models.DateField(blank=True, null=True)
+    termination_date = models.DateField(blank=True, null=True)
+    payroll_schedule = models.CharField(max_length=50, choices=PAYROLL_CHOICES, blank=True, null=True)
+    payment_type = models.CharField(max_length=50, choices=PAYMENT_CHOICES, blank=True, null=True)
+    rate = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    
     
     class Meta:
         verbose_name = 'Employee'
         verbose_name_plural = 'Employees'
-        ordering = ['first_name', 'last_name']
+        ordering = ['name']
     
-    def __str__(self) -> str:
-        """
-        Returns string representation of the employee.
-        
-        Returns:
-            str: Employee's full name
-        """
-        return f'{self.first_name} {self.last_name}'
+    def __str__(self):
+        return self.user.get_full_name()
     
     @property
     def default_contact(self) -> dict:
@@ -132,38 +94,6 @@ class Employeer(models.Model):
             )
         return None
     
-    def get_user_full_name(self) -> tuple:
-        """
-        Retrieves full name from associated user.
-        
-        Returns:
-            tuple: (first_name, last_name) from associated user
-        """
-        if self.user:
-            return self.user.first_name, self.user.last_name
-        return None, None
-    
-    def get_full_name(self) -> str:
-        """
-        Returns full name of the employee.
-        
-        Returns:
-            str: Employee's full name
-        """
-        return f"{self.first_name} {self.last_name}"
-    
-    def auto_insert_user(self) -> None:
-        """
-        Automatically sets created_by and updated_by fields.
-        
-        Sets both fields to the associated user if not already set.
-        """
-        if self.user:
-            if not self.created_by:
-                self.created_by = self.user
-            if not self.updated_by:
-                self.updated_by = self.user
-    
     def save(self, *args, **kwargs) -> None:
         """
         Overridden save method with automatic field population.
@@ -181,12 +111,7 @@ class Employeer(models.Model):
         # Always recalculate age if date_of_birth is set
         if self.date_of_birth:
             self.age = self.calculate_age()
-        
-        if (not self.first_name or not self.last_name) and self.user:
-            self.first_name, self.last_name = self.get_user_full_name()
             
         if not self.email and self.user:
             self.email = self.user.username
-            
-        self.auto_insert_user()
         super().save(*args, **kwargs)
