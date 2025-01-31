@@ -67,7 +67,7 @@ class Employeer(BaseAddressWithBaseModel):
         ordering = ['name']
     
     def __str__(self):
-        return self.user.get_full_name()
+        return self.name
     
     @property
     def default_contact(self) -> dict:
@@ -111,6 +111,9 @@ class Employeer(BaseAddressWithBaseModel):
         # Always recalculate age if date_of_birth is set
         if self.date_of_birth:
             self.age = self.calculate_age()
+            
+        if not self.name:
+            self.name = self.user.first_name + ' ' + self.user.last_name
             
         if not self.email and self.user:
             self.email = self.user.username
