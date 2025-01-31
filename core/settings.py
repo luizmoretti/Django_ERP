@@ -621,7 +621,7 @@ SPECTACULAR_SETTINGS = {
         # Companies
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
         {'name': 'Companies - Employees Soft Delete', 'description': 'Employee soft delete endpoints'},
-        {'name': 'Companie - HR', 'description': 'HR management endpoints'},
+        {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
     ]
 }
 

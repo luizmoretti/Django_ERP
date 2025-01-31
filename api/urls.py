@@ -27,8 +27,8 @@ urlpatterns = [
     # Employeer endpoints
     path('employeers/', include('apps.companies.employeers.urls')),
     
-    # HR endpoints
-    # path('hr/', include('apps.companies.hr.urls')),
+    # Attendance endpoints
+    path('attendance/', include('apps.companies.attendance.urls')),
     
     
     # Inventory Management endpoints

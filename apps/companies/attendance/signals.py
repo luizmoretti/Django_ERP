@@ -7,6 +7,20 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
+def convert_to_date(date_value):
+    """Helper function to convert string to date if needed"""
+    if isinstance(date_value, str):
+        return datetime.datetime.strptime(date_value, '%Y-%m-%d').date()
+    return date_value
+
+def convert_to_time(time_value):
+    """Helper function to convert string to time if needed"""
+    if isinstance(time_value, str):
+        if 'T' in time_value:  # ISO format
+            return datetime.datetime.fromisoformat(time_value).time()
+        return datetime.datetime.strptime(time_value, '%H:%M:%S').time()
+    return time_value
+
 @receiver(post_save, sender=TimeTracking)
 def update_or_create_payroll_hourly(sender, instance, created, **kwargs):
     """
@@ -23,27 +37,35 @@ def update_or_create_payroll_hourly(sender, instance, created, **kwargs):
             status='Pending'
         ).first()
         
+        # Ensure we have datetime objects
+        clock_in = instance.clock_in if isinstance(instance.clock_in, datetime.datetime) else datetime.datetime.fromisoformat(instance.clock_in)
+        clock_out = instance.clock_out if isinstance(instance.clock_out, datetime.datetime) else datetime.datetime.fromisoformat(instance.clock_out)
+        
+        # Calculate duration directly
+        duration = clock_out - clock_in
+        duration_hours = Decimal(str(duration.total_seconds() / 3600))
+        
         if not payroll:
             # Calculate initial values for the first entry
-            duration_hours = Decimal(str(instance.duration.total_seconds() / 3600))
             amount = duration_hours * Decimal(str(instance.employee.rate))
             
             payroll = Payroll.objects.create(
                 employee=instance.employee,
-                period_start=instance.clock_in.date(),
-                period_end=instance.clock_out.date(),
+                register=instance.register,
+                period_start=clock_in.date(),
+                period_end=clock_out.date(),
                 amount=amount,
-                days_worked=1 if instance.clock_in.date() == instance.clock_out.date() else 2,
-                hours_worked=duration_hours,
+                days_worked=1 if clock_in.date() == clock_out.date() else 2,
+                hours_worked=duration_hours.quantize(Decimal('0.01')),
                 status='Pending',
             )
-            logger.info(f'Hourly Payroll created successfully for {instance.clock_in.date()}')
+            logger.info(f'Hourly Payroll created successfully for {clock_in.date()}')
         else:
             # Update period range if needed
-            if instance.clock_out.date() > payroll.period_end:
-                payroll.period_end = instance.clock_out.date()
-            if instance.clock_in.date() < payroll.period_start:
-                payroll.period_start = instance.clock_in.date()
+            if clock_out.date() > payroll.period_end:
+                payroll.period_end = clock_out.date()
+            if clock_in.date() < payroll.period_start:
+                payroll.period_start = clock_in.date()
         
             # Get all time entries in the period
             time_entries = TimeTracking.objects.filter(
@@ -54,26 +76,31 @@ def update_or_create_payroll_hourly(sender, instance, created, **kwargs):
             )
             
             # Calculate totals
-            total_hours = Decimal('0')
+            total_hours = Decimal('0.00')
             worked_days = set()
             
             for entry in time_entries:
+                # Ensure we have datetime objects for each entry
+                entry_clock_in = entry.clock_in if isinstance(entry.clock_in, datetime.datetime) else datetime.datetime.fromisoformat(entry.clock_in)
+                entry_clock_out = entry.clock_out if isinstance(entry.clock_out, datetime.datetime) else datetime.datetime.fromisoformat(entry.clock_out)
+                
                 # Add all dates between clock_in and clock_out
-                current_date = entry.clock_in.date()
-                while current_date <= entry.clock_out.date():
+                current_date = entry_clock_in.date()
+                while current_date <= entry_clock_out.date():
                     worked_days.add(current_date)
                     current_date += datetime.timedelta(days=1)
                 
-                # Calculate hours
-                duration_hours = Decimal(str(entry.duration.total_seconds() / 3600))
-                total_hours += duration_hours
+                # Calculate hours directly
+                entry_duration = entry_clock_out - entry_clock_in
+                entry_hours = Decimal(str(entry_duration.total_seconds() / 3600))
+                total_hours += entry_hours
             
             # Calculate amount based on total hours
             amount = total_hours * Decimal(str(instance.employee.rate))
             
             payroll.amount = amount
             payroll.days_worked = len(worked_days)
-            payroll.hours_worked = total_hours
+            payroll.hours_worked = total_hours.quantize(Decimal('0.01'))
             payroll.save()
             
             logger.info(f'Hourly Payroll updated successfully for period {payroll.period_start} to {payroll.period_end}')
@@ -98,31 +125,36 @@ def update_or_create_payroll_daily(sender, instance, created, **kwargs):
             status='Pending'
         ).first()
         
+        # Convert date and times if they're strings
+        work_date = convert_to_date(instance.date)
+        clock_in_time = convert_to_time(instance.clock_in)
+        clock_out_time = convert_to_time(instance.clock_out)
+        
         if not payroll:
             # Calculate initial values for the first entry
-            # Convert time to datetime for duration calculation
-            clock_in_dt = datetime.datetime.combine(instance.date, instance.clock_in)
-            clock_out_dt = datetime.datetime.combine(instance.date, instance.clock_out)
+            clock_in_dt = datetime.datetime.combine(work_date, clock_in_time)
+            clock_out_dt = datetime.datetime.combine(work_date, clock_out_time)
             duration = clock_out_dt - clock_in_dt
             duration_hours = Decimal(str(duration.total_seconds() / 3600))
             amount = Decimal(str(instance.employee.rate))
             
             payroll = Payroll.objects.create(
                 employee=instance.employee,
-                period_start=instance.date,
-                period_end=instance.date,
+                register=instance.register,
+                period_start=work_date,
+                period_end=work_date,
                 amount=amount,
                 days_worked=1,
-                hours_worked=duration_hours.quantize(Decimal()),
+                hours_worked=duration_hours.quantize(Decimal('0.01')),
                 status='Pending',
             )
-            logger.info(f'Daily Payroll created successfully for {instance.date}')
+            logger.info(f'Daily Payroll created successfully for {work_date}')
         else:
             # Update period range if needed
-            if instance.date > payroll.period_end:
-                payroll.period_end = instance.date
-            if instance.date < payroll.period_start:
-                payroll.period_start = instance.date
+            if work_date > payroll.period_end:
+                payroll.period_end = work_date
+            if work_date < payroll.period_start:
+                payroll.period_start = work_date
             
             # Get all days entries in the period
             days_entries = DaysTracking.objects.filter(
@@ -133,15 +165,19 @@ def update_or_create_payroll_daily(sender, instance, created, **kwargs):
             )
             
             # Calculate totals
-            total_hours = Decimal()
+            total_hours = Decimal('0.00')
             worked_days = set()
             
             for entry in days_entries:
-                worked_days.add(entry.date)
+                entry_date = convert_to_date(entry.date)
+                entry_clock_in = convert_to_time(entry.clock_in)
+                entry_clock_out = convert_to_time(entry.clock_out)
+                
+                worked_days.add(entry_date)
                 
                 # Calculate actual hours worked
-                clock_in_dt = datetime.datetime.combine(entry.date, entry.clock_in)
-                clock_out_dt = datetime.datetime.combine(entry.date, entry.clock_out)
+                clock_in_dt = datetime.datetime.combine(entry_date, entry_clock_in)
+                clock_out_dt = datetime.datetime.combine(entry_date, entry_clock_out)
                 duration = clock_out_dt - clock_in_dt
                 duration_hours = Decimal(str(duration.total_seconds() / 3600))
                 total_hours += duration_hours
@@ -179,6 +215,7 @@ def update_or_create_payroll_history(sender, instance, created, **kwargs):
                 # Create and assign the new instance to payroll_history
                 payroll_history = PayrollHistory.objects.create(
                     employee=instance.employee,
+                    register=instance.register,
                     payroll=instance,
                     amount_paid=instance.amount,
                     payment_date=instance.period_end
