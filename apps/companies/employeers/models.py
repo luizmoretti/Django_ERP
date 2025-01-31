@@ -112,6 +112,9 @@ class Employeer(BaseAddressWithBaseModel):
         if self.date_of_birth:
             self.age = self.calculate_age()
             
+        if not self.name:
+            self.name = self.user.first_name + ' ' + self.user.last_name
+            
         if not self.email and self.user:
             self.email = self.user.username
         super().save(*args, **kwargs)
