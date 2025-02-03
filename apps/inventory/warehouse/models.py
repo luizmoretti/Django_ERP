@@ -32,7 +32,7 @@ class Warehouse(BaseModel):
     class Meta:
         verbose_name = 'Warehouse'
         verbose_name_plural = 'Warehouses'
-        ordering = ['-created_at']
+        ordering = ['name']
         
     def __str__(self):
         return self.name
