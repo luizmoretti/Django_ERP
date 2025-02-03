@@ -12,9 +12,7 @@ from drf_spectacular.utils import (
     OpenApiParameter, OpenApiTypes
 )
 from apps.companies.employeers.models import Employeer
-from apps.companies.employeers.serializers import (
-    EmployeerSerializer, ListAllEmployeersSerializer
-)
+from apps.companies.employeers.serializers import EmployeerSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,8 +38,8 @@ class BaseEmployeerView:
         try:
             employeer = user.employeer_user
             return Employeer.objects.select_related(
-                'user', 'companie', 'created_by', 'updated_by'
-            ).filter(is_active=True, companie=employeer.companie)
+                'companie'
+            ).filter(companie=employeer.companie)
         except Employeer.DoesNotExist:
             return Employeer.objects.none()
 
@@ -54,25 +52,29 @@ class BaseEmployeerView:
         description="""
         Creates a new employee record with the provided information.
         
-        The employee must be associated with both a user account and a company.
-        Both created_by and updated_by will be set to the creating user.
+        The employee must be associated with a user account.
+        Both created_by and updated_by will be set automatically.
         """,
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
-                    'first_name': {'type': 'string', 'minLength': 1},
-                    'last_name': {'type': 'string', 'minLength': 1},
-                    'date_of_birth': {'type': 'string', 'format': 'date'},
-                    'email': {'type': 'string', 'format': 'email'},
-                    'phone': {'type': 'string'},
-                    'address': {'type': 'string'},
-                    'city': {'type': 'string'},
-                    'zip_code': {'type': 'string'},
-                    'user_id': {'type': 'string', 'format': 'uuid'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
+                    'name': {'type': 'string', 'description': 'Full name of the employee'},
+                    'id_number': {'type': 'string', 'description': 'Employee identification number', 'example': '123-45-6789'},
+                    'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)', 'example': '1990-01-01'},
+                    'payroll_schedule': {'type': 'string', 'description': 'Payroll schedule', 'example': 'Weekly'},
+                    'payment_type': {'type': 'string', 'description': 'Payment type', 'example': 'Day'},
+                    'rate': {'type': 'number', 'description': 'Hourly rate or monthly salary', 'example': 150.00},
+                    'email': {'type': 'string', 'format': 'email', 'description': 'Contact email', 'example': 'employee@example.com'},
+                    'phone': {'type': 'string', 'description': 'Contact phone number', 'example': '(123) 456-7890'},
+                    'address': {'type': 'string', 'description': 'Physical address', 'example': '123 Main St'},
+                    'city': {'type': 'string', 'description': 'City name', 'example': 'Los Angeles'},
+                    'state': {'type': 'string', 'description': 'State/Province', 'example': 'CA'},
+                    'zip_code': {'type': 'string', 'description': 'ZIP/Postal code', 'example': '12345'},
+                    'country': {'type': 'string', 'description': 'Country name', 'default': 'USA'},
+                    'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
                 },
-                'required': ['first_name', 'last_name', 'email', 'user_id', 'companie_id']
+                'required': ['name', 'id_number', 'date_of_birth', 'payroll_schedule', 'payment_type', 'rate']
             }
         },
         responses={
@@ -81,8 +83,7 @@ class BaseEmployeerView:
                 'description': 'Invalid input data',
                 'type': 'object',
                 'properties': {
-                    'error': {'type': 'string'},
-                    'detail': {'type': 'string'}
+                    'detail': {'type': 'string', 'example': 'Error creating employee'}
                 }
             }
         }
@@ -92,39 +93,30 @@ class EmployeerCreateView(BaseEmployeerView, CreateAPIView):
     """
     View for creating new employee records.
     
-    This view handles employee creation with automatic user and company
-    association, and tracks who created the record.
+    This view handles employee creation with automatic user association,
+    and tracks who created the record.
     """
     serializer_class = EmployeerSerializer
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         try:
-            instance = serializer.save(
-                created_by=self.request.user,
-                updated_by=self.request.user
-            )
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
             logger.info(
-                f"Employee created successfully: {instance.first_name} {instance.last_name}",
-                extra={
-                    'employee_id': instance.id,
-                    'created_by': self.request.user.id,
-                    'company_id': instance.companie_id,
-                    'user_id': instance.user_id
-                }
+                f"Employee created: {instance.name}",
             )
+            return Response(serializer.data, status=HTTP_201_CREATED)
         except Exception as e:
             logger.error(
                 f"Error creating employee: {str(e)}",
-                extra={
-                    'user_id': self.request.user.id,
-                    'error': str(e)
-                },
                 exc_info=True
             )
-            raise ValidationError({
-                'error': "Error creating employee record",
-                'detail': str(e)
-            })
+            return Response(
+                {"detail": "Error creating employee"},
+                status=HTTP_400_BAD_REQUEST
+            )
+        
 
 
 @extend_schema_view(
@@ -132,19 +124,25 @@ class EmployeerCreateView(BaseEmployeerView, CreateAPIView):
         tags=["Companies - Employees"],
         operation_id="retrieve_employee",
         summary="Get employee details",
-        description="Retrieves complete information for a specific employee",
+        description="Retrieves complete information about a specific employee.",
         parameters=[
             OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
+                name="id",
                 location=OpenApiParameter.PATH,
-                description='UUID of the employee to retrieve',
-                required=True,
-            ),
+                type=OpenApiTypes.UUID,
+                description="UUID of the employee to retrieve",
+                required=True
+            )
         ],
         responses={
             200: EmployeerSerializer,
-            404: {'description': 'Employee not found'}
+            404: {
+                'description': 'Employee not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            }
         }
     )
 )
@@ -153,7 +151,7 @@ class EmployeerRetrieveView(BaseEmployeerView, RetrieveAPIView):
     View for retrieving specific employee details.
     
     Provides complete employee information including related
-    user, company, and audit data.
+    user and audit data.
     """
     serializer_class = EmployeerSerializer
     lookup_field = 'id'
@@ -162,7 +160,7 @@ class EmployeerRetrieveView(BaseEmployeerView, RetrieveAPIView):
         try:
             instance = self.get_object()
             logger.info(
-                f"Employee retrieved: {instance.first_name} {instance.last_name}",
+                f"Employee retrieved: {instance.name}",
                 extra={
                     'employee_id': instance.id,
                     'requester_id': request.user.id
@@ -187,84 +185,103 @@ class EmployeerRetrieveView(BaseEmployeerView, RetrieveAPIView):
         operation_id="update_employee",
         summary="Update employee",
         description="""
-        Updates all employee information.
-        
-        Requires all fields to be provided, even if unchanged.
-        The updated_by field will be set to the updating user.
+        Updates an existing employee record with the provided information.
+        All fields are optional except date_of_birth and user.
         """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the employee to update',
-                required=True,
-            ),
-        ],
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
-                    'first_name': {'type': 'string', 'minLength': 1},
-                    'last_name': {'type': 'string', 'minLength': 1},
-                    'date_of_birth': {'type': 'string', 'format': 'date'},
-                    'email': {'type': 'string', 'format': 'email'},
-                    'phone': {'type': 'string'},
-                    'address': {'type': 'string'},
-                    'city': {'type': 'string'},
-                    'zip_code': {'type': 'string'},
-                    'user_id': {'type': 'string', 'format': 'uuid'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
+                    'name': {'type': 'string', 'description': 'Full name of the employee'},
+                    'id_number': {'type': 'string', 'description': 'Employee identification number'},
+                    'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)'},
+                    'email': {'type': 'string', 'format': 'email', 'description': 'Contact email'},
+                    'phone': {'type': 'string', 'description': 'Contact phone number'},
+                    'address': {'type': 'string', 'description': 'Physical address'},
+                    'city': {'type': 'string', 'description': 'City name'},
+                    'state': {'type': 'string', 'description': 'State/Province'},
+                    'zip_code': {'type': 'string', 'description': 'ZIP/Postal code'},
+                    'country': {'type': 'string', 'description': 'Country name'},
+                    'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
                 },
-                'required': ['first_name', 'last_name', 'email', 'user_id', 'companie_id']
+                'required': ['date_of_birth', 'user']
             }
         },
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description="UUID of the employee to update",
+                required=True
+            )
+        ],
         responses={
             200: EmployeerSerializer,
-            400: {'description': 'Invalid input data'},
-            404: {'description': 'Employee not found'}
+            400: {
+                'description': 'Invalid input data',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            },
+            404: {
+                'description': 'Employee not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            }
         }
     ),
     patch=extend_schema(
         tags=["Companies - Employees"],
         operation_id="partial_update_employee",
-        summary="Partially update employee",
-        description="""
-        Updates specific employee fields.
-        
-        Only provided fields will be updated.
-        The updated_by field will be set to the updating user.
-        """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the employee to update',
-                required=True,
-            ),
-        ],
+        summary="Partial update employee",
+        description="Updates specific fields of an existing employee record.",
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
-                    'first_name': {'type': 'string', 'minLength': 1},
-                    'last_name': {'type': 'string', 'minLength': 1},
-                    'date_of_birth': {'type': 'string', 'format': 'date'},
-                    'email': {'type': 'string', 'format': 'email'},
-                    'phone': {'type': 'string'},
-                    'address': {'type': 'string'},
-                    'city': {'type': 'string'},
-                    'zip_code': {'type': 'string'},
-                    'user_id': {'type': 'string', 'format': 'uuid'},
-                    'companie_id': {'type': 'string', 'format': 'uuid'},
+                    'name': {'type': 'string', 'description': 'Full name of the employee'},
+                    'id_number': {'type': 'string', 'description': 'Employee identification number'},
+                    'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)'},
+                    'email': {'type': 'string', 'format': 'email', 'description': 'Contact email'},
+                    'phone': {'type': 'string', 'description': 'Contact phone number'},
+                    'address': {'type': 'string', 'description': 'Physical address'},
+                    'city': {'type': 'string', 'description': 'City name'},
+                    'state': {'type': 'string', 'description': 'State/Province'},
+                    'zip_code': {'type': 'string', 'description': 'ZIP/Postal code'},
+                    'country': {'type': 'string', 'description': 'Country name'},
+                    'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
                 }
             }
         },
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description="UUID of the employee to update",
+                required=True
+            )
+        ],
         responses={
             200: EmployeerSerializer,
-            400: {'description': 'Invalid input data'},
-            404: {'description': 'Employee not found'}
+            400: {
+                'description': 'Invalid input data',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            },
+            404: {
+                'description': 'Employee not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            }
         }
     )
 )
@@ -316,42 +333,26 @@ class EmployeerUpdateView(BaseEmployeerView, UpdateAPIView):
     def perform_update(self, serializer):
         try:
             old_data = {
-                'first_name': serializer.instance.first_name,
-                'last_name': serializer.instance.last_name,
+                'name': serializer.instance.name,
                 'email': serializer.instance.email,
-                'companie_id': serializer.instance.companie_id,
-                'is_active': serializer.instance.is_active
+                'user_id': serializer.instance.user_id
             }
             instance = serializer.save(updated_by=self.request.user)
             
-            # Log específico para reativação
-            if 'is_active' in serializer.validated_data and instance.is_active:
-                logger.info(
-                    f"Employee reactivated: {instance.first_name} {instance.last_name}",
-                    extra={
-                        'employee_id': instance.id,
-                        'reactivated_by': self.request.user.id
-                    }
-                )
-            else:
-                logger.info(
-                    f"Employee updated: {instance.first_name} {instance.last_name}",
-                    extra={
-                        'employee_id': instance.id,
-                        'updated_by': self.request.user.id,
-                        'old_data': old_data,
-                        'updated_fields': list(serializer.validated_data.keys())
-                    }
-                )
+            logger.info(
+                f"[EMPLOYEER VIEWS] - Employee updated: {instance.name}",
+                extra={
+                    'employee_id': instance.id,
+                    'updated_by': self.request.user.id,
+                    'old_data': old_data,
+                    'new_data': serializer.validated_data
+                }
+            )
+            return instance
         except Exception as e:
             logger.error(
-                f"Error updating employee: {str(e)}",
-                extra={
-                    'employee_id': serializer.instance.id,
-                    'user_id': self.request.user.id,
-                    'error': str(e)
-                },
-                exc_info=True
+                f"[EMPLOYEER VIEWS] - Error updating employee: {str(e)}",
+                extra={'error': str(e)}
             )
             raise ValidationError({
                 'error': "Erro ao atualizar funcionário",
@@ -491,7 +492,7 @@ class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
         
         try:
             employee_id = instance.id
-            employee_name = f"{instance.first_name} {instance.last_name}"
+            employee_name = instance.name
             
             # Perform soft delete
             instance = serializer.save(
@@ -500,7 +501,7 @@ class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
             )
             
             logger.info(
-                f"Employee soft deleted: {employee_name}",
+                f"[EMPLOYEER VIEWS] - Employee soft deleted: {employee_name}",
                 extra={
                     'employee_id': employee_id,
                     'deactivated_by': self.request.user.id
@@ -514,7 +515,7 @@ class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
             
         except Exception as e:
             logger.error(
-                f"Error soft deleting employee: {str(e)}",
+                f"[EMPLOYEER VIEWS] - Error soft deleting employee: {str(e)}",
                 extra={
                     'employee_id': instance.id,
                     'user_id': self.request.user.id,
@@ -530,35 +531,27 @@ class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
 @extend_schema_view(
     delete=extend_schema(
         tags=["Companies - Employees"],
-        operation_id="hard_delete_employeer",
-        summary="Permanently delete employee",
-        description="""
-        Permanently deletes an employee record from the database.
-        This operation cannot be undone. Use with caution.
-        Consider using soft delete instead if you need to preserve history.
-        """,
+        operation_id="delete_employee",
+        summary="Delete employee",
+        description="Permanently deletes an employee record.",
         parameters=[
             OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
+                name="id",
                 location=OpenApiParameter.PATH,
-                description='UUID of the employee to delete permanently',
-                required=True,
-            ),
+                type=OpenApiTypes.UUID,
+                description="UUID of the employee to delete",
+                required=True
+            )
         ],
         responses={
-            200: {
-                'description': 'Employee successfully deleted',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'message': {'type': 'string', 'default': 'Employee permanently deleted'}
-                        }
-                    }
+            204: {'description': 'Employee successfully deleted'},
+            404: {
+                'description': 'Employee not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
                 }
-            },
-            404: {'description': 'Employee not found'}
+            }
         }
     )
 )
@@ -590,11 +583,11 @@ class EmployeerDestroyView(BaseEmployeerView, DestroyAPIView):
         """
         try:
             employee_id = instance.id
-            employee_name = f"{instance.first_name} {instance.last_name}"
+            employee_name = instance.name
             instance.delete()
             
             logger.info(
-                f"Employee permanently deleted: {employee_name}",
+                f"[EMPLOYEER VIEWS] - Employee permanently deleted: {employee_name}",
                 extra={
                     'employee_id': employee_id,
                     'deleted_by': self.request.user.id
@@ -602,13 +595,11 @@ class EmployeerDestroyView(BaseEmployeerView, DestroyAPIView):
             )
         except Exception as e:
             logger.error(
-                f"Error permanently deleting employee: {str(e)}",
+                f"[EMPLOYEER VIEWS] - Error deleting employee: {str(e)}",
                 extra={
                     'employee_id': instance.id,
-                    'user_id': self.request.user.id,
                     'error': str(e)
-                },
-                exc_info=True
+                }
             )
             raise ValidationError({
                 'error': "Error deleting employee record",
@@ -628,9 +619,9 @@ class EmployeerDestroyView(BaseEmployeerView, DestroyAPIView):
         tags=["Companies - Employees"],
         operation_id="list_employees",
         summary="List all employees",
-        description="Retrieves a paginated list of all employees",
+        description="Retrieves a paginated list of all active employees.",
         responses={
-            200: ListAllEmployeersSerializer,
+            200: EmployeerSerializer,
             401: {'description': 'Authentication credentials not provided'}
         }
     )
@@ -640,9 +631,9 @@ class EmployeerListView(BaseEmployeerView, ListAPIView):
     View for listing all employees.
     
     Provides a paginated list of all employees with basic information,
-    using the simplified ListAllEmployeersSerializer.
+    using the EmployeerSerializer.
     """
-    serializer_class = ListAllEmployeersSerializer
+    serializer_class = EmployeerSerializer
 
     def list(self, request, *args, **kwargs):
         try:

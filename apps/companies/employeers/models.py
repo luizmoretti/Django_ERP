@@ -51,9 +51,10 @@ class Employeer(BaseAddressWithBaseModel):
         related_name='employeer_user'
     )
     name = models.CharField(max_length=100, blank=True)
+    id_number = models.CharField(max_length=20, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     age = models.PositiveIntegerField(blank=True, null=True)
-    hire_date = models.DateField(blank=True, null=True)
+    hire_date = models.DateField(blank=True, null=True, auto_now_add=True)
     termination_date = models.DateField(blank=True, null=True)
     payroll_schedule = models.CharField(max_length=50, choices=PAYROLL_CHOICES, blank=True, null=True)
     payment_type = models.CharField(max_length=50, choices=PAYMENT_CHOICES, blank=True, null=True)
