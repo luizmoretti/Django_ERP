@@ -20,12 +20,14 @@ class InflowItemSerializer(serializers.ModelSerializer):
         model: InflowItems
         fields: ['product', 'quantity']
     """
-    product = serializers.SlugRelatedField(slug_field='name', queryset=Product.objects.all())
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, required=True)
+    _product = serializers.CharField(source='product.name', read_only=True)
     quantity = serializers.IntegerField(min_value=1)
     
     class Meta:
         model = InflowItems
-        fields = ['product', 'quantity']
+        fields = ['product', '_product', 'quantity']
+        
 
 class InflowSerializer(serializers.ModelSerializer):
     """Serializer for Inflow model
@@ -169,13 +171,15 @@ class InflowSerializer(serializers.ModelSerializer):
         inflow = Inflow.objects.create(**validated_data)
         
         for item_data in items_data:
+            # Get the Product instance from the validated InflowItemSerializer
+            item_serializer = InflowItemSerializer(data=item_data)
+            item_serializer.is_valid(raise_exception=True)
+            validated_item = item_serializer.validated_data
+            
             InflowItems.objects.create(
                 inflow=inflow,
-                product=item_data['product'],
-                quantity=item_data['quantity'],
-                companie=inflow.companie,
-                created_by=inflow.created_by,
-                updated_by=inflow.updated_by,
+                product=validated_item['product'],
+                quantity=validated_item['quantity'],
             )
             
         return inflow
@@ -192,10 +196,15 @@ class InflowSerializer(serializers.ModelSerializer):
             instance.inflow_items.all().delete()
             
             for item_data in items_data:
+                # Get the Product instance from the validated InflowItemSerializer
+                item_serializer = InflowItemSerializer(data=item_data)
+                item_serializer.is_valid(raise_exception=True)
+                validated_item = item_serializer.validated_data
+                
                 InflowItems.objects.create(
                     inflow=instance,
-                    product=item_data['product'],
-                    quantity=item_data['quantity'],
+                    product=validated_item['product'],
+                    quantity=validated_item['quantity'],
                     companie=instance.companie,
                     created_by=instance.created_by,
                     updated_by=instance.updated_by,
