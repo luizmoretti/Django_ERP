@@ -24,7 +24,7 @@ class Vehicle(BaseModel):
         return self.vehicle_is_active
     
     def __str__(self):
-        return f'{self.name} | {self.plate} | {self.driver.get_full_name()}'
+        return f'{self.name} | {self.plate}'
     
 class VehicleMilageHistory(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='milage_history')

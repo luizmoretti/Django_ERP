@@ -30,6 +30,9 @@ urlpatterns = [
     # Attendance endpoints
     path('attendance/', include('apps.companies.attendance.urls')),
     
+    # Delivery Endpoints
+    path('vehicle/', include('apps.deliveries.vehicles.urls')),
+    
     
     # Inventory Management endpoints
     path('transfers/', include('apps.inventory.transfer.urls')),

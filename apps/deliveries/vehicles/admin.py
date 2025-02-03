@@ -41,7 +41,7 @@ class VehicleAdmin(admin.ModelAdmin):
         if obj.driver:
             return format_html(
                 "<strong>{}</strong><br/>License: {}",
-                obj.driver.get_full_name(),
+                obj.driver.display_name,
                 obj.drivers_license
             )
         return "-"
