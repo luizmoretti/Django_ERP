@@ -116,7 +116,7 @@ class CustomerProjectAddress(BaseAddressWithBaseModel):
             updated_by: ForeignKey to Employeer : Inherited from BaseModel
         }
     """
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address_customer')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address')
     
     class Meta:
         verbose_name = 'Customer Project Address'
@@ -197,7 +197,7 @@ class CustomerBillingAddress(BaseAddressWithBaseModel):
             updated_by: ForeignKey to Employeer : Inherited from BaseModel
         }
     """
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address_customer')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address')
     
     
     class Meta:

@@ -72,7 +72,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     
     # Nested address serializers
     billing_address_data = CustomerBillingAddressSerializer(
-        source='customer_billing_address_customer.first',
+        source='customer_billing_address.first',
         read_only=True  # Read-only serialization
     )
     _billing_address_data = serializers.JSONField(
@@ -80,7 +80,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         required=False
     )
     shipping_address_data = CustomerProjectAddressSerializer(
-        source='customer_project_address_customer.first',
+        source='customer_project_address.first',
         read_only=True  # Read-only serialization
     )
     _shipping_address_data = serializers.JSONField(
@@ -185,7 +185,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             str: Company name and type, or None if no company
         """
         if obj.companie:
-            return f"{obj.companie.name} - {obj.companie.type}"
+            return f"[{obj.companie.type}] {obj.companie.name}"
         return None
     
     def get_created_by(self, obj) -> str:
@@ -198,7 +198,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         Returns:
             str: Creator's full name, or None if not available
         """
-        return f"{obj.created_by.first_name} {obj.created_by.last_name}" if obj.created_by else None
+        return f"{obj.created_by.name}" if obj.created_by else None
     
     def get_updated_by(self, obj) -> str:
         """
@@ -210,7 +210,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         Returns:
             str: Last updater's full name, or None if not available
         """
-        return f"{obj.updated_by.first_name} {obj.updated_by.last_name}" if obj.updated_by else None
+        return f"{obj.updated_by.name}" if obj.updated_by else None
 
     def create(self, validated_data):
         """
@@ -265,14 +265,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         instance.save()
         
         if instance.another_billing_address:
-            billing_addr = instance.customer_billing_address_customer.first()
+            billing_addr = instance.customer_billing_address.first()
             if billing_addr and billing_data:
                 for attr, value in billing_data.items():
                     setattr(billing_addr, attr, value)
                 billing_addr.save()
                 
         if instance.another_shipping_address:
-            shipping_addr = instance.customer_project_address_customer.first()
+            shipping_addr = instance.customer_project_address.first()
             if shipping_addr and shipping_data:
                 for attr, value in shipping_data.items():
                     setattr(shipping_addr, attr, value)
