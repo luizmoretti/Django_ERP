@@ -79,6 +79,16 @@ class Employeer(BaseAddressWithBaseModel):
         """
         return {'Email': self.email, 'Phone': self.phone}
     
+    @property
+    def display_name(self) -> str:
+        """
+        Returns a display name for the employee.
+        
+        Returns:
+            str: Display name
+        """
+        return f'{self.name}'
+    
     def calculate_age(self) -> int:
         """
         Calculates age based on date of birth.
