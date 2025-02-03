@@ -28,6 +28,7 @@ class WarehouseSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     created_by = serializers.SerializerMethodField(read_only=True)
     updated_by = serializers.SerializerMethodField(read_only=True)
+    companie = serializers.SerializerMethodField(read_only=True)
     
     def get_created_by(self, obj) -> str | None:
         if obj.created_by:
@@ -38,6 +39,29 @@ class WarehouseSerializer(serializers.ModelSerializer):
         if obj.updated_by:
             return obj.updated_by.user.get_full_name()
         return None
+    
+    def get_companie(self, obj) -> str | None:
+        if obj.companie:
+            return f'[{obj.companie.type}] {obj.companie.name}'
+        return None
+    
+    def validate(self, attrs):
+        if attrs['limit'] < 0:
+            raise serializers.ValidationError("Limit cannot be negative.")
+        
+        if attrs['name'] == "":
+            raise serializers.ValidationError("Name is required")
+        
+        # Check if warehouse with same name exists
+        existing_warehouse = Warehouse.objects.filter(name=attrs['name']).first()
+        
+        if existing_warehouse:
+            # If this is a creation (no self.instance) or if the existing warehouse
+            # is different from the one being updated
+            if not self.instance or existing_warehouse.id != self.instance.id:
+                raise serializers.ValidationError("Warehouse with this name already exists")
+        
+        return attrs
     
     class Meta:
         model = Warehouse
@@ -50,7 +74,8 @@ class WarehouseSerializer(serializers.ModelSerializer):
             'created_at', 
             'updated_at',
             'created_by',
-            'updated_by'
+            'updated_by',
+            'companie'
             ]
         
         read_only_fields = [
@@ -60,7 +85,8 @@ class WarehouseSerializer(serializers.ModelSerializer):
             'created_at', 
             'updated_at',
             'created_by',
-            'updated_by'
+            'updated_by',
+            'companie'
             ]
         
         @transaction.atomic

@@ -67,16 +67,16 @@ class WarehouseListView(WareHouseBaseView, ListAPIView):
                 'properties': {
                     'name': {'type': 'string'},
                     'limit': {'type': 'number'},
-                    'items': {
-                        'type': 'array', 
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'product': {'type': 'string'},
-                                'current_quantity': {'type': 'number'},
-                            },
-                        },
-                    },
+                    # 'items': {
+                    #     'type': 'array', 
+                    #     'items': {
+                    #         'type': 'object',
+                    #         'properties': {
+                    #             'product': {'type': 'string'},
+                    #             'current_quantity': {'type': 'number'},
+                    #         },
+                    #     },
+                    # },
                 },
                 'required': ['name']
             }
@@ -95,3 +95,152 @@ class WarehouseCreateView(WareHouseBaseView, CreateAPIView):
         serializer.save()
         logger.info(f"[WAREHOUSE VIEWS] - Warehouse created successfully")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Inventory - Warehouse'],
+        operation_id='retrieve_warehouse',
+        summary='Retrieve a warehouse',
+        description='Retrieve a warehouse',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Warehouse UUID',
+                required=True
+            )
+        ],
+        responses={
+            200: WarehouseSerializer
+        }
+    )
+)
+class WarehouseRetrieveView(WareHouseBaseView, RetrieveAPIView):
+    serializer_class = WarehouseSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} retrieved successfully")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"[WAREHOUSE VIEWS] - Error retrieving warehouse: {str(e)}")
+            return Response(
+                {"detail": "Error retrieving warehouse"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@extend_schema_view(
+    put=extend_schema(
+        tags=['Inventory - Warehouse'],
+        operation_id='update_warehouse',
+        summary='Update a warehouse',
+        description='Update a warehouse',
+        request={
+            'application/json':{
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string'},
+                    'limit': {'type': 'number'},
+                },
+                'required': ['name']
+            }
+        },
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Warehouse UUID',
+                required=True
+            )
+        ],
+        responses={
+            200: WarehouseSerializer
+        }
+    ),
+    patch=extend_schema(
+        tags=['Inventory - Warehouse'],
+        operation_id='partial_update_warehouse',
+        summary='Partial update a warehouse',
+        description='Partial update a warehouse',
+        request={
+            'application/json':{
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string', 'example': 'Warehouse 1'},
+                    'limit': {'type': 'number', 'example': 1000}
+                }
+            }
+        },
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Warehouse UUID',
+                required=True
+            )
+        ],
+        responses={
+            200: WarehouseSerializer
+        }
+    )
+)
+class WarehouseUpdateView(WareHouseBaseView, UpdateAPIView):
+    serializer_class = WarehouseSerializer
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} updated successfully")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"[WAREHOUSE VIEWS] - Error updating warehouse: {str(e)}")
+            return Response(
+                {"detail": f"Error updating warehouse: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+            
+@extend_schema_view(
+    delete=extend_schema(
+        tags=['Inventory - Warehouse'],
+        operation_id='delete_warehouse',
+        summary='Delete a warehouse',
+        description='Delete a warehouse',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Warehouse UUID',
+                required=True
+            )
+        ],
+        responses={
+            200: WarehouseSerializer
+        }
+    )
+)
+class WarehouseDeleteView(WareHouseBaseView, DestroyAPIView):
+    serializer_class = WarehouseSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            logger.info(f"[WAREHOUSE VIEWS] - Warehouse deleted successfully")
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"[WAREHOUSE VIEWS] - Error deleting warehouse: {str(e)}")
+            return Response(
+                {"detail": f"Error deleting warehouse: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
