@@ -13,6 +13,9 @@ urlpatterns = [
     path('token/refresh/', views.DecoratedTokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', views.DecoratedTokenVerifyView.as_view(), name='token_verify'),
 
+    # Notifications endpoints
+    path('notifications/', include('apps.notifications.urls')),
+    
     # Swagger documentation
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
