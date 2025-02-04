@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     # Security
     'axes',  # Proteção contra força bruta
     
+    # WebSockets
+    'channels',
+    
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
@@ -490,7 +493,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 ################################
-########## CACHE CONFIG #########
+########## CACHE CONFIG ########
 ################################
 CACHES = {
     'default': {
@@ -500,6 +503,17 @@ CACHES = {
 }
 AXES_CACHE = 'default'
 
+################################
+########## CHANNELS CONFIG #####
+################################
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 ################################
 ########## CELERY CONFIG #######
 ################################
@@ -549,12 +563,12 @@ TIME_INPUT_FORMATS = [
 DATE_FORMAT = "Y/M/d" # '2023/10/01'
 
 ################################
-########## DEFAULT AUTO FIELD #########
+###### DEFAULT AUTO FIELD ######
 ################################
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ################################
-########## SPECTACULAR SETTINGS ##########
+#### SPECTACULAR SETTINGS ######
 ################################
 SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
