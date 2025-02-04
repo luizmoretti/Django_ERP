@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     # Apps
     'apps',
     'apps.accounts',
+    'apps.notifications',
     
     #Companie Manegement Apps
     'apps.companies',
