@@ -79,9 +79,9 @@ class Outflow(BaseModel):
         """
         try:
             if self.destiny:
-                project_address = self.destiny.customer_project_address_customer.first()
+                project_address = self.destiny.customer_project_address.first()
                 if project_address:
-                    return project_address
+                    return f'{project_address.address}, {project_address.city}, {project_address.state}, {project_address.zip_code}, {project_address.country}'
             return f'{self.destiny.address}, {self.destiny.city}, {self.destiny.state}, {self.destiny.zip_code}, {self.destiny.country}'
         except AttributeError:
             return "Destiny not setted. Please set the destiny customer first."
