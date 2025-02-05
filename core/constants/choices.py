@@ -202,3 +202,12 @@ DELIVERY_STATUS_CHOICES = [
     ('Returned', _('Returned')),
     ('Cancelled', _('Cancelled')),
 ]
+
+
+MOVEMENTS_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+        ('completed', 'Completed')
+    ]

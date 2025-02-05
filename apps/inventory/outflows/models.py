@@ -3,6 +3,7 @@ from ..product.models import Product
 from ..warehouse.models import Warehouse
 from basemodels.models import BaseModel
 from apps.companies.customers.models import Customer
+from core.constants.choices import MOVEMENTS_STATUS_CHOICES
 
 
 class Outflow(BaseModel):
@@ -30,6 +31,19 @@ class Outflow(BaseModel):
     """
     origin = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='outflows_origin', help_text='The warehouse of the outflow')
     destiny = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='outflows_destiny', help_text='The customer of the outflow')
+    
+    status = models.CharField(
+        max_length=20,
+        choices=MOVEMENTS_STATUS_CHOICES,
+        default='pending',
+        help_text='Current status of the outflow'
+    )
+    
+    rejection_reason = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Reason for rejection if outflow was rejected'
+    )
     
     verbose_name = 'Outflow'
     verbose_name_plural = 'Outflows'

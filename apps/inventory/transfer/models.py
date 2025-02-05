@@ -2,6 +2,7 @@ from django.db import models
 from ..warehouse.models import Warehouse
 from basemodels.models import BaseModel
 from ..product.models import Product
+from core.constants.choices import MOVEMENTS_STATUS_CHOICES
 
 class Transfer(BaseModel):
     """Transfer model
@@ -28,6 +29,21 @@ class Transfer(BaseModel):
     origin = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers_origin', help_text='The warehouse of the transfer')
     destiny = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers_destiny', help_text='The warehouse of the transfer')
 
+    status = models.CharField(
+        max_length=20,
+        choices=MOVEMENTS_STATUS_CHOICES,
+        default='pending',
+        help_text='Current status of the transfer'
+    )
+
+    rejection_reason = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Reason for rejection if transfer was rejected'
+    )
+    
+    
+    
     class Meta:
         verbose_name = 'Transfer'
         verbose_name_plural = 'Transfers'

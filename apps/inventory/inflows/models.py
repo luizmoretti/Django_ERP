@@ -1,8 +1,9 @@
 from django.db import models
 from ..product.models import Product
-from ..warehouse.models import Warehouse, WarehouseProduct
+from ..warehouse.models import Warehouse
 from basemodels.models import BaseModel
 from ..supplier.models import Supplier
+from core.constants.choices import MOVEMENTS_STATUS_CHOICES
 
 class Inflow(BaseModel):
     """Inflows
@@ -22,7 +23,20 @@ class Inflow(BaseModel):
     """
     origin = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='inflows_origin', help_text='The supplier of the inflow')
     destiny = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='inflows_destiny', help_text='The warehouse of the inflow')
-
+    status = models.CharField(
+        max_length=20,
+        choices=MOVEMENTS_STATUS_CHOICES,
+        default='pending',
+        help_text='Current status of the inflow'
+    )
+    
+    rejection_reason = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Reason for rejection if inflow was rejected'
+    )
+    
+    
     class Meta:
         verbose_name = 'Inflow'
         verbose_name_plural = 'Inflows'
