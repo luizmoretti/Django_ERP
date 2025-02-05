@@ -20,12 +20,13 @@ class OutflowItemSerializer(serializers.ModelSerializer):
         model: OutflowItems
         fields: ['product', 'quantity']
     """
-    product = serializers.SlugRelatedField(slug_field='name', queryset=Product.objects.all())
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, required=True)
+    _product = serializers.CharField(source='product.name', read_only=True)
     quantity = serializers.IntegerField(min_value=1)
     
     class Meta:
         model = OutflowItems
-        fields = ['product', 'quantity']
+        fields = ['product', '_product', 'quantity']
 
 class OutflowSerializer(serializers.ModelSerializer):
     """Serializer for Outflow model
@@ -41,8 +42,8 @@ class OutflowSerializer(serializers.ModelSerializer):
         destiny (PrimaryKeyRelatedField): Write-only field for destiny customer UUID
         origin_name (CharField): Read-only field for origin warehouse name
         destiny_name (CharField): Read-only field for destiny customer name
-        items (OutflowItemSerializer): Read-only nested serializer for outflow items
-        items_data (ListField): Write-only field for creating outflow items
+        _items (OutflowItemSerializer): Read-only nested serializer for outflow items
+        items (OutflowItemSerializer): Write-only field for creating outflow items
         created_at (DateTimeField): Read-only timestamp
         updated_at (DateTimeField): Read-only timestamp
         created_by (SerializerMethodField): Read-only creator name
@@ -63,26 +64,34 @@ class OutflowSerializer(serializers.ModelSerializer):
         queryset=Warehouse.objects.all(),
         required=True,
         write_only=True
-    )
+    ) 
+    # Read-only fields for Origin Warehouse 
+    _origin = serializers.CharField(source='origin.name', read_only=True)
+    origin_address = serializers.CharField(source='display_origin_address', read_only=True)
+    
     destiny = serializers.PrimaryKeyRelatedField(
         queryset=Customer.objects.all(),
         required=True,
         write_only=True
     )
-    
-    # Read-only fields for names
-    origin_name = serializers.CharField(source='origin.name', read_only=True)
-    origin_address = serializers.CharField(source='display_origin_address', read_only=True)
-    
-    destiny_name = serializers.CharField(source='destiny.full_name', read_only=True)
+    # Read-only fields for Destiny Customer
+    _destiny = serializers.CharField(source='destiny.full_name', read_only=True)
     destiny_address = serializers.CharField(source='display_destiny_address', read_only=True)
     
-    items = OutflowItemSerializer(many=True, read_only=True)
+    
+    # Write-only field for items
     items_data = serializers.ListField(
         child=serializers.DictField(),
         write_only=True,
         required=True
     )
+    # Read-only field for items
+    items = OutflowItemSerializer(many=True, read_only=True)
+    
+    #Status Fields
+    status = serializers.CharField(max_length=20, required=False)
+    rejection_reason = serializers.CharField(max_length=255, required=False)
+    
     
     created_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
@@ -93,14 +102,21 @@ class OutflowSerializer(serializers.ModelSerializer):
         model = Outflow
         fields = [
             'id',
+            
             'origin',
-            'origin_name',
+            '_origin',
             'origin_address',
+            
             'destiny',
-            'destiny_name',
+            '_destiny',
             'destiny_address',
+            
+            
             'items',
             'items_data',
+            
+            'status',
+            'rejection_reason',
             'companie',
             'created_at',
             'updated_at',
@@ -109,10 +125,13 @@ class OutflowSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
-            'origin_name',
+            
+            '_origin',
             'origin_address',
-            'destiny_name',
+            
+            '_destiny',
             'destiny_address',
+            
             'items',
             'companie',
             'created_at',
@@ -133,11 +152,11 @@ class OutflowSerializer(serializers.ModelSerializer):
             return obj.updated_by.user.get_full_name()
         return None
     
-    def get_origin_name(self, obj) -> str:
+    def get__origin(self, obj) -> str:
         """Get the name of the origin warehouse"""
         return obj.origin.name
     
-    def get_destiny_name(self, obj) -> str:
+    def get__destiny(self, obj) -> str:
         """Get the name of the destiny customer"""
         return obj.destiny.full_name
         
