@@ -62,8 +62,8 @@ class Outflow(BaseModel):
     """
         try:
             if self.origin and self.origin.companie:
-                # Busca o endereço de coleta através da relação reversa
-                pickup_address = self.origin.companie.pick_up_companie_address_companie.first()
+                # Search for the collection address via the reverse relationship
+                pickup_address = self.origin.companie.companie_pick_up_address.first()
                 if pickup_address:
                     return pickup_address.full_address
             return None

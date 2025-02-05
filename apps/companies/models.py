@@ -32,7 +32,7 @@ class Companie(models.Model):
 
 class PickUpCompanieAddress(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
-    companie = models.ForeignKey(Companie, on_delete=models.SET_NULL, null=True, blank=True, related_name='pick_up_companie_address_companie')
+    companie = models.ForeignKey(Companie, on_delete=models.SET_NULL, null=True, blank=True, related_name='companie_pick_up_address')
     full_address = models.CharField(max_length=250, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
