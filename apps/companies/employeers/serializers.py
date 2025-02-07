@@ -10,50 +10,50 @@ logger = logging.getLogger(__name__)
 
 class EmployeerSerializer(serializers.ModelSerializer):
     """
-    Serializer centralizado para operações com funcionários.
+    Centralized serializer for employee operations.
+
+    This serializer provides all the necessary functionality for:
+    - Listing employees
+    - Creating employees
+    - Updating employees
+    - Detailing employees
     
-    Este serializador fornece todas as funcionalidades necessárias para:
-    - Listagem de funcionários
-    - Criação de funcionários
-    - Atualização de funcionários
-    - Detalhamento de funcionários
-    
-    Atributos:
-        id (UUIDField): Identificador único do funcionário (somente leitura)
-        name (CharField): Nome completo do funcionário
-        id_number (CharField): Número de identificação do funcionário
-        date_of_birth (DateField): Data de nascimento
-        age (IntegerField): Idade calculada (somente leitura)
+    Attributes:
+        id (UUIDField): Unique identifier for the employee (read-only)
+        name (CharField): Full name of the employee
+        id_number (CharField): Employee identification number
+        date_of_birth (DateField): Date of birth
+        age (IntegerField): Calculated age (read-only)
         
-        # Informações de Contato
-        phone (CharField): Telefone de contato
-        email (EmailField): Email de contato
+        # Contact Information
+        phone (CharField): Phone number
+        email (EmailField): Email address
         
-        # Informações de Endereço
-        address (CharField): Endereço
-        city (CharField): Cidade
-        state (CharField): Estado
-        zip_code (CharField): CEP
-        country (CharField): País
+        # Address Information
+        address (CharField): Address
+        city (CharField): City
+        state (CharField): State
+        zip_code (CharField): ZIP code
+        country (CharField): Country
         
-        # Informações de Usuário
-        user (SerializerMethodField): Dados do usuário associado (somente leitura)
-        user_id (UUIDField): ID do usuário (somente escrita)
+        # User Information
+        user (PrimaryKeyRelatedField): User (write-only)
+        _user (SerializerMethodField): Associated user data (read-only)
         
-        # Informações da Empresa
-        companie (SerializerMethodField): Dados da empresa (somente leitura)
-        
-        # Campos de Auditoria
-        created_at (DateTimeField): Data de criação
-        updated_at (DateTimeField): Data de última atualização
-        created_by_name (SerializerMethodField): Nome de quem criou
-        updated_by_name (SerializerMethodField): Nome de quem atualizou por último
+        # Company Information
+        company (SerializerMethodField): Company data (read-only)
+
+        # Audit fields
+        created_at (DateTimeField): Creation date
+        updated_at (DateTimeField): Last updated date
+        created_by_name (SerializerMethodField): Name of creator
+        updated_by_name (SerializerMethodField): Last updated name
     """
-    # Campos Básicos
+    # Basic Fields
     id = serializers.UUIDField(read_only=True)
     name = serializers.CharField(required=False)
     id_number = serializers.CharField(required=False)
-    date_of_birth = serializers.DateField(required=True)
+    date_of_birth = serializers.DateField(required=False)
     age = serializers.IntegerField(read_only=True)
     
     hire_date = serializers.DateField(required=False)
@@ -62,45 +62,45 @@ class EmployeerSerializer(serializers.ModelSerializer):
     payment_type = serializers.CharField(required=False)
     rate = serializers.DecimalField(required=False, max_digits=10, decimal_places=2)
     
-    # Campos de Contato
+    # Contact Information
     phone = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
     
-    # Campos de Endereço
+    # Address Information
     address = serializers.CharField(required=False)
     city = serializers.CharField(required=False)
     state = serializers.CharField(required=False)
     zip_code = serializers.CharField(required=False)
     country = serializers.CharField(required=False)
     
-    # Campos de Relacionamento
+    # User Information
     user = serializers.PrimaryKeyRelatedField(queryset=NormalUser.objects.all(), required=False, write_only=True)
     _user = serializers.SerializerMethodField(read_only=True)
     
-    # Campos de Auditoria
-    _created_by = serializers.SerializerMethodField(read_only=True)
-    _updated_by = serializers.SerializerMethodField(read_only=True)
-    _companie = serializers.SerializerMethodField(read_only=True)
+    # Audit fields
+    created_by = serializers.SerializerMethodField(read_only=True)
+    updated_by = serializers.SerializerMethodField(read_only=True)
+    companie = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Employeer
         fields = [
-            # Campos Básicos
+            # Basic Fields
             'id', 'name', 'id_number', 'date_of_birth', 'age',
             'hire_date', 'termination_date', 'payroll_schedule', 
             'payment_type', 'rate',
             
-            # Campos de Contato
+            # Contact Information
             'phone', 'email',
             
-            # Campos de Endereço
+            # Address Information
             'address', 'city', 'state', 'zip_code', 'country',
             
-            # Campos de Relacionamento
+            # User Information
             'user', '_user',
             
-            # Campos de Auditoria
-            'created_at', 'updated_at', '_created_by', '_updated_by', '_companie'
+            # Audit fields
+            'created_at', 'updated_at', 'created_by', 'updated_by', 'companie'
         ]
         read_only_fields = [
             'id', 
@@ -108,9 +108,9 @@ class EmployeerSerializer(serializers.ModelSerializer):
             '_user',
             'created_at', 
             'updated_at',
-            '_created_by',
-            '_updated_by',
-            '_companie'
+            'created_by',
+            'updated_by',
+            'companie'
         ]
 
     def get__user(self, obj) -> dict:
@@ -123,26 +123,26 @@ class EmployeerSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def get__companie(self, obj) -> str:
-        """Retorna informações formatadas da empresa"""
+    def get_companie(self, obj) -> str:
+        """Returns formatted company information"""
         if obj.companie:
             return f"[{obj.companie.type}] {obj.companie.name}"
         return None
 
-    def get__created_by(self, obj) -> str | None:
-        """Retorna o nome de quem criou o registro"""
+    def get_created_by(self, obj) -> str | None:
+        """Returns the name of the person who created the record"""
         if obj.created_by:
             return f"{obj.created_by.name}"
         return None
 
-    def get__updated_by(self, obj) -> str | None:
-        """Retorna o nome de quem atualizou o registro"""
+    def get_updated_by(self, obj) -> str | None:
+        """Returns the name of the person who updated the record"""
         if obj.updated_by:
             return f"{obj.updated_by.name}"
         return None
 
     def validate_email(self, value):
-        """Valida se o email é único"""
+        """Validates if the email is unique"""
         if not value:
             return value
             
@@ -172,7 +172,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
 
     
     def create(self, validated_data):
-        """Cria um novo funcionário"""
+        """Create a new employee"""
         user_id = validated_data.pop('user')
         instance = self.Meta.model(**validated_data)
         instance.user_id = user_id
@@ -181,7 +181,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
 
     
     def update(self, instance, validated_data):
-        """Atualiza um funcionário existente"""
+        """Updates an existing employee"""
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
