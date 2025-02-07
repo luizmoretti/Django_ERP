@@ -79,6 +79,7 @@ cover/
 .windsurfrules
 DESIGN_ARCHITECTURE_SPECIFICATION.md
 .codeiumignore
+memory-bank/
 
 # Flask stuff:
 instance/
