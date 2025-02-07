@@ -49,32 +49,38 @@ class BaseEmployeerView:
         tags=["Companies - Employees"],
         operation_id="create_employee",
         summary="Create new employee",
-        description="""
-        Creates a new employee record with the provided information.
-        
-        The employee must be associated with a user account.
-        Both created_by and updated_by will be set automatically.
-        """,
+        description="Creates a new employee record with the provided information.",
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
+                    # Basic Fields
                     'name': {'type': 'string', 'description': 'Full name of the employee'},
-                    'id_number': {'type': 'string', 'description': 'Employee identification number', 'example': '123-45-6789'},
-                    'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)', 'example': '1990-01-01'},
-                    'payroll_schedule': {'type': 'string', 'description': 'Payroll schedule', 'example': 'Weekly'},
-                    'payment_type': {'type': 'string', 'description': 'Payment type', 'example': 'Day'},
-                    'rate': {'type': 'number', 'description': 'Hourly rate or monthly salary', 'example': 150.00},
-                    'email': {'type': 'string', 'format': 'email', 'description': 'Contact email', 'example': 'employee@example.com'},
-                    'phone': {'type': 'string', 'description': 'Contact phone number', 'example': '(123) 456-7890'},
-                    'address': {'type': 'string', 'description': 'Physical address', 'example': '123 Main St'},
-                    'city': {'type': 'string', 'description': 'City name', 'example': 'Los Angeles'},
-                    'state': {'type': 'string', 'description': 'State/Province', 'example': 'CA'},
-                    'zip_code': {'type': 'string', 'description': 'ZIP/Postal code', 'example': '12345'},
+                    'id_number': {'type': 'string', 'description': 'Employee identification number'},
+                    'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)'},
+                    
+                    # Fields of Employment
+                    'hire_date': {'type': 'string', 'format': 'date', 'description': 'Date of employment'},
+                    'termination_date': {'type': 'string', 'format': 'date', 'description': 'Date of termination (if applicable)'},
+                    'payroll_schedule': {'type': 'string', 'enum': ['Weekly', 'Biweekly', 'Monthly'], 'description': 'Payroll schedule'},
+                    'payment_type': {'type': 'string', 'enum': ['Hour', 'Day', 'Month'], 'description': 'Payment type'},
+                    'rate': {'type': 'number', 'description': 'Hourly rate or salary'},
+                    
+                    # Contact Information
+                    'email': {'type': 'string', 'format': 'email', 'description': 'Contact email'},
+                    'phone': {'type': 'string', 'description': 'Contact phone number'},
+                    
+                    # Address
+                    'address': {'type': 'string', 'description': 'Physical address'},
+                    'city': {'type': 'string', 'description': 'City name'},
+                    'state': {'type': 'string', 'description': 'State/Province'},
+                    'zip_code': {'type': 'string', 'description': 'ZIP/Postal code'},
                     'country': {'type': 'string', 'description': 'Country name', 'default': 'USA'},
+                    
+                    # Associate User
                     'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
                 },
-                'required': ['name', 'id_number', 'date_of_birth', 'payroll_schedule', 'payment_type', 'rate']
+                'required': ['date_of_birth', 'user']
             }
         },
         responses={
@@ -186,25 +192,38 @@ class EmployeerRetrieveView(BaseEmployeerView, RetrieveAPIView):
         summary="Update employee",
         description="""
         Updates an existing employee record with the provided information.
-        All fields are optional except date_of_birth and user.
+        All fields are optional.
         """,
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
+                    # Basic Fields
                     'name': {'type': 'string', 'description': 'Full name of the employee'},
-                    'id_number': {'type': 'string', 'description': 'Employee identification number'},
                     'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)'},
+                    'id_number': {'type': 'string', 'description': 'Employee identification number such as SSN or ITIN'},
+                    
+                    # Fields of Employment
+                    'hire_date': {'type': 'string', 'format': 'date', 'description': 'Date of employment'},
+                    'termination_date': {'type': 'string', 'format': 'date', 'description': 'Date of termination (if applicable)'},
+                    'payroll_schedule': {'type': 'string', 'enum': ['Weekly', 'Biweekly', 'Monthly'], 'description': 'Payroll schedule'},
+                    'payment_type': {'type': 'string', 'enum': ['Hour', 'Day', 'Month'], 'description': 'Payment type'},
+                    'rate': {'type': 'number', 'description': 'Hourly rate or salary'},
+                    
+                    # Contact Information
                     'email': {'type': 'string', 'format': 'email', 'description': 'Contact email'},
                     'phone': {'type': 'string', 'description': 'Contact phone number'},
+                    
+                    # Address
                     'address': {'type': 'string', 'description': 'Physical address'},
                     'city': {'type': 'string', 'description': 'City name'},
                     'state': {'type': 'string', 'description': 'State/Province'},
                     'zip_code': {'type': 'string', 'description': 'ZIP/Postal code'},
-                    'country': {'type': 'string', 'description': 'Country name'},
+                    'country': {'type': 'string', 'description': 'Country name', 'default': 'USA'},
+                    
+                    # Associate User
                     'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
                 },
-                'required': ['date_of_birth', 'user']
             }
         },
         parameters=[
@@ -243,18 +262,31 @@ class EmployeerRetrieveView(BaseEmployeerView, RetrieveAPIView):
             'application/json': {
                 'type': 'object',
                 'properties': {
+                    # Basic Fields
                     'name': {'type': 'string', 'description': 'Full name of the employee'},
-                    'id_number': {'type': 'string', 'description': 'Employee identification number'},
                     'date_of_birth': {'type': 'string', 'format': 'date', 'description': 'Birth date (YYYY-MM-DD)'},
+                    
+                    # Fields of Employment
+                    'hire_date': {'type': 'string', 'format': 'date', 'description': 'Date of employment'},
+                    'termination_date': {'type': 'string', 'format': 'date', 'description': 'Date of termination (if applicable)'},
+                    'payroll_schedule': {'type': 'string', 'enum': ['Weekly', 'Biweekly', 'Monthly'], 'description': 'Payroll schedule'},
+                    'payment_type': {'type': 'string', 'enum': ['Hour', 'Day', 'Month'], 'description': 'Payment type'},
+                    'rate': {'type': 'number', 'description': 'Hourly rate or salary'},
+                    
+                    # Contact Information
                     'email': {'type': 'string', 'format': 'email', 'description': 'Contact email'},
                     'phone': {'type': 'string', 'description': 'Contact phone number'},
+                    
+                    # Address
                     'address': {'type': 'string', 'description': 'Physical address'},
                     'city': {'type': 'string', 'description': 'City name'},
                     'state': {'type': 'string', 'description': 'State/Province'},
                     'zip_code': {'type': 'string', 'description': 'ZIP/Postal code'},
-                    'country': {'type': 'string', 'description': 'Country name'},
+                    'country': {'type': 'string', 'description': 'Country name', 'default': 'USA'},
+                    
+                    # Associate User
                     'user': {'type': 'string', 'format': 'uuid', 'description': 'UUID of the associated user account'}
-                }
+                },
             }
         },
         parameters=[
