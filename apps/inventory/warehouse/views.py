@@ -5,6 +5,12 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from core.cache import (
+    cache_response, 
+    invalidate_cache_key, 
+    get_cache_key,
+    cache_get_or_set
+)
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
     OpenApiParameter, OpenApiTypes
@@ -49,11 +55,27 @@ class WarehouseListView(WareHouseBaseView, ListAPIView):
     serializer_class = WarehouseSerializer
     
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        logger.info(f"[WAREHOUSE VIEWS] - Warehouses list retrieved successfully")
-        return Response(serializer.data)
-
+        cache_key = 'warehouse_list:GET:/api/v1/warehouse/'
+        
+        def get_fresh_data():
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            logger.info(f"[WAREHOUSE VIEWS] - Warehouses list retrieved successfully (cache miss)")
+            return serializer.data
+        
+        # Get the latest updated_at from all warehouses to use as cache version
+        latest_warehouse = Warehouse.objects.order_by('-updated_at').first()
+        cache_version = int(latest_warehouse.updated_at.timestamp()) if latest_warehouse else 0
+        
+        data = cache_get_or_set(
+            key=cache_key,
+            default_func=get_fresh_data,
+            timeout=300,
+            cache_alias='default'
+        )
+        
+        logger.info(f"[WAREHOUSE VIEWS] - Warehouses list retrieved successfully (cache hit)")
+        return Response(data, headers={'Cache-Version': str(cache_version)})
 
 @extend_schema_view(
     post=extend_schema(
@@ -67,16 +89,6 @@ class WarehouseListView(WareHouseBaseView, ListAPIView):
                 'properties': {
                     'name': {'type': 'string'},
                     'limit': {'type': 'number'},
-                    # 'items': {
-                    #     'type': 'array', 
-                    #     'items': {
-                    #         'type': 'object',
-                    #         'properties': {
-                    #             'product': {'type': 'string'},
-                    #             'current_quantity': {'type': 'number'},
-                    #         },
-                    #     },
-                    # },
                 },
                 'required': ['name']
             }
@@ -92,8 +104,12 @@ class WarehouseCreateView(WareHouseBaseView, CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        warehouse = serializer.save()
         logger.info(f"[WAREHOUSE VIEWS] - Warehouse created successfully")
+        
+        # Invalidate warehouse list cache
+        invalidate_cache_key('warehouse_list:GET:/api/v1/warehouse/', cache_alias='drywall')
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     
@@ -123,9 +139,25 @@ class WarehouseRetrieveView(WareHouseBaseView, RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} retrieved successfully")
-            return Response(serializer.data)
+            cache_key = f'warehouse_detail:GET:/api/v1/warehouse/{instance.id}/'
+            
+            def get_fresh_data():
+                serializer = self.get_serializer(instance)
+                logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} retrieved successfully (cache miss)")
+                return serializer.data
+            
+            # Use cache_get_or_set with version based on updated_at
+            cache_version = int(instance.updated_at.timestamp())
+            data = cache_get_or_set(
+                key=cache_key,
+                default_func=get_fresh_data,
+                timeout=300,
+                cache_alias='default'
+            )
+            
+            logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} retrieved successfully (cache hit)")
+            return Response(data, headers={'Cache-Version': str(cache_version)})
+            
         except Exception as e:
             logger.error(f"[WAREHOUSE VIEWS] - Error retrieving warehouse: {str(e)}")
             return Response(
@@ -198,9 +230,25 @@ class WarehouseUpdateView(WareHouseBaseView, UpdateAPIView):
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
-            logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} updated successfully")
-            return Response(serializer.data)
+            
+            with transaction.atomic():
+                warehouse = serializer.save()
+                
+                # Invalidar todos os caches relacionados
+                cache_keys = [
+                    'warehouse_list:GET:/api/v1/warehouse/',  # warehouse list
+                    f'warehouse_detail:GET:/api/v1/warehouse/{instance.id}/',  # warehouse detail
+                    get_cache_key('warehouse', id=instance.id),  # Object cache
+                    f'warehouse_total_quantity:{instance.__class__.__name__}:{instance.id}',  # Quantity cache
+                ]
+                
+                for key in cache_keys:
+                    invalidate_cache_key(key, cache_alias='default')
+                    logger.info(f"[WAREHOUSE VIEWS] - Cache invalidated for key: {key}")
+                
+                logger.info(f"[WAREHOUSE VIEWS] - Warehouse {instance.id} updated successfully")
+                return Response(serializer.data)
+                
         except Exception as e:
             logger.error(f"[WAREHOUSE VIEWS] - Error updating warehouse: {str(e)}")
             return Response(
@@ -235,8 +283,15 @@ class WarehouseDeleteView(WareHouseBaseView, DestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            warehouse_id = instance.id
             self.perform_destroy(instance)
             logger.info(f"[WAREHOUSE VIEWS] - Warehouse deleted successfully")
+            
+            # Invalidate all related caches
+            invalidate_cache_key('warehouse_list:GET:/api/v1/warehouse/', cache_alias='drywall')
+            invalidate_cache_key(f'warehouse_detail:GET:/api/v1/warehouse/{warehouse_id}/', cache_alias='drywall')
+            invalidate_cache_key(get_cache_key('warehouse', id=warehouse_id), cache_alias='drywall')
+            
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             logger.error(f"[WAREHOUSE VIEWS] - Error deleting warehouse: {str(e)}")

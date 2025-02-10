@@ -2,6 +2,7 @@ from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from basemodels.models import BaseModel
 from ..product.models import Product
+from core.cache import cache_method_result, invalidate_cache_key, get_cache_key
 
 class Warehouse(BaseModel):
     """
@@ -38,15 +39,24 @@ class Warehouse(BaseModel):
     def __str__(self):
         return self.name
     
-    def update_total_quantity(self):
-        """Recalculate total quantity based on sum of all WarehouseProduct quantities"""
-        total = WarehouseProduct.objects.filter(
+    @cache_method_result(timeout=300, key_prefix='warehouse_total_quantity', cache_alias='default')
+    def get_total_quantity(self):
+        """Get cached total quantity of all products in warehouse"""
+        return WarehouseProduct.objects.filter(
             warehouse=self
         ).aggregate(
             total=models.Sum('current_quantity')
         )['total'] or 0
+    
+    def update_total_quantity(self):
+        """Recalculate total quantity and update cache"""
+        total = self.get_total_quantity()
         self.quantity = total
         self.save()
+        
+        # Invalidate related caches
+        invalidate_cache_key(get_cache_key('warehouse', id=self.id), cache_alias='default')
+        invalidate_cache_key(f'warehouse_total_quantity:{self.__class__.__name__}:{self.id}', cache_alias='default')
     
     def clean(self):
         """Validate warehouse limit against current quantity"""
@@ -55,9 +65,14 @@ class Warehouse(BaseModel):
             raise ValidationError(f"Warehouse {self.name} exceeds capacity: {self.quantity}/{self.limit}")
     
     def save(self, *args, **kwargs):
-        """Save with validation"""
+        """Save with validation and cache invalidation"""
         self.full_clean()
         super().save(*args, **kwargs)
+        
+        # Invalidate warehouse caches
+        invalidate_cache_key(get_cache_key('warehouse', id=self.id), cache_alias='default')
+        invalidate_cache_key('warehouse_list:GET:/api/v1/warehouse/', cache_alias='default')
+        invalidate_cache_key(f'warehouse_detail:GET:/api/v1/warehouse/{self.id}/', cache_alias='default')
     
 class WarehouseProduct(BaseModel):
     """
@@ -116,8 +131,18 @@ class WarehouseProduct(BaseModel):
             )
     
     def save(self, *args, **kwargs):
-        """Save the model with validation"""
+        """Save the model with validation and cache invalidation"""
         self.full_clean()
         with transaction.atomic():
             super().save(*args, **kwargs)
+            
+            # Invalidate related caches
+            warehouse_id = self.warehouse.id
+            product_id = self.product.id
+            
+            invalidate_cache_key(get_cache_key('warehouse', id=warehouse_id), cache_alias='default')
+            invalidate_cache_key(get_cache_key('product', id=product_id), cache_alias='default')
+            invalidate_cache_key(get_cache_key('inventory', warehouse_id=warehouse_id, product_id=product_id), cache_alias='default')
+            invalidate_cache_key(f'warehouse_total_quantity:{self.warehouse.__class__.__name__}:{warehouse_id}', cache_alias='default')
+            
             self.warehouse.update_total_quantity()

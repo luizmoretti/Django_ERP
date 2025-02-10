@@ -524,10 +524,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ################################
 CACHES = {
     'default': {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0'),
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
+        'OPTIONS': {
+            'db': 0,
+        },
+        'KEY_PREFIX': 'drywall',
+        'VERSION': 1,
+        'TIMEOUT': 300,  # 5 minutes default timeout
     }
 }
+
+# Session configuration
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# Use the default cache for axes
 AXES_CACHE = 'default'
 
 ################################
