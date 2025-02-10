@@ -208,6 +208,54 @@ class OutflowCapacityTests(TestCase):
                 updated_by=self.employee
             )
 
+    def test_warehouse_total_after_multiple_operations(self):
+        """Test warehouse total is correctly updated after multiple operations"""
+        # Initial state
+        self.assertEqual(self.warehouse.quantity, 100)
+        
+        # Create first outflow
+        outflow1 = OutflowItems.objects.create(
+            outflow=self.outflow,
+            product=self.product,
+            quantity=30,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify total after first outflow
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 70)
+        
+        # Create second outflow
+        outflow2 = OutflowItems.objects.create(
+            outflow=self.outflow,
+            product=self.product,
+            quantity=20,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify total after second outflow
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 50)
+        
+        # Delete first outflow
+        outflow1.delete()
+        
+        # Verify total after deletion
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 80)
+        
+        # Update second outflow
+        outflow2.quantity = 30
+        outflow2.save()
+        
+        # Verify total after update
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 70)
+
     def test_atomic_transaction_rollback(self):
         """Test that failed quantity validation rolls back all changes"""
         # Create initial outflow

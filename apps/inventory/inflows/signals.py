@@ -76,25 +76,28 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             
             if created:
                 # New inflow
-                warehouse_product.current_quantity += instance.quantity
-                product.quantity += instance.quantity
+                quantity_change = instance.quantity
             else:
                 # Update - calculate difference
-                difference = instance.quantity - getattr(instance, '_previous_quantity', 0)
-                warehouse_product.current_quantity += difference
-                product.quantity += difference
+                quantity_change = instance.quantity - getattr(instance, '_previous_quantity', 0)
             
-            # Save changes
+            # Update WarehouseProduct quantity
+            warehouse_product.current_quantity += quantity_change
             warehouse_product.save()
+            
+            # Update Product quantity
+            product.quantity += quantity_change
             product.save()
             
-            # Update total warehouse quantity
-            warehouse.update_total_quantity()
+            # Update Warehouse total quantity
+            warehouse.quantity = warehouse.get_total_quantity()
+            warehouse.save()
             
             logger.info(
                 f"Updated quantities for inflow item {instance.id}. "
                 f"Product: {product.name}, New quantity: {product.quantity}, "
-                f"Warehouse product quantity: {warehouse_product.current_quantity}"
+                f"Warehouse product quantity: {warehouse_product.current_quantity}, "
+                f"Total warehouse quantity: {warehouse.quantity}"
             )
             
         except Exception as e:

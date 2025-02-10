@@ -39,9 +39,8 @@ class Warehouse(BaseModel):
     def __str__(self):
         return self.name
     
-    @cache_method_result(timeout=300, key_prefix='warehouse_total_quantity', cache_alias='default')
     def get_total_quantity(self):
-        """Get cached total quantity of all products in warehouse"""
+        """Get total quantity of all products in warehouse"""
         return WarehouseProduct.objects.filter(
             warehouse=self
         ).aggregate(
@@ -50,13 +49,20 @@ class Warehouse(BaseModel):
     
     def update_total_quantity(self):
         """Recalculate total quantity and update cache"""
-        total = self.get_total_quantity()
-        self.quantity = total
-        self.save()
-        
-        # Invalidate related caches
+        # First invalidate the cache
         invalidate_cache_key(get_cache_key('warehouse', id=self.id), cache_alias='default')
         invalidate_cache_key(f'warehouse_total_quantity:{self.__class__.__name__}:{self.id}', cache_alias='default')
+        
+        # Then get the fresh total
+        total = WarehouseProduct.objects.filter(
+            warehouse=self
+        ).aggregate(
+            total=models.Sum('current_quantity')
+        )['total'] or 0
+        
+        # Update the quantity
+        self.quantity = total
+        self.save()
     
     def clean(self):
         """Validate warehouse limit against current quantity"""
@@ -73,7 +79,7 @@ class Warehouse(BaseModel):
         invalidate_cache_key(get_cache_key('warehouse', id=self.id), cache_alias='default')
         invalidate_cache_key('warehouse_list:GET:/api/v1/warehouse/', cache_alias='default')
         invalidate_cache_key(f'warehouse_detail:GET:/api/v1/warehouse/{self.id}/', cache_alias='default')
-    
+        
 class WarehouseProduct(BaseModel):
     """
     Fields:
@@ -101,48 +107,51 @@ class WarehouseProduct(BaseModel):
     current_quantity = models.BigIntegerField(default=0, blank=True, null=True, help_text='The current quantity of this product in the warehouse')
     
     class Meta:
-        verbose_name = 'Product Warehouse'
-        verbose_name_plural = 'Product Warehouses'
-        ordering = ['-created_at']
-    
+        verbose_name = 'Warehouse Product'
+        verbose_name_plural = 'Warehouse Products'
+        ordering = ['warehouse', 'product']
+        unique_together = ('warehouse', 'product')
+        
+    def __str__(self):
+        return f"{self.warehouse.name} - {self.product.name}: {self.current_quantity}"
+        
     def clean(self):
-        """Validate warehouse product quantities"""
+        """Validate warehouse product quantity"""
         super().clean()
-        
-        # Prevent negative quantities
         if self.current_quantity < 0:
-            raise ValidationError("Product quantity cannot be negative")
-        
-        # Calculate total warehouse quantity including this product
-        total_quantity = (
-            WarehouseProduct.objects.filter(warehouse=self.warehouse)
-            .exclude(pk=self.pk)
-            .aggregate(total=models.Sum('current_quantity'))['total'] or 0
-        )
-        total_quantity += self.current_quantity
-        
-        # Check warehouse capacity limit
-        if self.warehouse.limit > 0 and total_quantity > self.warehouse.limit:
-            raise ValidationError(
-                f"Operation would exceed warehouse capacity. "
-                f"Current: {total_quantity - self.current_quantity}, "
-                f"Change: {self.current_quantity}, "
-                f"Limit: {self.warehouse.limit}"
+            raise ValidationError(f"Product {self.product.name} quantity cannot be negative in warehouse {self.warehouse.name}")
+            
+        if self.warehouse.limit > 0:
+            # Calculate total excluding this product's current quantity
+            other_products_total = (
+                WarehouseProduct.objects.filter(warehouse=self.warehouse)
+                .exclude(pk=self.pk)
+                .aggregate(total=models.Sum('current_quantity'))['total'] or 0
             )
+            
+            # Add this product's new quantity
+            total = other_products_total + self.current_quantity
+            
+            if total > self.warehouse.limit:
+                raise ValidationError(
+                    f"Adding {self.current_quantity} of {self.product.name} would exceed "
+                    f"warehouse {self.warehouse.name} capacity. "
+                    f"Current total: {other_products_total}, "
+                    f"New total would be: {total}, "
+                    f"Limit: {self.warehouse.limit}"
+                )
     
     def save(self, *args, **kwargs):
-        """Save the model with validation and cache invalidation"""
+        """Save with validation and cache invalidation"""
         self.full_clean()
         with transaction.atomic():
             super().save(*args, **kwargs)
             
-            # Invalidate related caches
-            warehouse_id = self.warehouse.id
-            product_id = self.product.id
+            # Invalidate warehouse caches
+            invalidate_cache_key(get_cache_key('warehouse', id=self.warehouse.id), cache_alias='default')
+            invalidate_cache_key(f'warehouse_total_quantity:{self.warehouse.__class__.__name__}:{self.warehouse.id}', cache_alias='default')
+            invalidate_cache_key('warehouse_list:GET:/api/v1/warehouse/', cache_alias='default')
+            invalidate_cache_key(f'warehouse_detail:GET:/api/v1/warehouse/{self.warehouse.id}/', cache_alias='default')
             
-            invalidate_cache_key(get_cache_key('warehouse', id=warehouse_id), cache_alias='default')
-            invalidate_cache_key(get_cache_key('product', id=product_id), cache_alias='default')
-            invalidate_cache_key(get_cache_key('inventory', warehouse_id=warehouse_id, product_id=product_id), cache_alias='default')
-            invalidate_cache_key(f'warehouse_total_quantity:{self.warehouse.__class__.__name__}:{warehouse_id}', cache_alias='default')
-            
+            # Update warehouse total quantity
             self.warehouse.update_total_quantity()

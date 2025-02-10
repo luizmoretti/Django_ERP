@@ -77,6 +77,16 @@ def validate_transfer_quantities(sender, instance, **kwargs):
             logger.error(f"Error validating transfer quantities: {str(e)}")
             raise ValidationError(f"Error validating transfer quantities: {str(e)}")
 
+@receiver(pre_save, sender=TransferItems)
+def store_previous_quantity(sender, instance, **kwargs):
+    """Store previous quantity before saving"""
+    if instance.pk:  # Only for updates
+        try:
+            previous = TransferItems.objects.get(pk=instance.pk)
+            instance._previous_quantity = previous.quantity
+        except TransferItems.DoesNotExist:
+            instance._previous_quantity = 0
+
 @receiver(post_save, sender=TransferItems)
 def update_quantities_on_transfer(sender, instance, created, **kwargs):
     with transaction.atomic():
@@ -108,7 +118,7 @@ def update_quantities_on_transfer(sender, instance, created, **kwargs):
             else:
                 quantity_change = instance.quantity - getattr(instance, '_previous_quantity', 0)
             
-            # Update quantities
+            # Update WarehouseProduct quantities
             origin_warehouse_product.current_quantity -= quantity_change
             destiny_warehouse_product.current_quantity += quantity_change
             
@@ -119,18 +129,20 @@ def update_quantities_on_transfer(sender, instance, created, **kwargs):
             if destiny_warehouse_product.current_quantity < 0:
                 raise ValidationError("Destiny warehouse product quantity cannot be negative")
             
-            # Save changes
+            # Save WarehouseProduct changes
             origin_warehouse_product.save()
             destiny_warehouse_product.save()
             
-            # Update total quantities
+            # Update Warehouse total quantities
             origin_warehouse.update_total_quantity()
             destiny_warehouse.update_total_quantity()
             
             logger.info(
                 f"Updated quantities for transfer item {instance.id}. "
                 f"Origin warehouse ({origin_warehouse.name}) quantity: {origin_warehouse_product.current_quantity}, "
-                f"Destiny warehouse ({destiny_warehouse.name}) quantity: {destiny_warehouse_product.current_quantity}"
+                f"Origin warehouse total: {origin_warehouse.quantity}, "
+                f"Destiny warehouse ({destiny_warehouse.name}) quantity: {destiny_warehouse_product.current_quantity}, "
+                f"Destiny warehouse total: {destiny_warehouse.quantity}"
             )
             
         except Exception as e:

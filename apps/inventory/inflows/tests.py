@@ -201,6 +201,14 @@ class InflowCapacityTests(TestCase):
         # Verify original quantity unchanged
         inflow_item.refresh_from_db()
         self.assertEqual(inflow_item.quantity, 50)
+        
+        # Verify warehouse quantities unchanged
+        warehouse_product = WarehouseProduct.objects.get(
+            warehouse=self.warehouse,
+            product=self.product
+        )
+        self.assertEqual(warehouse_product.current_quantity, 50)
+        self.assertEqual(self.warehouse.quantity, 50)
 
     def test_inflow_deletion_updates_capacity(self):
         """Test warehouse capacity is updated when inflow is deleted"""
@@ -224,3 +232,52 @@ class InflowCapacityTests(TestCase):
         # Verify quantity updated
         self.warehouse.refresh_from_db()
         self.assertEqual(self.warehouse.quantity, 0)
+
+    def test_warehouse_total_after_multiple_operations(self):
+        """Test warehouse total is correctly updated after multiple operations"""
+        # Initial state
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 0)
+        
+        # Create first inflow
+        inflow1 = InflowItems.objects.create(
+            inflow=self.inflow,
+            product=self.product,
+            quantity=30,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify total after first inflow
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 30)
+        
+        # Create second inflow
+        inflow2 = InflowItems.objects.create(
+            inflow=self.inflow,
+            product=self.product,
+            quantity=20,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify total after second inflow
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 50)
+        
+        # Delete first inflow
+        inflow1.delete()
+        
+        # Verify total after deletion
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 20)
+        
+        # Update second inflow
+        inflow2.quantity = 30
+        inflow2.save()
+        
+        # Verify total after update
+        self.warehouse.refresh_from_db()
+        self.assertEqual(self.warehouse.quantity, 30)

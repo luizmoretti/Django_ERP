@@ -93,16 +93,21 @@ def update_quantities_on_outflow(sender, instance, created, **kwargs):
                 previous_quantity = getattr(instance, '_previous_quantity', 0)
                 quantity_change = instance.quantity - previous_quantity
 
-            # Update the quantities
+            # Update Product quantity
             product.quantity -= quantity_change
-            warehouse.quantity -= quantity_change
-            warehouse_product.current_quantity -= quantity_change
-
             product.save()
-            warehouse.save()
+            
+            # Update WarehouseProduct quantity
+            # This will trigger update_total_quantity() in WarehouseProduct.save()
+            warehouse_product.current_quantity -= quantity_change
             warehouse_product.save()
 
-            logger.info(f"Successfully updated quantities for outflow item {str(instance.id)}")
+            logger.info(
+                f"Updated quantities for outflow item {instance.id}. "
+                f"Product: {product.name}, New quantity: {product.quantity}, "
+                f"Warehouse product quantity: {warehouse_product.current_quantity}, "
+                f"Total warehouse quantity: {warehouse.quantity}"
+            )
 
     except Exception as e:
         logger.error(f"Error updating quantities for outflow item {str(instance.id)}: {str(e)}")
@@ -132,10 +137,12 @@ def restore_quantities_on_outflow_delete(sender, instance, **kwargs):
                 warehouse_product.current_quantity += instance.quantity
                 warehouse_product.save()
                 
-                warehouse.quantity += instance.quantity
-                warehouse.save()
-                
-                logger.info(f"OutflowItems deleted: Product {product.name} outflow reversed. Origin warehouse {warehouse.name}: {warehouse.quantity}")
+                logger.info(
+                    f"OutflowItems deleted: Product {product.name} outflow reversed. "
+                    f"Origin warehouse {warehouse.name}: {warehouse.quantity}, "
+                    f"Product quantity: {product.quantity}, "
+                    f"Warehouse product quantity: {warehouse_product.current_quantity}"
+                )
             except WarehouseProduct.DoesNotExist:
                 logger.warning(f"No warehouse product found for {product.name} in {warehouse.name}")
                 

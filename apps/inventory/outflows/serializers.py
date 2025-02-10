@@ -188,17 +188,22 @@ class OutflowSerializer(serializers.ModelSerializer):
                 })
             
             # Check if product quantity is available in warehouse
-            product_name = item['product']
-            product = Product.objects.get(name=product_name)
+            product_id = item['product']
             try:
-                warehouse_product = warehouse.warehouseproduct_set.get(product=product)
-                if warehouse_product.current_quantity < item['quantity']:
+                product = Product.objects.get(id=product_id)
+                try:
+                    warehouse_product = warehouse.items.get(product=product)
+                    if warehouse_product.current_quantity < item['quantity']:
+                        raise ValidationError({
+                            'items_data': f'Not enough quantity for product {product.name} in warehouse'
+                        })
+                except warehouse.items.model.DoesNotExist:
                     raise ValidationError({
-                        'items_data': f'Not enough quantity for product {product_name} in warehouse'
+                        'items_data': f'Product {product.name} not found in warehouse'
                     })
-            except warehouse.warehouseproduct_set.model.DoesNotExist:
+            except Product.DoesNotExist:
                 raise ValidationError({
-                    'items_data': f'Product {product_name} not found in warehouse'
+                    'items_data': f'Product with id {product_id} does not exist'
                 })
                 
         return attrs
@@ -214,14 +219,16 @@ class OutflowSerializer(serializers.ModelSerializer):
         outflow = Outflow.objects.create(**validated_data)
         
         for item_data in items_data:
-            product_name = item_data.pop('product')
-            product = Product.objects.get(name=product_name)
-            OutflowItems.objects.create(
-                outflow=outflow,
-                product=product,
-                quantity=item_data['quantity'],
-                **item_data
-            )
+            product_id = item_data.pop('product')
+            try:
+                product = Product.objects.get(id=product_id)
+                OutflowItems.objects.create(
+                    outflow=outflow,
+                    product=product,
+                    quantity=item_data['quantity']
+                )
+            except Product.DoesNotExist:
+                raise ValidationError(f'Product with id {product_id} does not exist')
             
         return outflow
         
@@ -237,12 +244,15 @@ class OutflowSerializer(serializers.ModelSerializer):
             instance.items.all().delete()
             
             for item_data in items_data:
-                product_name = item_data.pop('product')
-                product = Product.objects.get(name=product_name)
-                OutflowItems.objects.create(
-                    outflow=instance,
-                    product=product,
-                    **item_data
-                )
+                product_id = item_data.pop('product')
+                try:
+                    product = Product.objects.get(id=product_id)
+                    OutflowItems.objects.create(
+                        outflow=instance,
+                        product=product,
+                        quantity=item_data['quantity']
+                    )
+                except Product.DoesNotExist:
+                    raise ValidationError(f'Product with id {product_id} does not exist')
                 
         return super().update(instance, validated_data)

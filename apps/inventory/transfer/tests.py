@@ -200,7 +200,7 @@ class TransferCapacityTests(TestCase):
         transfer_item = TransferItems.objects.create(
             transfer=unlimited_transfer,
             product=self.product,
-            quantity=100,
+            quantity=100,  # Can transfer all available quantity
             companie=self.company,
             created_by=self.employee,
             updated_by=self.employee
@@ -208,13 +208,91 @@ class TransferCapacityTests(TestCase):
         
         # Verify quantities
         self.origin_warehouse_product.refresh_from_db()
-        destiny_product = WarehouseProduct.objects.get(
+        self.origin_warehouse.refresh_from_db()
+        
+        unlimited_warehouse_product = WarehouseProduct.objects.get(
             warehouse=unlimited_warehouse,
             product=self.product
         )
+        unlimited_warehouse.refresh_from_db()
         
         self.assertEqual(self.origin_warehouse_product.current_quantity, 0)
-        self.assertEqual(destiny_product.current_quantity, 100)
+        self.assertEqual(self.origin_warehouse.quantity, 0)
+        self.assertEqual(unlimited_warehouse_product.current_quantity, 100)
+        self.assertEqual(unlimited_warehouse.quantity, 100)
+
+    def test_warehouse_total_after_multiple_operations(self):
+        """Test warehouse total is correctly updated after multiple operations"""
+        # Initial state
+        self.assertEqual(self.origin_warehouse.quantity, 100)
+        self.assertEqual(self.destiny_warehouse.quantity, 0)
+        
+        # Create first transfer
+        transfer1 = TransferItems.objects.create(
+            transfer=self.transfer,
+            product=self.product,
+            quantity=30,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify totals after first transfer
+        self.origin_warehouse.refresh_from_db()
+        self.destiny_warehouse.refresh_from_db()
+        self.assertEqual(self.origin_warehouse.quantity, 70)
+        self.assertEqual(self.destiny_warehouse.quantity, 30)
+        
+        # Create second transfer
+        transfer2 = TransferItems.objects.create(
+            transfer=self.transfer,
+            product=self.product,
+            quantity=20,
+            companie=self.company,
+            created_by=self.employee,
+            updated_by=self.employee
+        )
+        
+        # Verify totals after second transfer
+        self.origin_warehouse.refresh_from_db()
+        self.destiny_warehouse.refresh_from_db()
+        self.assertEqual(self.origin_warehouse.quantity, 50)
+        self.assertEqual(self.destiny_warehouse.quantity, 50)
+        
+        # Delete first transfer
+        transfer1.delete()
+        
+        # Verify totals after deletion
+        self.origin_warehouse.refresh_from_db()
+        self.destiny_warehouse.refresh_from_db()
+        self.assertEqual(self.origin_warehouse.quantity, 80)
+        self.assertEqual(self.destiny_warehouse.quantity, 20)
+        
+        # Update second transfer
+        transfer2.quantity = 30
+        transfer2.save()
+        
+        # Verify totals after update
+        self.origin_warehouse.refresh_from_db()
+        self.destiny_warehouse.refresh_from_db()
+        self.assertEqual(self.origin_warehouse.quantity, 70)
+        self.assertEqual(self.destiny_warehouse.quantity, 30)
+
+    def test_transfer_capacity_warning(self):
+        """Test warning when transfer approaches destiny capacity"""
+        with self.assertLogs('apps.inventory.warehouse.signals', level='WARNING') as cm:
+            # Create transfer that will result in 91% capacity
+            TransferItems.objects.create(
+                transfer=self.transfer,
+                product=self.product,
+                quantity=91,  # 91% of destiny limit
+                companie=self.company,
+                created_by=self.employee,
+                updated_by=self.employee
+            )
+            
+            # Check that warning was logged
+            self.assertTrue(any('91.0% capacity' in msg for msg in cm.output))
 
     def test_multiple_transfers_capacity(self):
         """Test capacity validation with multiple transfers"""
@@ -291,19 +369,3 @@ class TransferCapacityTests(TestCase):
         
         self.assertEqual(self.origin_warehouse_product.current_quantity, 100)
         self.assertEqual(destiny_product.current_quantity, 0)
-
-    def test_transfer_capacity_warning(self):
-        """Test warning when transfer approaches destiny capacity"""
-        with self.assertLogs('apps.inventory.warehouse.signals', level='WARNING') as cm:
-            # Create transfer that will result in 91% capacity
-            TransferItems.objects.create(
-                transfer=self.transfer,
-                product=self.product,
-                quantity=91,  # 91% of destiny limit
-                companie=self.company,
-                created_by=self.employee,
-                updated_by=self.employee
-            )
-            
-            # Check that warning was logged
-            self.assertTrue(any('91.0% capacity' in msg for msg in cm.output))
