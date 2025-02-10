@@ -55,5 +55,5 @@ SEVERITY_TYPES = {
 RECIPIENT_TYPES = {
     'DEFAULT': ['Stock_Controller', 'Manager', 'Admin'],
     'APPROVAL': ['Manager', 'Owner', 'CEO', 'Admin'],
-    'WAREHOUSE': ['Stock_Controller', 'Manager', 'Stockist']
+    'WAREHOUSE': ['Stock_Controller', 'Stocker', 'Manager']
 }

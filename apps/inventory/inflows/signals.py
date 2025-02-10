@@ -2,6 +2,7 @@ import logging
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from .models import InflowItems
 from ..product.models import Product
 from ..warehouse.models import WarehouseProduct
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(pre_save, sender=InflowItems)
 def store_previous_quantity(sender, instance, **kwargs):
+    """Store previous quantity before changes"""
     if instance.pk:
         try:
             previous = InflowItems.objects.get(pk=instance.pk)
@@ -22,8 +24,40 @@ def store_previous_quantity(sender, instance, **kwargs):
         instance._previous_quantity = 0
         logger.info("New InflowItems: previous quantity set to 0")
 
+@receiver(pre_save, sender=InflowItems)
+def validate_inflow_capacity(sender, instance, **kwargs):
+    """Validate warehouse capacity before saving"""
+    warehouse = instance.inflow.destiny
+    
+    if not warehouse.limit:  # No limit set
+        return
+        
+    # Calculate quantity change
+    if instance.pk:
+        try:
+            previous = InflowItems.objects.get(pk=instance.pk)
+            quantity_change = instance.quantity - previous.quantity
+        except InflowItems.DoesNotExist:
+            quantity_change = instance.quantity
+    else:
+        quantity_change = instance.quantity
+    
+    # Calculate projected total
+    projected_total = warehouse.quantity + quantity_change
+    
+    # Check if total would exceed limit
+    if projected_total > warehouse.limit:
+        logger.error(f"Inflow would exceed warehouse capacity. Current: {warehouse.quantity}, Change: {quantity_change}, Limit: {warehouse.limit}")
+        raise ValidationError(
+            f"Operation would exceed warehouse capacity. "
+            f"Current: {warehouse.quantity}, "
+            f"Change: {quantity_change}, "
+            f"Limit: {warehouse.limit}"
+        )
+
 @receiver(post_save, sender=InflowItems)
 def update_quantities_on_inflow(sender, instance, created, **kwargs):
+    """Update quantities after successful validation"""
     with transaction.atomic():
         product = instance.product
         warehouse = instance.inflow.destiny
@@ -65,10 +99,12 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             
         except Exception as e:
             logger.error(f"Error updating quantities for inflow item {instance.id}: {str(e)}")
+            transaction.set_rollback(True)
             raise
 
 @receiver(post_delete, sender=InflowItems)
 def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
+    """Subtract quantities when inflow is deleted"""
     with transaction.atomic():
         try:
             product = instance.product
@@ -77,9 +113,9 @@ def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
             if not product or not warehouse:
                 logger.warning(f"InflowItems ID {instance.id} has no associated product or warehouse.")
                 return
-
+            
+            # Get warehouse product
             try:
-                # Get WarehouseProduct
                 warehouse_product = WarehouseProduct.objects.get(
                     warehouse=warehouse,
                     product=product
@@ -88,28 +124,26 @@ def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
                 # Update quantities
                 warehouse_product.current_quantity -= instance.quantity
                 product.quantity -= instance.quantity
-                warehouse.quantity -= instance.quantity
                 
-                if warehouse_product.current_quantity < 0:
-                    raise ValueError("Warehouse product quantity cannot be negative")
+                # Save changes
+                warehouse_product.save()
+                product.save()
                 
-                if product.quantity < 0:
-                    raise ValueError("Product quantity cannot be negative")
-                
-                # Save all changes
-                warehouse_product.save(update_fields=['current_quantity'])
-                product.save(update_fields=['quantity'])
-                warehouse.save(update_fields=['quantity'])
+                # Update total warehouse quantity
+                warehouse.update_total_quantity()
                 
                 logger.info(
-                    f"InflowItems deleted: Removed {instance.quantity} from product {product}. "
+                    f"InflowItems deleted: Removed {instance.quantity} from product {product.name}. "
                     f"Current warehouse quantity: {warehouse_product.current_quantity}"
                 )
                 
             except WarehouseProduct.DoesNotExist:
-                logger.error(f"WarehouseProduct not found for product {product} in warehouse {warehouse}")
-                raise
+                logger.warning(
+                    f"WarehouseProduct not found for inflow item {instance.id}. "
+                    f"Product: {product.name}, Warehouse: {warehouse.name}"
+                )
                 
         except Exception as e:
-            logger.error(f"Error updating quantities on InflowItems {instance.id} deletion: {str(e)}")
-            raise ValueError(f"Error updating quantities: {str(e)}")
+            logger.error(f"Error subtracting quantities for inflow item {instance.id}: {str(e)}")
+            transaction.set_rollback(True)
+            raise

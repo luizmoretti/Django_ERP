@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='inflows.tasks.generate_daily_inflow_report')
+@shared_task(name='generate_daily_inflow_report')
 def generate_daily_inflow_report():
     today = timezone.now().date()
     start_date = today - timezone.timedelta(days=7)

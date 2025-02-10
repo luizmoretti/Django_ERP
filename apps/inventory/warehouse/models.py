@@ -1,4 +1,5 @@
-from django.db import models
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
 from basemodels.models import BaseModel
 from ..product.models import Product
 
@@ -47,6 +48,17 @@ class Warehouse(BaseModel):
         self.quantity = total
         self.save()
     
+    def clean(self):
+        """Validate warehouse limit against current quantity"""
+        super().clean()
+        if self.limit > 0 and self.quantity > self.limit:
+            raise ValidationError(f"Warehouse {self.name} exceeds capacity: {self.quantity}/{self.limit}")
+    
+    def save(self, *args, **kwargs):
+        """Save with validation"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
 class WarehouseProduct(BaseModel):
     """
     Fields:
@@ -77,3 +89,35 @@ class WarehouseProduct(BaseModel):
         verbose_name = 'Product Warehouse'
         verbose_name_plural = 'Product Warehouses'
         ordering = ['-created_at']
+    
+    def clean(self):
+        """Validate warehouse product quantities"""
+        super().clean()
+        
+        # Prevent negative quantities
+        if self.current_quantity < 0:
+            raise ValidationError("Product quantity cannot be negative")
+        
+        # Calculate total warehouse quantity including this product
+        total_quantity = (
+            WarehouseProduct.objects.filter(warehouse=self.warehouse)
+            .exclude(pk=self.pk)
+            .aggregate(total=models.Sum('current_quantity'))['total'] or 0
+        )
+        total_quantity += self.current_quantity
+        
+        # Check warehouse capacity limit
+        if self.warehouse.limit > 0 and total_quantity > self.warehouse.limit:
+            raise ValidationError(
+                f"Operation would exceed warehouse capacity. "
+                f"Current: {total_quantity - self.current_quantity}, "
+                f"Change: {self.current_quantity}, "
+                f"Limit: {self.warehouse.limit}"
+            )
+    
+    def save(self, *args, **kwargs):
+        """Save the model with validation"""
+        self.full_clean()
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            self.warehouse.update_total_quantity()

@@ -1,18 +1,9 @@
-from django.shortcuts import render
+from rest_framework import generics, status
+from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 from .models import Transfer
 from .serializers import TransferSerializer
-from rest_framework.response import Response
-from rest_framework import status
-from django.db import transaction
-from drf_spectacular.utils import (
-    extend_schema, extend_schema_view,
-    OpenApiParameter, OpenApiTypes
-)
-from rest_framework.generics import (
-    ListAPIView, CreateAPIView, 
-    RetrieveAPIView, UpdateAPIView, 
-    DestroyAPIView
-)
+from .notifications.handlers import TransferNotificationHandler
 from rest_framework.permissions import IsAuthenticated
 import logging
 
@@ -46,7 +37,7 @@ class TransferBaseView:
         }
     )
 )
-class TransferListView(TransferBaseView, ListAPIView):
+class TransferListView(TransferBaseView, generics.ListAPIView):
     serializer_class = TransferSerializer
     
     def list(self, request, *args, **kwargs):
@@ -144,7 +135,7 @@ class TransferListView(TransferBaseView, ListAPIView):
         }
     )
 )
-class TransferCreateView(TransferBaseView, CreateAPIView):
+class TransferCreateView(TransferBaseView, generics.CreateAPIView):
     serializer_class = TransferSerializer
     
     def create(self, request, *args, **kwargs):
@@ -196,7 +187,7 @@ class TransferCreateView(TransferBaseView, CreateAPIView):
         }
     )
 )
-class TransferRetrieveView(TransferBaseView, RetrieveAPIView):
+class TransferRetrieveView(TransferBaseView, generics.RetrieveAPIView):
     serializer_class = TransferSerializer
     
     def retrieve(self, request, *args, **kwargs):
@@ -351,7 +342,7 @@ class TransferRetrieveView(TransferBaseView, RetrieveAPIView):
         }
     )
 )
-class TransferUpdateView(TransferBaseView, UpdateAPIView):
+class TransferUpdateView(TransferBaseView, generics.UpdateAPIView):
     serializer_class = TransferSerializer
     
     def update(self, request, *args, **kwargs):
@@ -397,7 +388,7 @@ class TransferUpdateView(TransferBaseView, UpdateAPIView):
         }
     )
 )
-class TransferDestroyView(TransferBaseView, DestroyAPIView):
+class TransferDestroyView(TransferBaseView, generics.DestroyAPIView):
     serializer_class = TransferSerializer
     lookup_field = 'id'
     

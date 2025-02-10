@@ -18,7 +18,6 @@ class TransferNotificationHandler(BaseNotificationHandler):
     """Handler for transfer-related notifications."""
     
     @classmethod
-    @receiver(post_save, sender=Transfer)
     def notify_transfer_created(cls, sender, instance, created, **kwargs):
         """
         Notifica sobre criação de transferência.
@@ -34,6 +33,9 @@ class TransferNotificationHandler(BaseNotificationHandler):
             # Get total quantity from transfer items
             total_quantity = sum(item.quantity for item in instance.items.all())
             
+            first_item = instance.items.first()
+            product_info = f"{first_item.product.name}" if first_item and first_item.product else "Produtos"
+            
             data = {
                 'type': SEVERITY_TYPES['INFO'],
                 'transfer_id': str(instance.id),
@@ -42,12 +44,6 @@ class TransferNotificationHandler(BaseNotificationHandler):
                 'total_quantity': total_quantity,
                 'items_count': instance.items.count()
             }
-            
-            # Get first item for message (if multiple items, indicate this)
-            first_item = instance.items.first()
-            product_info = f"{first_item.product.name}"
-            if instance.items.count() > 1:
-                product_info += f" and {instance.items.count() - 1} other products"
             
             message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['TRANSFER_CREATED']] % {
                 'quantity': total_quantity,
@@ -73,15 +69,12 @@ class TransferNotificationHandler(BaseNotificationHandler):
     def notify_transfer_approved(cls, transfer, approver, recipient_ids=None):
         """Notifica sobre aprovação de transferência."""
         try:
-            if recipient_ids is None:
-                recipients = cls.get_recipients_by_type(*RECIPIENT_TYPES['WAREHOUSE'])
+            if not recipient_ids:
+                recipients = cls.get_recipients_by_type(*RECIPIENT_TYPES['DEFAULT'])
                 recipient_ids = [str(user.id) for user in recipients]
             
+            # Get total quantity from transfer items
             total_quantity = sum(item.quantity for item in transfer.items.all())
-            first_item = transfer.items.first()
-            product_info = f"{first_item.product.name}"
-            if transfer.items.count() > 1:
-                product_info += f" and {transfer.items.count() - 1} other products"
             
             data = {
                 'type': SEVERITY_TYPES['INFO'],
@@ -90,25 +83,29 @@ class TransferNotificationHandler(BaseNotificationHandler):
                 'destiny_warehouse': transfer.destiny.name,
                 'total_quantity': total_quantity,
                 'items_count': transfer.items.count(),
-                'approver_name': approver.get_full_name() or approver.email
+                'approver': approver.name
             }
             
-            message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['TRANSFER_APPROVED']] % {
-                'quantity': total_quantity,
-                'product': product_info,
-                'origin': transfer.origin.name,
-                'destiny': transfer.destiny.name
-            }
+            # Get first item for message (if multiple items, indicate this)
+            first_item = transfer.items.first()
+            product_info = f"{first_item.product.name}"
+            if transfer.items.count() > 1:
+                product_info += f" and {transfer.items.count() - 1} other products"
             
-            cls.send_to_recipients(
-                recipient_ids=recipient_ids,
-                title=NOTIFICATION_TITLES[NOTIFICATION_TYPE['TRANSFER_APPROVED']],
-                message=message,
+            cls.send_notification(
+                title=NOTIFICATION_TITLES['TRANSFER_APPROVED'],
+                message=NOTIFICATION_MESSAGES['TRANSFER_APPROVED'].format(
+                    product_info=product_info,
+                    origin=transfer.origin.name,
+                    destiny=transfer.destiny.name,
+                    approver=approver.name
+                ),
                 app_name=APP_NAME,
-                notification_type=SEVERITY_TYPES['INFO'],
-                data=data
+                notification_type=NOTIFICATION_TYPE,
+                data=data,
+                recipient_ids=recipient_ids
             )
-                
+            
         except Exception as e:
             logger.error(f"Error sending transfer approval notification: {str(e)}")
             raise
@@ -201,3 +198,6 @@ class TransferNotificationHandler(BaseNotificationHandler):
         except Exception as e:
             logger.error(f"Error sending transfer completion notification: {str(e)}")
             raise
+
+# Register the signal handler manually
+post_save.connect(TransferNotificationHandler.notify_transfer_created, sender=Transfer)

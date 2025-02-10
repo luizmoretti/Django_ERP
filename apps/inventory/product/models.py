@@ -23,6 +23,15 @@ class Product(BaseModel):
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, related_name='products', help_text='The brand of the product')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products', help_text='The category of the product')
     
+    # Price fields
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text='Current price of the product'
+    )
+    
+    
     # Trash Hold Fields for warehouse low_stock notification
     min_quantity = models.PositiveIntegerField(default=0, help_text='The minimum quantity of the product that should be in stock')
     max_quantity = models.PositiveIntegerField(default=0, help_text='The maximum quantity of the product that should be in stock')

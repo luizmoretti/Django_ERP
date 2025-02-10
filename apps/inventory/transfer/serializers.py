@@ -19,12 +19,13 @@ class TransferItemSerializer(serializers.ModelSerializer):
         model: TransferItems
         fields: ['product', 'quantity']
     """
-    product = serializers.SlugRelatedField(slug_field='name', queryset=Product.objects.all())
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, required=True)
+    _product = serializers.CharField(source='product.name', read_only=True)
     quantity = serializers.IntegerField(min_value=1)
     
     class Meta:
         model = TransferItems
-        fields = ['product', 'quantity']
+        fields = ['product', '_product', 'quantity']
 
 class TransferSerializer(serializers.ModelSerializer):
     """Serializer for Transfer model
@@ -61,15 +62,18 @@ class TransferSerializer(serializers.ModelSerializer):
         required=True,
         write_only=True
     )
+    # Read-only field for origin warehouse name
+    _origin = serializers.CharField(source='origin.name', read_only=True)
+    
+    
     destiny = serializers.PrimaryKeyRelatedField(
         queryset=Warehouse.objects.all(),
         required=True,
         write_only=True
     )
+    # Read-only field for destiny warehouse name
+    _destiny = serializers.CharField(source='destiny.name', read_only=True)
     
-    # Read-only fields for warehouse names
-    origin_name = serializers.CharField(source='origin.name', read_only=True)
-    destiny_name = serializers.CharField(source='destiny.name', read_only=True)
     
     items = TransferItemSerializer(many=True, read_only=True)
     items_data = serializers.ListField(
@@ -87,13 +91,17 @@ class TransferSerializer(serializers.ModelSerializer):
         model = Transfer
         fields = [
             'id',
-            'companie',
+            
             'origin',
-            'origin_name',
+            '_origin',
+            
             'destiny',
-            'destiny_name',
+            '_destiny',
+            
             'items',
             'items_data',
+            
+            'companie',
             'created_at',
             'updated_at',
             'created_by',
@@ -105,9 +113,10 @@ class TransferSerializer(serializers.ModelSerializer):
             'created_at', 
             'updated_at', 
             'created_by', 
-            'updated_by', 
-            'origin_name', 
-            'destiny_name'
+            'updated_by',
+            'items', 
+            '_origin',
+            '_destiny'
         ]
     
     def get_created_by(self, obj) -> str | None:
@@ -121,7 +130,7 @@ class TransferSerializer(serializers.ModelSerializer):
             str | None: Creator's full name, or None if not available
         """
         if obj.created_by:
-            return obj.created_by.get_full_name()
+            return obj.created_by.user.get_full_name()
         return None
     
     def get_updated_by(self, obj) -> str | None:
@@ -135,16 +144,16 @@ class TransferSerializer(serializers.ModelSerializer):
             str | None: Last updater's full name, or None if not available
         """
         if obj.updated_by:
-            return obj.updated_by.get_full_name()
+            return obj.updated_by.user.get_full_name()
         return None
     
-    def get_origin_name(self, obj) -> str:
+    def get__origin(self, obj) -> str:
         """
         Retrieves origin warehouse name
         """
         return obj.origin.name
     
-    def get_destiny_name(self, obj) -> str:
+    def get__destiny(self, obj) -> str:
         """
         Retrieves destination warehouse name
         """

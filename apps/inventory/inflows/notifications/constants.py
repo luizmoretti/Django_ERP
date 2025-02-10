@@ -1,47 +1,41 @@
 from django.utils.translation import gettext
 
 # App name for notifications
-APP_NAME = "outflows"
+APP_NAME = "inflows"
 
 # Notification types
 NOTIFICATION_TYPE = {
-    'OUTFLOW_CREATED': 'outflow_created',
-    'OUTFLOW_APPROVED': 'outflow_approved',
-    'OUTFLOW_REJECTED': 'outflow_rejected',
-    'OUTFLOW_CANCELLED': 'outflow_cancelled',
-    'OUTFLOW_DELIVERED': 'outflow_delivered'
+    'INFLOW_RECEIVED': 'inflow_received',
+    'INFLOW_APPROVED': 'inflow_approved',
+    'INFLOW_REJECTED': 'inflow_rejected',
+    'INFLOW_CANCELLED': 'inflow_cancelled'
 }
 
 # Notification titles
 NOTIFICATION_TITLES = {
-    NOTIFICATION_TYPE['OUTFLOW_CREATED']: gettext("New Outflow Created"),
-    NOTIFICATION_TYPE['OUTFLOW_APPROVED']: gettext("Outflow Approved"),
-    NOTIFICATION_TYPE['OUTFLOW_REJECTED']: gettext("Outflow Rejected"),
-    NOTIFICATION_TYPE['OUTFLOW_CANCELLED']: gettext("Outflow Cancelled"),
-    NOTIFICATION_TYPE['OUTFLOW_DELIVERED']: gettext("Outflow Delivered")
+    NOTIFICATION_TYPE['INFLOW_RECEIVED']: gettext("New Inflow Received"),
+    NOTIFICATION_TYPE['INFLOW_APPROVED']: gettext("Inflow Approved"),
+    NOTIFICATION_TYPE['INFLOW_REJECTED']: gettext("Inflow Rejected"),
+    NOTIFICATION_TYPE['INFLOW_CANCELLED']: gettext("Inflow Cancelled")
 }
 
 # Notification messages
 NOTIFICATION_MESSAGES = {
-    NOTIFICATION_TYPE['OUTFLOW_CREATED']: gettext(
-        "New outflow created: %(quantity)d units of %(product)s "
-        "for %(customer)s. Total value: $%(value).2f"
+    NOTIFICATION_TYPE['INFLOW_RECEIVED']: gettext(
+        "New inflow received: %(quantity)d units of %(product)s "
+        "from %(supplier)s. Total value: $%(value).2f"
     ),
-    NOTIFICATION_TYPE['OUTFLOW_APPROVED']: gettext(
-        "Outflow approved: %(quantity)d units of %(product)s "
-        "for %(customer)s. Total value: $%(value).2f"
+    NOTIFICATION_TYPE['INFLOW_APPROVED']: gettext(
+        "Inflow approved: %(quantity)d units of %(product)s "
+        "from %(supplier)s. Total value: $%(value).2f"
     ),
-    NOTIFICATION_TYPE['OUTFLOW_REJECTED']: gettext(
-        "Outflow rejected: %(quantity)d units of %(product)s "
-        "for %(customer)s. Reason: %(reason)s"
+    NOTIFICATION_TYPE['INFLOW_REJECTED']: gettext(
+        "Inflow rejected: %(quantity)d units of %(product)s "
+        "from %(supplier)s. Reason: %(reason)s"
     ),
-    NOTIFICATION_TYPE['OUTFLOW_CANCELLED']: gettext(
-        "Outflow cancelled: %(quantity)d units of %(product)s "
-        "for %(customer)s. Reason: %(reason)s"
-    ),
-    NOTIFICATION_TYPE['OUTFLOW_DELIVERED']: gettext(
-        "Outflow delivered: %(quantity)d units of %(product)s "
-        "to %(customer)s. Delivery date: %(delivery_date)s"
+    NOTIFICATION_TYPE['INFLOW_CANCELLED']: gettext(
+        "Inflow cancelled: %(quantity)d units of %(product)s "
+        "from %(supplier)s. Reason: %(reason)s"
     )
 }
 
@@ -49,11 +43,4 @@ NOTIFICATION_MESSAGES = {
 SEVERITY_TYPES = {
     'INFO': 'info',
     'WARNING': 'warning'
-}
-
-# User types that should receive notifications
-RECIPIENT_TYPES = {
-    'DEFAULT': ['Stock_Controller', 'Manager'],
-    'APPROVAL': ['Manager', 'Owner', 'CEO'],
-    'DELIVERY': ['Stock_Controller', 'Manager', 'Delivery_Staff']
 }
