@@ -41,8 +41,8 @@ def send_notification(
             notification = Notification.objects.create(
                 recipient=user,
                 title=title,
-                message=message,
                 app_name=app_name,
+                message=message,
                 notification_type=notification_type,
                 data=data or {}
             )
