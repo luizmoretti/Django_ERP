@@ -106,9 +106,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 "css_class": css_class
             }
             
+            logger.debug(f"Preparing to send notification: {message_data}")
             await self.send(text_data=json.dumps(message_data))
-            logger.debug(f"Sent notification to {self.user.email}: {message_data}")
+            logger.info(f"Successfully sent notification to {self.user.email}")
             
         except Exception as e:
-            logger.error(f"Message sending error: {str(e)}")
+            logger.error(f"Error sending notification: {str(e)}", exc_info=True)
             await self.close(code=4005)
