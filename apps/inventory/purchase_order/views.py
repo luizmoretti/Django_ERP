@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from .models import PurchaseOrder
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
+from .models import PurchaseOrder, PurchaseOrderItem
 from .serializers import PurchaseOrderSerializer
+from .services import PurchaseOrderService, PurchaseOrderItemService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class PurchaseOrderBaseView:
         description='Retrieve a list of all purchase orders for authenticated user'
     )
 )
-class PurchaseOrderListView(PurchaseOrderBaseView, generics.ListAPIView):
+class PurchaseOrderListView(generics.ListAPIView, PurchaseOrderBaseView):
     """List all purchase orders
     
     Returns a list of purchase orders that belong to the user's company.
@@ -259,7 +260,16 @@ class PurchaseOrderUpdateView(PurchaseOrderBaseView, generics.UpdateAPIView):
         tags=['Inventory - Purchase Orders'],
         operation_id='Delete Purchase Order',
         summary='Delete purchase order',
-        description='Delete a purchase order and all its items'
+        description='Delete a purchase order and all its items',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the purchase order to delete',
+                required=True
+            )
+        ]
     )
 )
 class PurchaseOrderDeleteView(PurchaseOrderBaseView, generics.DestroyAPIView):
@@ -279,5 +289,405 @@ class PurchaseOrderDeleteView(PurchaseOrderBaseView, generics.DestroyAPIView):
             logger.error(f"Error deleting purchase order: {str(e)}")
             return Response(
                 {"error": f"{str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Approve Purchase Order',
+        summary='Approve a purchase order',
+        description='Approve a pending purchase order',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the purchase order to approve',
+                required=True
+            )
+        ],
+        responses={
+            200: PurchaseOrderSerializer,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Apenas pedidos pendentes podem ser aprovados'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderApproveView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Approve a purchase order"""
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                order = self.get_object()
+                logger.info(f"Attempting to approve order {order.id}")
+                logger.info(f"User permissions: {request.user.get_all_permissions()}")
+                logger.info(f"User groups: {request.user.groups.all()}")
+                logger.info(f"User type: {request.user.user_type}")
+                logger.info(f"Order status: {order.status}")
+                logger.info(f"Order company: {order.companie}")
+                logger.info(f"User company: {request.user.employeer_user.companie}")
+                logger.info(f"User employeer: {request.user.employeer_user}")
+                updated_order = PurchaseOrderService.approve_order(
+                    order=order,
+                    user=request.user
+                )
+                serializer = self.get_serializer(updated_order)
+                return Response(serializer.data)
+        except ValidationError as e:
+            logger.error(f"Validation error approving order: {str(e)}")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error approving purchase order: {str(e)}", exc_info=True)
+            return Response(
+                {"error": "Error interno ao aprovar pedido"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Reject Purchase Order',
+        summary='Reject a purchase order',
+        description='Reject a pending purchase order',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'reason': {
+                        'type': 'string',
+                        'description': 'Reason for rejection',
+                        'required': True
+                    }
+                }
+            }
+        },
+        responses={
+            200: PurchaseOrderSerializer,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Apenas pedidos pendentes podem ser rejeitados'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderRejectView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Reject a purchase order"""
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            order = self.get_object()
+            reason = request.data.get('reason')
+            if not reason:
+                return Response(
+                    {"error": "É necessário informar o motivo da rejeição"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            updated_order = PurchaseOrderService.reject_order(
+                order_id=order.id,
+                user=request.user,
+                reason=reason
+            )
+            serializer = self.get_serializer(updated_order)
+            return Response(serializer.data)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error rejecting purchase order: {str(e)}")
+            return Response(
+                {"error": "Error interno ao rejeitar pedido"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Cancel Purchase Order',
+        summary='Cancel a purchase order',
+        description='Cancel a pending or approved purchase order',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'reason': {
+                        'type': 'string',
+                        'description': 'Reason for cancellation',
+                        'required': True
+                    }
+                }
+            }
+        },
+        responses={
+            200: PurchaseOrderSerializer,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Apenas pedidos pendentes ou aprovados podem ser cancelados'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderCancelView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Cancel a purchase order"""
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            order = self.get_object()
+            reason = request.data.get('reason')
+            if not reason:
+                return Response(
+                    {"error": "É necessário informar o motivo do cancelamento"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            updated_order = PurchaseOrderService.cancel_order(
+                order_id=order.id,
+                user=request.user,
+                reason=reason
+            )
+            serializer = self.get_serializer(updated_order)
+            return Response(serializer.data)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error canceling purchase order: {str(e)}")
+            return Response(
+                {"error": "Error interno ao cancelar pedido"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Add Item to Purchase Order',
+        summary='Add item to purchase order',
+        description='Add a new item to a pending purchase order',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'product': {
+                        'type': 'string',
+                        'description': 'Product UUID',
+                        'format': 'uuid',
+                        'required': True
+                    },
+                    'quantity': {
+                        'type': 'integer',
+                        'description': 'Quantity to order',
+                        'minimum': 1,
+                        'required': True
+                    },
+                    'unit_price': {
+                        'type': 'number',
+                        'description': 'Price per unit',
+                        'format': 'decimal',
+                        'minimum': 0,
+                        'required': True
+                    }
+                }
+            }
+        },
+        responses={
+            201: PurchaseOrderSerializer,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Itens só podem ser adicionados a pedidos pendentes'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderAddItemView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Add item to purchase order"""
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            order = self.get_object()
+            item = PurchaseOrderItemService.add_item(
+                order_id=order.id,
+                product_id=request.data.get('product'),
+                quantity=request.data.get('quantity'),
+                unit_price=request.data.get('unit_price'),
+                user=request.user
+            )
+            # Recarrega o pedido para incluir o novo item
+            order.refresh_from_db()
+            serializer = self.get_serializer(order)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error adding item to purchase order: {str(e)}")
+            return Response(
+                {"error": "Error interno ao adicionar item"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    put=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Update Purchase Order Item',
+        summary='Update purchase order item',
+        description='Update quantity or price of a purchase order item',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'quantity': {
+                        'type': 'integer',
+                        'description': 'New quantity',
+                        'minimum': 1,
+                        'required': False
+                    },
+                    'unit_price': {
+                        'type': 'number',
+                        'description': 'New price per unit',
+                        'format': 'decimal',
+                        'minimum': 0,
+                        'required': False
+                    }
+                }
+            }
+        },
+        responses={
+            200: PurchaseOrderSerializer,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Itens só podem ser atualizados em pedidos pendentes'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderUpdateItemView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Update purchase order item"""
+    queryset = PurchaseOrderItem.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def put(self, request, *args, **kwargs):
+        try:
+            item = self.get_object()
+            updated_item = PurchaseOrderItemService.update_item(
+                item_id=item.id,
+                quantity=request.data.get('quantity'),
+                unit_price=request.data.get('unit_price'),
+                user=request.user
+            )
+            # Recarrega o pedido para incluir as alterações
+            order = updated_item.purchase_order
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error updating purchase order item: {str(e)}")
+            return Response(
+                {"error": "Error interno ao atualizar item"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    delete=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Remove Purchase Order Item',
+        summary='Remove item from purchase order',
+        description='Remove an item from a pending purchase order',
+        responses={
+            204: None,
+            400: {
+                'description': 'Invalid request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Itens só podem ser removidos de pedidos pendentes'
+                    }
+                }
+            }
+        }
+    )
+)
+class PurchaseOrderRemoveItemView(PurchaseOrderBaseView, generics.GenericAPIView):
+    """Remove item from purchase order"""
+    queryset = PurchaseOrderItem.objects.all()
+    serializer_class = PurchaseOrderSerializer
+    
+    def delete(self, request, *args, **kwargs):
+        try:
+            item = self.get_object()
+            PurchaseOrderItemService.remove_item(
+                item_id=item.id,
+                user=request.user
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error removing purchase order item: {str(e)}")
+            return Response(
+                {"error": "Error interno ao remover item"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
