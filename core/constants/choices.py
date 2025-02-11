@@ -211,3 +211,12 @@ MOVEMENTS_STATUS_CHOICES = [
         ('cancelled', gettext('Cancelled')),
         ('completed', gettext('Completed'))
     ]
+
+PURCHASE_ORDER_STATUS_CHOICES = [
+    ('draft', gettext('Draft')),
+    ('pending', gettext('Pending')),
+    ('approved', gettext('Approved')),
+    ('rejected', gettext('Rejected')),
+    ('cancelled', gettext('Cancelled')),
+    ('completed', gettext('Completed'))
+]
