@@ -14,6 +14,8 @@ Key Features:
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 from core.constants.choices import USER_TYPE_CHOICES
 from django.apps import apps
 import logging
@@ -29,34 +31,28 @@ class Command(BaseCommand):
     
     help = "Setup user groups and assign permissions"
 
-    def has_permission(self, request, view):
+    def __get_custom_permissions(self, app_label):
         """
-        Check if a user has permission to perform a specific action.
+        Get custom permissions defined in models for a specific app.
         
         Args:
-            request: The HTTP request object
-            view: The view being accessed
+            app_label (str): The app label to get permissions from
             
         Returns:
-            bool: True if user has permission, False otherwise
+            list: List of custom permission codenames
         """
-        user_type = request.user.groups.first().name if request.user.groups.exists() else None
-        logger.debug(f"Checking permissions for user type: {user_type}")
+        custom_permissions = []
+        try:
+            app_config = apps.get_app_config(app_label)
+            for model in app_config.get_models():
+                if hasattr(model._meta, 'permissions'):
+                    model_perms = [perm[0] for perm in model._meta.permissions]
+                    custom_permissions.extend(model_perms)
+                    logger.debug(f"Found custom permissions for {model.__name__}: {model_perms}")
+        except Exception as e:
+            logger.error(f"Error getting custom permissions for app {app_label}: {str(e)}")
         
-        model_permission_codename = self.__get_model_permission_codename(
-            method=request.method,
-            view=view,
-            user_type=user_type
-        )
-        
-        if model_permission_codename is None:
-            logger.info(f"Permission not required for {request.method} in {view.__class__.__name__}")
-            return True
-            
-        has_perm = request.user.has_perm(model_permission_codename)
-        if not has_perm:
-            logger.warning(f"Access denied: User {request.user} does not have permission {model_permission_codename}")
-        return has_perm
+        return custom_permissions
 
     def __get_allowed_actions(self, group_name):
         """
@@ -72,13 +68,24 @@ class Command(BaseCommand):
         
         # Define specific permissions per app for each group
         group_permissions = {
-            "Owner": lambda app_label: ["view", "add", "change", "delete"],  # Full access to all apps
+            "Owner": lambda app_label: (
+                ["view", "add", "change", "delete"] + 
+                (self.__get_custom_permissions(app_label) if app_label == "purchase_order" else [])
+            ),
             
-            "CEO": lambda app_label: ["view", "add", "change", "delete"],  # Full access to all apps
+            "CEO": lambda app_label: (
+                ["view", "add", "change", "delete"] + 
+                (self.__get_custom_permissions(app_label) if app_label == "purchase_order" else [])
+            ),
             
-            "Admin": lambda app_label: ["view", "add", "change", "delete"],  # Full access to all apps
+            "Admin": lambda app_label: (
+                ["view", "add", "change", "delete"] + 
+                (self.__get_custom_permissions(app_label) if app_label == "purchase_order" else [])
+            ),
             
             "Manager": lambda app_label: (
+                (["view", "add", "change", "delete"] + self.__get_custom_permissions(app_label))
+                if app_label == "purchase_order" else
                 ["view", "add", "change", "delete"] if app_label in [
                     "employeers", "hr", "warehouse", "inventory", "categories",
                     "brand", "supplier", "product", "customers"
@@ -89,7 +96,10 @@ class Command(BaseCommand):
                 ] else []
             ),
             
-            "Stock controller": lambda app_label: (
+            "Stock_Controller": lambda app_label: (
+                (["view", "add", "change"] + 
+                 ["can_add_item", "can_update_item", "can_remove_item"])
+                if app_label == "purchase_order" else
                 ["view", "add", "change"] if app_label in [
                     "inflows", "outflows", "transfers", "products",
                     "suppliers", "barcodes"
@@ -98,17 +108,46 @@ class Command(BaseCommand):
                 ] else []
             ),
             
-            "Stockist": lambda app_label: (
-                ["view"] if app_label in ["products", "customers", "suppliers"]
-                else ["view", "add", "change"] if app_label in ["inflows", "outflows", "transfers"]
-                else ["view", "add"] if app_label in ["barcodes", "stores"]
-                else []
-            ),
+            "Stocker": lambda app_label: ["view"] if app_label in [
+                "inflows", "outflows", "transfers", "products",
+                "suppliers", "barcodes", "stores", "categories", "brands"
+            ] else [],
             
-            "Deliverer": lambda app_label: (
-                ["view", "change"] if app_label == "deliveries"
-                else []
-            )
+            "Employee": lambda app_label: ["view"] if app_label in [
+                "employeers", "hr", "warehouse", "inventory"
+            ] else [],
+            
+            "HR": lambda app_label: ["view", "add", "change", "delete"] if app_label in [
+                "employeers", "hr"
+            ] else ["view"] if app_label in [
+                "warehouse", "inventory"
+            ] else [],
+            
+            "Accountant": lambda app_label: ["view"] if app_label in [
+                "inflows", "outflows", "transfers", "products",
+                "suppliers", "barcodes", "stores", "categories", "brands",
+                "employeers", "hr", "warehouse", "inventory"
+            ] else [],
+            
+            "Salesman": lambda app_label: ["view"] if app_label in [
+                "products", "categories", "brands", "customers"
+            ] else [],
+            
+            "Driver": lambda app_label: ["view"] if app_label in [
+                "vehicles", "deliveries"
+            ] else [],
+            
+            "Deliveryman": lambda app_label: ["view"] if app_label in [
+                "deliveries"
+            ] else [],
+            
+            "Customer": lambda app_label: ["view"] if app_label in [
+                "products", "categories", "brands"
+            ] else [],
+            
+            "Supplier": lambda app_label: ["view"] if app_label in [
+                "products", "categories", "brands"
+            ] else []
         }
         
         permission_getter = group_permissions.get(group_name)
@@ -118,182 +157,77 @@ class Command(BaseCommand):
             
         return permission_getter
 
-    def __get_model_permission_codename(self, method, view, user_type=None):
-        """
-        Generate permission codename based on HTTP method and view.
-        
-        Args:
-            method (str): HTTP method (GET, POST, etc.)
-            view: The view being accessed
-            user_type (str, optional): Type of user
-            
-        Returns:
-            str: Permission codename or None if not applicable
-        """
-        logger.debug(f"Generating permission codename for method {method} and view {view.__class__.__name__}")
-        
-        if hasattr(view, "queryset") and view.queryset is not None:
-            model = view.queryset.model
-            model_name = model._meta.model_name
-            app_label = model._meta.app_label
-            
-            # Get specific permissions for the current group's app
-            permission_getter = self.__get_allowed_actions(user_type)
-            actions = permission_getter(app_label)
-            
-            action = self.__get_action_sufix(method, actions)
-            
-            if action:
-                permission = f"{app_label}.{action}_{model_name}"
-                logger.debug(f"Permission codename generated: {permission}")
-                return permission
-            
-            logger.debug(f"No corresponding action for method {method}")
-            return None
-            
-        logger.debug("View has no queryset defined")
-        return None
-
-    def __get_action_sufix(self, method, allowed_actions):
-        """
-        Get the corresponding action suffix for an HTTP method.
-        
-        Args:
-            method (str): HTTP method
-            allowed_actions (list): List of allowed actions
-            
-        Returns:
-            str: Action suffix or None if not allowed
-        """
-        method_map = {
-            "GET": "view",
-            "POST": "add",
-            "PUT": "change",
-            "PATCH": "change",
-            "DELETE": "delete",
-            "OPTIONS": "view",
-            "HEAD": "view",
-        }
-        action = method_map.get(method)
-        return action if action in allowed_actions else None
-
     def handle(self, *args, **kwargs):
         """
         Main command handler that sets up groups and permissions.
         Creates user groups and assigns appropriate permissions based on
         predefined mappings.
         """
-        logger.info("Starting to configure groups and permissions")
+        logger.info("Starting permission groups setup")
         
-        # App definitions for each user type
-        apps_mapping = {
-            # Executive Level
-            "Owner": [
-            'accounts', 'companies', 'customers', 'employeers', 'hr', 'warehouse',
-            'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 
-            'outflows', 'transfer', 'deliveries', 'vehicles'
-            ],
+        # Get all installed apps that start with 'apps.'
+        installed_apps = [
+            app.split('.')[-1] for app in settings.INSTALLED_APPS 
+            if app.startswith('apps.')
+        ]
+        
+        for group_name, _ in USER_TYPE_CHOICES:
+            logger.info(f"Setting up group: {group_name}")
             
-            "CEO": ['companies', 'customers', 'employeers', 'hr', 'warehouse',
-                    'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 'outflows', 'transfer', 'deliveries', 'vehicles'],
-            
-            "Admin": ['accounts', 'companies', 'customers', 'employeers', 'hr', 'warehouse',
-                      'inventory', 'product', 'supplier', 'brand', 'categories', 'inflows', 'outflows', 'transfer', 'deliveries', 'vehicles'],
-            
-            # Management Level
-            "Manager": [ "employeers", "hr", "warehouse", "inventory", "categories",
-            "brand", "supplier", "product", "customers", "inflows", "outflows", "transfer", "deliveries", "vehicles"
-            ],
-            
-            # HR Level
-            "HR": [],
-            
-            # Accountant Level
-            "Accountant": [],
-            
-            # Operational Level
-            "Employee": [],
-            "Stock_Controller": [],
-            "Stocker": [],
-            "Salesman": [],
-            "Driver": [],
-            "Deliveryman": [],
-            
-            # External Users
-            "Customer": [],
-            "Supplier": []
-        }
-
-        def get_filtered_permissions(apps, group_name):
-            """
-            Get filtered permissions for a specific group and set of apps.
-            
-            Args:
-                apps (list): List of app names
-                group_name (str): Name of the group
-                
-            Returns:
-                list: List of Permission objects
-            """
-            logger.debug(f"Searching for group {group_name} permissions in apps: {apps}")
-            permission_getter = self.__get_allowed_actions(group_name)
-            
-            all_permissions = []
-            for app in apps:
-                allowed_actions = permission_getter(app)
-                if allowed_actions:
-                    app_permissions = Permission.objects.filter(
-                        content_type__app_label=app
-                    ).filter(
-                        codename__regex=r'^(' + '|'.join(allowed_actions) + ')_'
-                    )
-                    all_permissions.extend(app_permissions)
-            
-            logger.debug(f"Total permissions found: {len(all_permissions)}")
-            return all_permissions
-
-        if not USER_TYPE_CHOICES:
-            logger.error("No user type defined in the system")
-            self.stdout.write(self.style.ERROR("No user types defined."))
-            return
-
-        total_groups = len(USER_TYPE_CHOICES)
-        logger.info(f"Processing {total_groups} user groups")
-
-        for user_type, group_name in USER_TYPE_CHOICES:
-            logger.info(f"Processing group: {group_name}")
             try:
+                # Create or get the group
                 group, created = Group.objects.get_or_create(name=group_name)
                 if created:
-                    logger.info(f"New group created: {group_name}")
-                else:
-                    logger.info(f"Existing group updated: {group_name}")
-
+                    logger.info(f"Created new group: {group_name}")
+                
+                # Clear existing permissions
                 group.permissions.clear()
-                logger.debug(f"Previous permissions removed from the group {group_name}")
-
-                apps = apps_mapping.get(group_name, [])
-                if not apps:
-                    logger.warning(f"No app defined for the group {group_name}")
-                    continue
-
-                permissions = get_filtered_permissions(apps, group_name)
-
-                if permissions:
-                    permission_count = len(permissions)
-                    group.permissions.add(*permissions)
-                    logger.info(f"Added {permission_count} permissions to the group {group_name}")
+                logger.debug(f"Cleared existing permissions for group: {group_name}")
+                
+                # Get allowed actions for this group
+                allowed_actions = self.__get_allowed_actions(group_name)
+                
+                for app_label in installed_apps:
+                    # Get all permissions for this app
+                    content_types = ContentType.objects.filter(app_label=app_label)
+                    app_permissions = Permission.objects.filter(content_type__in=content_types)
                     
-                    # Detailed permission logging for debugging
-                    for perm in permissions:
-                        logger.debug(f"Permission added to {group_name}: {perm.codename}")
-                        
+                    # Get allowed permission codenames for this app
+                    allowed_codenames = allowed_actions(app_label)
+                    
+                    # Add permissions that match the allowed codenames
+                    permissions_to_add = []
+                    for content_type in content_types:
+                        model = content_type.model_class()
+                        if model:
+                            for action in allowed_codenames:
+                                if action.startswith(('can_', 'view_', 'add_', 'change_', 'delete_')):
+                                    codename = action
+                                else:
+                                    codename = f"{action}_{model._meta.model_name}"
+                                permissions_to_add.append(codename)
+                    
+                    if permissions_to_add:
+                        matching_permissions = app_permissions.filter(codename__in=permissions_to_add)
+                        if matching_permissions:
+                            group.permissions.add(*matching_permissions)
+                            logger.debug(
+                                f"Added {matching_permissions.count()} permissions for app "
+                                f"{app_label} to group {group_name}"
+                            )
+                            
+                            # Log individual permissions for debugging
+                            for perm in matching_permissions:
+                                logger.debug(f"Added permission to {group_name}: {perm.codename}")
+                
                 self.stdout.write(
-                    self.style.SUCCESS(f"Successfully processed group: {group_name}")
+                    self.style.SUCCESS(f"Successfully configured group: {group_name}")
                 )
                 
             except Exception as e:
-                logger.error(f"Error processing group {group_name}: {str(e)}")
+                logger.error(f"Error configuring group {group_name}: {str(e)}")
                 self.stdout.write(
-                    self.style.ERROR(f"Error processing group {group_name}: {str(e)}")
+                    self.style.ERROR(f"Error configuring group {group_name}: {str(e)}")
                 )
+        
+        logger.info("Permission groups setup completed successfully")
