@@ -34,7 +34,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
-    type = serializers.CharField(read_only=True, default='Employee')
+    user_type = serializers.CharField(read_only=True, default='Employee')
     date_joined = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     is_active = serializers.BooleanField(required=False, read_only=True, default=True)
     last_login = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
@@ -45,7 +45,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
         model = NormalUser
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'type', 'date_joined', 'is_active', 'last_login', 'img', 'ip'
+            'user_type', 'date_joined', 'is_active', 'last_login', 'img', 'ip'
         ]
 
 
