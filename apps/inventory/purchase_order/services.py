@@ -12,12 +12,12 @@ class PurchaseOrderService:
     """Service for handling purchase order operations"""
     
     @staticmethod
-    def approve_order(order_id, user):
+    def approve_order(order, user):
         """
         Aprova um pedido de compra
         
         Args:
-            order_id: ID do pedido de compra
+            order: Pedido de compra a ser aprovado
             user: Usuário que está aprovando o pedido
             
         Returns:
@@ -27,17 +27,14 @@ class PurchaseOrderService:
             ValidationError: Se o pedido não puder ser aprovado
         """
         with transaction.atomic():
-            order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
-            
-            if order.status != PurchaseOrder.Status.PENDING:
+            if order.status != 'pending':
                 raise ValidationError("Apenas pedidos pendentes podem ser aprovados")
                 
             if not user.has_perm('purchase_order.can_approve_order'):
                 raise ValidationError("Usuário não tem permissão para aprovar pedidos")
                 
-            order.status = PurchaseOrder.Status.APPROVED
-            order.approved_by = user
-            order.approved_at = timezone.now()
+            order.status = 'approved'
+            order.updated_by = user.employeer_user
             order.save()
             
             return order
@@ -61,16 +58,15 @@ class PurchaseOrderService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status != PurchaseOrder.Status.PENDING:
+            if order.status != 'pending':
                 raise ValidationError("Apenas pedidos pendentes podem ser rejeitados")
                 
             if not user.has_perm('purchase_order.can_reject_order'):
                 raise ValidationError("Usuário não tem permissão para rejeitar pedidos")
                 
-            order.status = PurchaseOrder.Status.REJECTED
-            order.rejected_by = user
-            order.rejected_at = timezone.now()
-            order.rejection_reason = reason
+            order.status = 'rejected'
+            order.updated_by = user.employeer_user
+            order.notes = reason
             order.save()
             
             return order
@@ -94,14 +90,14 @@ class PurchaseOrderService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status not in [PurchaseOrder.Status.PENDING, PurchaseOrder.Status.APPROVED]:
+            if order.status not in ['pending', 'approved']:
                 raise ValidationError("Apenas pedidos pendentes ou aprovados podem ser cancelados")
                 
             if not user.has_perm('purchase_order.can_cancel_order'):
                 raise ValidationError("Usuário não tem permissão para cancelar pedidos")
                 
-            order.status = PurchaseOrder.Status.CANCELLED
-            order.cancelled_by = user
+            order.status = 'cancelled'
+            order.cancelled_by = user.employeer_user
             order.cancelled_at = timezone.now()
             order.cancellation_reason = reason
             order.save()
@@ -132,7 +128,7 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status != PurchaseOrder.Status.PENDING:
+            if order.status != 'pending':
                 raise ValidationError("Itens só podem ser adicionados a pedidos pendentes")
                 
             if not user.has_perm('purchase_order.can_add_item'):
@@ -168,7 +164,7 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
-            if item.purchase_order.status != PurchaseOrder.Status.PENDING:
+            if item.purchase_order.status != 'pending':
                 raise ValidationError("Itens só podem ser atualizados em pedidos pendentes")
                 
             if not user.has_perm('purchase_order.can_update_item'):
@@ -198,7 +194,7 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
-            if item.purchase_order.status != PurchaseOrder.Status.PENDING:
+            if item.purchase_order.status != 'pending':
                 raise ValidationError("Itens só podem ser removidos de pedidos pendentes")
                 
             if not user.has_perm('purchase_order.can_remove_item'):
