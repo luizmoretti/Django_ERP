@@ -2,8 +2,10 @@
 Purchase Order notification handlers
 """
 import logging
+from contextlib import contextmanager
+from threading import Lock
 from apps.notifications.base import BaseNotificationHandler
-from django.db.models.signals import pre_save, post_save, post_delete
+from django.db.models.signals import pre_save, post_save, pre_delete, post_delete
 from django.dispatch import receiver
 from ..models import PurchaseOrder, PurchaseOrderItem
 from ..services import PurchaseOrderItemChangeService
@@ -19,6 +21,30 @@ from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
+# Lock para sincronização de acesso ao set
+_orders_lock = Lock()
+_orders_being_deleted = set()
+
+def _mark_order_for_deletion(order_id):
+    """
+    Marca um pedido para deleção de forma thread-safe
+    """
+    with _orders_lock:
+        _orders_being_deleted.add(str(order_id))
+
+def _unmark_order_for_deletion(order_id):
+    """
+    Remove a marcação de deleção de forma thread-safe
+    """
+    with _orders_lock:
+        _orders_being_deleted.discard(str(order_id))
+
+def _is_order_being_deleted(order_id):
+    """
+    Verifica de forma thread-safe se um pedido está sendo deletado.
+    """
+    with _orders_lock:
+        return str(order_id) in _orders_being_deleted
 
 class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     """Handler for purchase order notifications."""
@@ -189,29 +215,43 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
         if not created:  # Se não é um novo item, ignora
             return
             
-        # Verifica se a ordem foi criada há mais de 1 segundo
-        # Isso indica que é uma ordem existente, não uma nova ordem sendo criada com seus itens
-        if (instance.purchase_order.created_at - instance.created_at).total_seconds() > 1:
+        def send_notification():
             try:
+                # Recarrega o item para ter certeza que temos os dados mais recentes
+                item = PurchaseOrderItem.objects.select_related(
+                    'purchase_order', 
+                    'purchase_order__supplier',
+                    'product'
+                ).get(pk=instance.pk)
+                
+                # Verifica se o item está sendo criado junto com o pedido
+                # Se o pedido tiver apenas este item, significa que está sendo criado agora
+                items_count = PurchaseOrderItem.objects.filter(
+                    purchase_order=item.purchase_order
+                ).count()
+                
+                if items_count <= 1:
+                    return
+                
                 handler = PurchaseOrderNotificationHandler()
                 recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES['ITEM'])
                 recipient_ids = [str(user.id) for user in recipients]
                 
                 data = {
                     'type': SEVERITY_TYPES['INFO'],
-                    'order_id': str(instance.purchase_order.id),
-                    'order_number': instance.purchase_order.order_number,
-                    'supplier': instance.purchase_order.supplier.name,
-                    'product': instance.product.name,
-                    'quantity': instance.quantity,
-                    'total': float(instance.purchase_order.total)
+                    'order_id': str(item.purchase_order.id),
+                    'order_number': item.purchase_order.order_number,
+                    'supplier': item.purchase_order.supplier.name,
+                    'product': item.product.name,
+                    'quantity': item.quantity,
+                    'total': float(item.purchase_order.total)
                 }
                 
                 message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['ITEM_ADDED']] % {
-                    'product': instance.product.name,
-                    'order_number': instance.purchase_order.order_number,
-                    'quantity': instance.quantity,
-                    'total': float(instance.purchase_order.total)
+                    'product': item.product.name,
+                    'order_number': item.purchase_order.order_number,
+                    'quantity': item.quantity,
+                    'total': float(item.purchase_order.total)
                 }
                 
                 handler.send_to_recipients(
@@ -222,10 +262,14 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     notification_type=SEVERITY_TYPES['INFO'],
                     data=data
                 )
-                
+                    
             except Exception as e:
                 logger.error(f"Error handling item added notification: {str(e)}")
                 raise
+        
+        # Agenda o envio da notificação para depois que a transação for commitada
+        from django.db import transaction
+        transaction.on_commit(send_notification)
     
     @staticmethod
     @receiver(pre_save, sender=PurchaseOrderItem, dispatch_uid='notify_item_changes')
@@ -329,13 +373,70 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
             raise
     
     @staticmethod
+    @receiver(pre_delete, sender=PurchaseOrder, dispatch_uid='mark_order_for_deletion')
+    def mark_order_for_deletion(sender, instance, **kwargs):
+        """
+        Marca o pedido para deleção antes que os itens comecem a ser deletados.
+        """
+        _mark_order_for_deletion(instance.id)
+        logger.debug(f"Marked order {instance.id} for deletion")
+    
+    
+    @staticmethod
+    @receiver(post_delete, sender=PurchaseOrder, dispatch_uid='notify_order_deleted')
+    def notify_order_deleted(sender, instance, **kwargs):
+        """
+        Notifica sobre deleção de pedido e remove a marcação.
+        Automaticamente chamado quando um PurchaseOrder é deletado.
+        """
+        try:
+            handler = PurchaseOrderNotificationHandler()
+            recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES['ORDER'])
+            recipient_ids = [str(user.id) for user in recipients]
+            
+            data = {
+                'type': SEVERITY_TYPES['WARNING'],
+                'order_id': str(instance.id),
+                'order_number': instance.order_number,
+                'supplier': instance.supplier.name
+            }
+            
+            message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['ORDER_DELETED']] % {
+                'order_number': instance.order_number,
+                'supplier': instance.supplier.name
+            }
+            
+            handler.send_to_recipients(
+                recipient_ids=recipient_ids,
+                title=NOTIFICATION_TITLES[NOTIFICATION_TYPE['ORDER_DELETED']],
+                message=message,
+                app_name=APP_NAME,
+                notification_type=SEVERITY_TYPES['WARNING'],
+                data=data
+            )
+                
+        except Exception as e:
+            logger.error(f"Error sending order deletion notification: {str(e)}")
+            raise
+        finally:
+            # Remove a marcação após o pedido ser completamente deletado
+            _unmark_order_for_deletion(instance.id)
+            logger.debug(f"Unmarked order {instance.id} from deletion")
+
+    @staticmethod
     @receiver(post_delete, sender=PurchaseOrderItem, dispatch_uid='notify_item_deleted')
     def notify_item_deleted(sender, instance, **kwargs):
         """
         Notifica sobre remoção de item do pedido.
         Automaticamente chamado quando um PurchaseOrderItem é deletado.
+        IMPORTANTE: Não notifica quando o item é deletado devido à deleção do pedido.
         """
         try:
+            # Usa a função thread-safe para verificar
+            if _is_order_being_deleted(instance.purchase_order.id):
+                logger.debug(f"Skipping item deletion notification for order {instance.purchase_order.id} as it is being deleted")
+                return
+            
             handler = PurchaseOrderNotificationHandler()
             recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES['ITEM'])
             recipient_ids = [str(user.id) for user in recipients]
