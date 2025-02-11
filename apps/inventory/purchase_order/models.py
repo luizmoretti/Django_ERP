@@ -59,7 +59,7 @@ class PurchaseOrder(BaseModel):
     notes = models.TextField(
         blank=True,
         null=True,
-        help_text='Additional notes about the order'
+        help_text='Additional notes about the order, including reason for rejection'
     )
     
     total = models.DecimalField(
@@ -73,6 +73,14 @@ class PurchaseOrder(BaseModel):
         verbose_name = 'Purchase Order'
         verbose_name_plural = 'Purchase Orders'
         ordering = ['-created_at']
+        permissions = [
+            ('can_approve_order', 'Can approve order'),
+            ('can_reject_order', 'Can reject order'),
+            ('can_cancel_order', 'Can cancel order'),
+            ('can_add_item', 'Can add item'),
+            ('can_update_item', 'Can update item'),
+            ('can_remove_item', 'Can remove item'),
+        ]
     
     def __str__(self):
         return f"Purchase Order #{self.order_number}"
