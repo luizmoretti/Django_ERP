@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'apps.inventory.transfer',
     'apps.inventory.brand',
     'apps.inventory.load_order',
+    'apps.inventory.purchase_order',
     
 ]
 
@@ -552,10 +553,11 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')],
+            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/3')],
         },
     },
 }
+
 ################################
 ########## CELERY CONFIG #######
 ################################
@@ -657,6 +659,9 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Outflows', 'description': 'Outflow management endpoints'},
         {'name': 'Inventory - Warehouse', 'description': 'Warehouse management endpoints'},
         {'name': 'Inventory - Load Orders', 'description': 'Load order management endpoints'},
+        {'name': 'Inventory - Purchase Orders', 'description': 'Purchase order management endpoints'},
+        {'name': 'Inventory - Products', 'description': 'Product management endpoints'},
+        {'name': 'Inventory - Suppliers', 'description': 'Supplier management endpoints'},
         
         # Reports
         
