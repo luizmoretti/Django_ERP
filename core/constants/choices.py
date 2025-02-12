@@ -16,9 +16,9 @@ USER_TYPE_CHOICES = (
     ('Employee', gettext('Employee')),
     ('Stock_Controller', gettext('Stock Controller')),
     ('Stocker', gettext('Stocker')),
-    ('Salesman', gettext('Salesman')),
+    ('Salesman', gettext('Sales man')),
     ('Driver', gettext('Driver')),
-    ('Deliveryman', gettext('Deliveryman')),
+    ('Deliveryman', gettext('Delivery man')),
 
     # External Users - Non-employee stakeholders
     ('Customer', gettext('Customer')),
