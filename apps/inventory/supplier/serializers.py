@@ -12,17 +12,17 @@ class SupplierProductPriceSerializer(serializers.ModelSerializer):
         - last_purchase_date: Date of last purchase
         - is_current: Boolean indicating if this is the current price
     """
-    product_name = serializers.CharField(source='product.name', read_only=True)
+    _product = serializers.CharField(source='product.name', read_only=True)
     
     class Meta:
         model = SupplierProductPrice
         fields = [
-            'product_name',
+            '_product',
             'unit_price',
             'last_purchase_date',
             'is_current',
         ]
-        read_only_fields = ['product_name']
+        read_only_fields = ['_product']
 
 class SupplierSerializer(serializers.ModelSerializer):
     """Serializer for suppliers
