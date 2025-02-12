@@ -14,24 +14,24 @@ class PurchaseOrderService:
     @staticmethod
     def approve_order(order, user):
         """
-        Aprova um pedido de compra
+        Approves a purchase order
         
         Args:
-            order: Pedido de compra a ser aprovado
-            user: Usuário que está aprovando o pedido
+            order: Purchase order to be approved
+            user: User who is approving the order
             
         Returns:
-            PurchaseOrder: Pedido de compra atualizado
+            PurchaseOrder: Updated purchase order
             
         Raises:
-            ValidationError: Se o pedido não puder ser aprovado
+            ValidationError: If the order cannot be approved
         """
         with transaction.atomic():
             if order.status != 'pending':
-                raise ValidationError("Apenas pedidos pendentes podem ser aprovados")
+                raise ValidationError("Only pending orders can be approved")
                 
             if not user.has_perm('purchase_order.can_approve_order'):
-                raise ValidationError("Usuário não tem permissão para aprovar pedidos")
+                raise ValidationError("User does not have permission to approve orders")
                 
             order.status = 'approved'
             order.updated_by = user.employeer_user
@@ -42,27 +42,27 @@ class PurchaseOrderService:
     @staticmethod
     def reject_order(order_id, user, reason):
         """
-        Rejeita um pedido de compra
+        Rejects a purchase order
         
         Args:
-            order_id: ID do pedido de compra
-            user: Usuário que está rejeitando o pedido
-            reason: Motivo da rejeição
+            order_id: ID of the purchase order
+            user: User who is rejecting the order
+            reason: Reason for rejection
             
         Returns:
-            PurchaseOrder: Pedido de compra atualizado
+            PurchaseOrder: Updated purchase order
             
         Raises:
-            ValidationError: Se o pedido não puder ser rejeitado
+            ValidationError: If the order cannot be rejected
         """
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
             if order.status != 'pending':
-                raise ValidationError("Apenas pedidos pendentes podem ser rejeitados")
+                raise ValidationError("Only pending orders can be rejected")
                 
             if not user.has_perm('purchase_order.can_reject_order'):
-                raise ValidationError("Usuário não tem permissão para rejeitar pedidos")
+                raise ValidationError("User does not have permission to reject orders")
                 
             order.status = 'rejected'
             order.updated_by = user.employeer_user
@@ -74,27 +74,27 @@ class PurchaseOrderService:
     @staticmethod
     def cancel_order(order_id, user, reason):
         """
-        Cancela um pedido de compra
+        Cancels a purchase order
         
         Args:
-            order_id: ID do pedido de compra
-            user: Usuário que está cancelando o pedido
-            reason: Motivo do cancelamento
+            order_id: ID of the purchase order
+            user: User who is cancelling the order
+            reason: Reason for cancellation
             
         Returns:
-            PurchaseOrder: Pedido de compra atualizado
+            PurchaseOrder: Updated purchase order
             
         Raises:
-            ValidationError: Se o pedido não puder ser cancelado
+            ValidationError: If the order cannot be cancelled
         """
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
             if order.status not in ['pending', 'approved']:
-                raise ValidationError("Apenas pedidos pendentes ou aprovados podem ser cancelados")
+                raise ValidationError("Only pending or approved orders can be cancelled")
                 
             if not user.has_perm('purchase_order.can_cancel_order'):
-                raise ValidationError("Usuário não tem permissão para cancelar pedidos")
+                raise ValidationError("User does not have permission to cancel orders")
                 
             order.status = 'cancelled'
             order.cancelled_by = user.employeer_user
@@ -110,29 +110,29 @@ class PurchaseOrderItemService:
     @staticmethod
     def add_item(order_id, product_id, quantity, unit_price, user):
         """
-        Adiciona um item ao pedido de compra
+        Adds an item to the purchase order
         
         Args:
-            order_id: ID do pedido de compra
-            product_id: ID do produto
-            quantity: Quantidade
-            unit_price: Preço unitário
-            user: Usuário que está adicionando o item
+            order_id: ID of the purchase order
+            product_id: ID of the product
+            quantity: Quantity
+            unit_price: Unit price
+            user: User who is adding the item
             
         Returns:
-            PurchaseOrderItem: Item adicionado
+            PurchaseOrderItem: Added item
             
         Raises:
-            ValidationError: Se o item não puder ser adicionado
+            ValidationError: If the item cannot be added
         """
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
             if order.status != 'pending':
-                raise ValidationError("Itens só podem ser adicionados a pedidos pendentes")
+                raise ValidationError("Items can only be added to pending orders")
                 
             if not user.has_perm('purchase_order.can_add_item'):
-                raise ValidationError("Usuário não tem permissão para adicionar itens")
+                raise ValidationError("User does not have permission to add items")
                 
             item = PurchaseOrderItem(
                 purchase_order=order,
@@ -147,28 +147,28 @@ class PurchaseOrderItemService:
     @staticmethod
     def update_item(item_id, quantity=None, unit_price=None, user=None):
         """
-        Atualiza um item do pedido de compra
+        Updates a purchase order item
         
         Args:
-            item_id: ID do item
-            quantity: Nova quantidade (opcional)
-            unit_price: Novo preço unitário (opcional)
-            user: Usuário que está atualizando o item
+            item_id: ID of the item
+            quantity: New quantity (optional)
+            unit_price: New unit price (optional)
+            user: User who is updating the item
             
         Returns:
-            PurchaseOrderItem: Item atualizado
+            PurchaseOrderItem: Updated item
             
         Raises:
-            ValidationError: Se o item não puder ser atualizado
+            ValidationError: If the item cannot be updated
         """
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
             if item.purchase_order.status != 'pending':
-                raise ValidationError("Itens só podem ser atualizados em pedidos pendentes")
+                raise ValidationError("Items can only be updated in pending orders")
                 
             if not user.has_perm('purchase_order.can_update_item'):
-                raise ValidationError("Usuário não tem permissão para atualizar itens")
+                raise ValidationError("User does not have permission to update items")
                 
             if quantity is not None:
                 item.quantity = quantity
@@ -182,23 +182,23 @@ class PurchaseOrderItemService:
     @staticmethod
     def remove_item(item_id, user):
         """
-        Remove um item do pedido de compra
+        Removes a purchase order item
         
         Args:
-            item_id: ID do item
-            user: Usuário que está removendo o item
+            item_id: ID of the item
+            user: User who is removing the item
             
         Raises:
-            ValidationError: Se o item não puder ser removido
+            ValidationError: If the item cannot be removed
         """
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
             if item.purchase_order.status != 'pending':
-                raise ValidationError("Itens só podem ser removidos de pedidos pendentes")
+                raise ValidationError("Items can only be removed from pending orders")
                 
             if not user.has_perm('purchase_order.can_remove_item'):
-                raise ValidationError("Usuário não tem permissão para remover itens")
+                raise ValidationError("User does not have permission to remove items")
                 
             item.delete()
 
@@ -230,13 +230,13 @@ class PurchaseOrderItemChangeService:
             'price_changed': False
         }
         
-        # Verifica se a quantidade mudou
+        # Check if the quantity has changed
         if old_instance.quantity != new_instance.quantity:
             changes['quantity_changed'] = True
             changes['old_quantity'] = old_instance.quantity
             changes['new_quantity'] = new_instance.quantity
         
-        # Verifica se o preço mudou
+        # Check if the price has changed
         if old_instance.unit_price != new_instance.unit_price:
             changes['price_changed'] = True
             changes['old_price'] = old_instance.unit_price

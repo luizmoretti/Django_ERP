@@ -21,14 +21,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 class PurchaseOrderModelTests(TestCase):
-    """Testes para o modelo PurchaseOrder"""
+    """Tests for the PurchaseOrder model"""
     
     def setUp(self):
-        """Configuração inicial para os testes"""
-        # Configurar grupos e permissões
+        """Initial setup for tests"""
+        # Set up groups and permissions
         call_command('setup_permission_groups')
         
-        # Criar usuários com diferentes tipos
+        # Create users with different types
         self.admin_user = NormalUser.objects.create_user(
             username='admin',
             password='admin123',
@@ -56,18 +56,18 @@ class PurchaseOrderModelTests(TestCase):
             user_type='Employee'
         )
         
-        # Criar empresa
+        # Create company
         self.company = Companie.objects.create(
             name='Test Company',
             type='matriz'
         )
         
-        # Obter os funcionários criados automaticamente
+        # Get automatically created employees
         self.admin_employee = Employeer.objects.get(user=self.admin_user)
         self.stock_employee = Employeer.objects.get(user=self.stock_controller)
         self.regular_employee = Employeer.objects.get(user=self.employee)
         
-        # Associar funcionários à empresa
+        # Associate employees with company
         self.admin_employee.companie = self.company
         self.admin_employee.save()
         self.stock_employee.companie = self.company
@@ -75,12 +75,12 @@ class PurchaseOrderModelTests(TestCase):
         self.regular_employee.companie = self.company
         self.regular_employee.save()
 
-        # Recarregar usuários para atualizar o cache
+        # Reload users to update cache
         self.admin_user.refresh_from_db()
         self.stock_controller.refresh_from_db()
         self.employee.refresh_from_db()
         
-        # Adicionar usuários aos grupos apropriados
+        # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
         stock_group = Group.objects.get(name='Stock_Controller')
         employee_group = Group.objects.get(name='Employee')
@@ -89,41 +89,41 @@ class PurchaseOrderModelTests(TestCase):
         self.stock_controller.groups.add(stock_group)
         self.employee.groups.add(employee_group)
         
-        # Criar fornecedor
+        # Create supplier
         self.supplier = Supplier.objects.create(
             name='Test Supplier'
         )
         
-        # Criar produto
+        # Create product
         self.product = Product.objects.create(
             name='Test Product'
         )
         
-        # Criar pedido
+        # Create order
         self.order = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
 
     def test_order_number_generation(self):
-        """Testa a geração automática do número do pedido"""
+        """Test automatic order number generation"""
         self.assertIsNotNone(self.order.order_number)
         self.assertEqual(len(self.order.order_number), 5)
         
-        # Criar outro pedido e verificar incremento
+        # Create another order and check increment
         order2 = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         self.assertEqual(int(order2.order_number), int(self.order.order_number) + 1)
     
     def test_calculate_total(self):
-        """Testa o cálculo do total do pedido"""
-        # Criar itens
+        """Test order total calculation"""
+        # Create items
         item1 = PurchaseOrderItem.objects.create(
             purchase_order=self.order,
             product=self.product,
@@ -141,14 +141,14 @@ class PurchaseOrderModelTests(TestCase):
         self.assertEqual(self.order.total, expected_total)
 
 class PurchaseOrderServiceTests(TestCase):
-    """Testes para os serviços de PurchaseOrder"""
+    """Tests for the PurchaseOrder services"""
     
     def setUp(self):
-        """Configuração inicial para os testes"""
-        # Configurar grupos e permissões
+        """Initial setup for tests"""
+        # Set up groups and permissions
         call_command('setup_permission_groups')
         
-        # Criar usuários com diferentes tipos
+        # Create users with different types
         self.admin_user = NormalUser.objects.create_user(
             username='admin',
             password='admin123',
@@ -176,18 +176,18 @@ class PurchaseOrderServiceTests(TestCase):
             user_type='Employee'
         )
         
-        # Criar empresa
+        # Create company
         self.company = Companie.objects.create(
             name='Test Company',
             type='matriz'
         )
         
-        # Obter os funcionários criados automaticamente
+        # Get automatically created employees
         self.admin_employee = Employeer.objects.get(user=self.admin_user)
         self.stock_employee = Employeer.objects.get(user=self.stock_controller)
         self.regular_employee = Employeer.objects.get(user=self.employee)
         
-        # Associar funcionários à empresa
+        # Associate employees with company
         self.admin_employee.companie = self.company
         self.admin_employee.save()
         self.stock_employee.companie = self.company
@@ -195,12 +195,12 @@ class PurchaseOrderServiceTests(TestCase):
         self.regular_employee.companie = self.company
         self.regular_employee.save()
 
-        # Recarregar usuários para atualizar o cache
+        # Reload users to update cache
         self.admin_user.refresh_from_db()
         self.stock_controller.refresh_from_db()
         self.employee.refresh_from_db()
         
-        # Adicionar usuários aos grupos apropriados
+        # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
         stock_group = Group.objects.get(name='Stock_Controller')
         employee_group = Group.objects.get(name='Employee')
@@ -209,22 +209,22 @@ class PurchaseOrderServiceTests(TestCase):
         self.stock_controller.groups.add(stock_group)
         self.employee.groups.add(employee_group)
         
-        # Criar fornecedor
+        # Create supplier
         self.supplier = Supplier.objects.create(
             name='Test Supplier'
         )
         
-        # Criar pedido
+        # Create order
         self.order = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='pending',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
 
     def test_user_permissions(self):
-        """Testa as permissões de diferentes tipos de usuários"""
-        # Admin deve ter todas as permissões
+        """Test user permissions"""
+        # Admin should have all permissions
         expected_admin_perms = [
             'can_approve_order',
             'can_reject_order',
@@ -240,7 +240,7 @@ class PurchaseOrderServiceTests(TestCase):
                 f"Admin should have {perm} permission"
             )
         
-        # Stock_Controller deve ter permissões básicas
+        # Stock_Controller should have basic permissions
         basic_perms = ['can_add_item', 'can_update_item', 'can_remove_item']
         for perm in basic_perms:
             self.assertTrue(
@@ -248,7 +248,7 @@ class PurchaseOrderServiceTests(TestCase):
                 f"Stock Controller should have {perm} permission"
             )
         
-        # Stock_Controller não deve ter permissões de aprovação
+        # Stock_Controller should not have approval permissions
         approval_perms = ['can_approve_order', 'can_reject_order', 'can_cancel_order']
         for perm in approval_perms:
             self.assertFalse(
@@ -256,7 +256,7 @@ class PurchaseOrderServiceTests(TestCase):
                 f"Stock Controller should not have {perm} permission"
             )
         
-        # Employee deve ter apenas permissão de visualização
+        # Employee should have view permission only
         for perm in expected_admin_perms:
             self.assertFalse(
                 self.employee.has_perm(f'purchase_order.{perm}'),
@@ -264,8 +264,8 @@ class PurchaseOrderServiceTests(TestCase):
             )
 
     def test_approve_order(self):
-        """Testa a aprovação de pedido"""
-        # Admin deve poder aprovar pedido
+        """Test order approval"""
+        # Admin should be able to approve order
         updated_order = PurchaseOrderService.approve_order(
             self.order,
             self.admin_user
@@ -273,14 +273,14 @@ class PurchaseOrderServiceTests(TestCase):
         self.assertEqual(updated_order.status, 'approved')
         self.assertEqual(updated_order.updated_by.user, self.admin_user)
         
-        # Stock_Controller não deve poder aprovar pedido
+        # Stock_Controller should not be able to approve order
         with self.assertRaises(Exception):
             PurchaseOrderService.approve_order(
                 self.order,
                 self.stock_controller
             )
         
-        # Employee não deve poder aprovar pedido
+        # Employee should not be able to approve order
         with self.assertRaises(Exception):
             PurchaseOrderService.approve_order(
                 self.order,
@@ -288,9 +288,9 @@ class PurchaseOrderServiceTests(TestCase):
             )
 
     def test_reject_order(self):
-        """Testa a rejeição de pedido"""
-        # Rejeitar pedido
-        reason = "Preços muito altos"
+        """Test order rejection"""
+        # Reject order
+        reason = "Prices are too high"
         updated_order = PurchaseOrderService.reject_order(
             self.order.id,
             self.admin_user,
@@ -302,19 +302,19 @@ class PurchaseOrderServiceTests(TestCase):
         self.assertEqual(updated_order.notes, reason)
 
 class PurchaseOrderAPITests(APITestCase):
-    """Testes para as APIs de PurchaseOrder"""
+    """Tests for the PurchaseOrder API"""
     
     def setUp(self):
-        """Configuração inicial para os testes"""
-        # Configurar logger
+        """Initial setup for tests"""
+        # Set up logger
         logging.basicConfig(level=logging.INFO)
         
-        # Configurar grupos e permissões
+        # Set up groups and permissions
         call_command('setup_permission_groups')
         
         self.client = APIClient()
         
-        # Criar usuários com diferentes tipos
+        # Create users with different types
         self.admin_user = NormalUser.objects.create_user(
             username='admin',
             password='admin123',
@@ -342,18 +342,18 @@ class PurchaseOrderAPITests(APITestCase):
             user_type='Employee'
         )
         
-        # Criar empresa
+        # Create company
         self.company = Companie.objects.create(
             name='Test Company',
             type='matriz'
         )
         
-        # Obter os funcionários criados automaticamente
+        # Get automatically created employees
         self.admin_employee = Employeer.objects.get(user=self.admin_user)
         self.stock_employee = Employeer.objects.get(user=self.stock_controller)
         self.regular_employee = Employeer.objects.get(user=self.employee)
         
-        # Associar funcionários à empresa
+        # Associate employees with company
         self.admin_employee.companie = self.company
         self.admin_employee.save()
         self.stock_employee.companie = self.company
@@ -361,12 +361,12 @@ class PurchaseOrderAPITests(APITestCase):
         self.regular_employee.companie = self.company
         self.regular_employee.save()
 
-        # Recarregar usuários para atualizar o cache
+        # Reload users to update cache
         self.admin_user.refresh_from_db()
         self.stock_controller.refresh_from_db()
         self.employee.refresh_from_db()
         
-        # Adicionar usuários aos grupos apropriados
+        # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
         stock_group = Group.objects.get(name='Stock_Controller')
         employee_group = Group.objects.get(name='Employee')
@@ -375,21 +375,21 @@ class PurchaseOrderAPITests(APITestCase):
         self.stock_controller.groups.add(stock_group)
         self.employee.groups.add(employee_group)
         
-        # Criar fornecedor
+        # Create supplier
         self.supplier = Supplier.objects.create(
             name='Test Supplier'
         )
         
-        # Criar produto
+        # Create product
         self.product = Product.objects.create(
             name='Test Product'
         )
         
-        # Autenticar cliente
+        # Authenticate client
         self.client.force_authenticate(user=self.admin_user)
     
     def test_create_order(self):
-        """Testa a criação de pedido via API"""
+        """Test creating an order via API"""
         url = reverse('purchase_order:create')
         data = {
             'supplier': str(self.supplier.id),
@@ -411,19 +411,19 @@ class PurchaseOrderAPITests(APITestCase):
         self.assertEqual(PurchaseOrderItem.objects.count(), 1)
     
     def test_list_orders(self):
-        """Testa a listagem de pedidos via API"""
-        # Criar alguns pedidos
+        """Test listing orders via API"""
+        # Create some orders
         PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='pending',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         
         url = reverse('purchase_order:list')
@@ -433,16 +433,16 @@ class PurchaseOrderAPITests(APITestCase):
         self.assertEqual(len(response.data), 2)
     
     def test_approve_order_api(self):
-        """Testa a aprovação de pedido via API"""
-        # Criar pedido
+        """Test approving an order via API"""
+        # Create order
         order = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='pending',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         
-        # Adicionar item ao pedido
+        # Add item to order
         PurchaseOrderItem.objects.create(
             purchase_order=order,
             product=self.product,
@@ -469,14 +469,14 @@ class PurchaseOrderAPITests(APITestCase):
         self.assertEqual(order.status, 'approved')
 
 class NotificationTests(TestCase):
-    """Testes para o sistema de notificações"""
+    """Tests for the notification system"""
     
     def setUp(self):
-        """Configuração inicial para os testes"""
-        # Configurar grupos e permissões
+        """Initial setup for tests"""
+        # Set up groups and permissions
         call_command('setup_permission_groups')
         
-        # Criar usuários com diferentes tipos
+        # Create users with different types
         self.admin_user = NormalUser.objects.create_user(
             username='admin',
             password='admin123',
@@ -504,18 +504,18 @@ class NotificationTests(TestCase):
             user_type='Employee'
         )
         
-        # Criar empresa
+        # Create company
         self.company = Companie.objects.create(
             name='Test Company',
             type='matriz'
         )
         
-        # Obter os funcionários criados automaticamente
+        # Get automatically created employees
         self.admin_employee = Employeer.objects.get(user=self.admin_user)
         self.stock_employee = Employeer.objects.get(user=self.stock_controller)
         self.regular_employee = Employeer.objects.get(user=self.employee)
         
-        # Associar funcionários à empresa
+        # Associate employees with company
         self.admin_employee.companie = self.company
         self.admin_employee.save()
         self.stock_employee.companie = self.company
@@ -523,12 +523,12 @@ class NotificationTests(TestCase):
         self.regular_employee.companie = self.company
         self.regular_employee.save()
 
-        # Recarregar usuários para atualizar o cache
+        # Reload users to update cache
         self.admin_user.refresh_from_db()
         self.stock_controller.refresh_from_db()
         self.employee.refresh_from_db()
         
-        # Adicionar usuários aos grupos apropriados
+        # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
         stock_group = Group.objects.get(name='Stock_Controller')
         employee_group = Group.objects.get(name='Employee')
@@ -537,40 +537,40 @@ class NotificationTests(TestCase):
         self.stock_controller.groups.add(stock_group)
         self.employee.groups.add(employee_group)
         
-        # Criar fornecedor
+        # Create supplier
         self.supplier = Supplier.objects.create(
             name='Test Supplier'
         )
         
-        # Criar produto
+        # Create product
         self.product = Product.objects.create(
             name='Test Product'
         )
     
     def test_order_creation_notification(self):
-        """Testa notificação de criação de pedido"""
+        """Test order creation notification"""
         order = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         
-        # TODO: Implementar verificação de notificações
-        # Por enquanto, apenas verifica se o pedido foi criado
+        # TODO: Implement notification checks
+        # For now, just check if the order was created
         self.assertTrue(PurchaseOrder.objects.filter(id=order.id).exists())
     
     def test_item_addition_notification(self):
-        """Testa notificação de adição de item"""
-        # Criar pedido
+        """Test item addition notification"""
+        # Create order
         order = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
-            companie=self.company  # Associando o pedido à empresa
+            companie=self.company  # Associate order with company
         )
         
-        # Adicionar item
+        # Add item
         item = PurchaseOrderItem.objects.create(
             purchase_order=order,
             product=self.product,
@@ -578,6 +578,6 @@ class NotificationTests(TestCase):
             unit_price=Decimal('10.00')
         )
         
-        # TODO: Implementar verificação de notificações
-        # Por enquanto, apenas verifica se o item foi criado
+        # TODO: Implement notification checks
+        # For now, just check if the item was created
         self.assertTrue(PurchaseOrderItem.objects.filter(id=item.id).exists())

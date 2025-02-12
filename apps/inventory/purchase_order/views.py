@@ -315,7 +315,7 @@ class PurchaseOrderDeleteView(PurchaseOrderBaseView, generics.DestroyAPIView):
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Apenas pedidos pendentes podem ser aprovados'
+                        'example': 'Only pending orders can be approved'
                     }
                 }
             }
@@ -354,7 +354,7 @@ class PurchaseOrderApproveView(PurchaseOrderBaseView, generics.GenericAPIView):
         except Exception as e:
             logger.error(f"Error approving purchase order: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Error interno ao aprovar pedido"},
+                {"error": "Internal error approving order"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -385,7 +385,7 @@ class PurchaseOrderApproveView(PurchaseOrderBaseView, generics.GenericAPIView):
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Apenas pedidos pendentes podem ser rejeitados'
+                        'example': 'Only pending orders can be rejected'
                     }
                 }
             }
@@ -403,7 +403,7 @@ class PurchaseOrderRejectView(PurchaseOrderBaseView, generics.GenericAPIView):
             reason = request.data.get('reason')
             if not reason:
                 return Response(
-                    {"error": "É necessário informar o motivo da rejeição"},
+                    {"error": "Reason for rejection is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
@@ -422,7 +422,7 @@ class PurchaseOrderRejectView(PurchaseOrderBaseView, generics.GenericAPIView):
         except Exception as e:
             logger.error(f"Error rejecting purchase order: {str(e)}")
             return Response(
-                {"error": "Error interno ao rejeitar pedido"},
+                {"error": "Internal error rejecting order"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -453,7 +453,7 @@ class PurchaseOrderRejectView(PurchaseOrderBaseView, generics.GenericAPIView):
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Apenas pedidos pendentes ou aprovados podem ser cancelados'
+                        'example': 'Only pending or approved orders can be canceled'
                     }
                 }
             }
@@ -471,7 +471,7 @@ class PurchaseOrderCancelView(PurchaseOrderBaseView, generics.GenericAPIView):
             reason = request.data.get('reason')
             if not reason:
                 return Response(
-                    {"error": "É necessário informar o motivo do cancelamento"},
+                    {"error": "Reason for cancellation is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
@@ -490,7 +490,7 @@ class PurchaseOrderCancelView(PurchaseOrderBaseView, generics.GenericAPIView):
         except Exception as e:
             logger.error(f"Error canceling purchase order: {str(e)}")
             return Response(
-                {"error": "Error interno ao cancelar pedido"},
+                {"error": "Internal error canceling order"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -535,7 +535,7 @@ class PurchaseOrderCancelView(PurchaseOrderBaseView, generics.GenericAPIView):
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Itens só podem ser adicionados a pedidos pendentes'
+                        'example': 'Items can only be added to pending orders'
                     }
                 }
             }
@@ -557,7 +557,7 @@ class PurchaseOrderAddItemView(PurchaseOrderBaseView, generics.GenericAPIView):
                 unit_price=request.data.get('unit_price'),
                 user=request.user
             )
-            # Recarrega o pedido para incluir o novo item
+            # Reload the order to include the new item
             order.refresh_from_db()
             serializer = self.get_serializer(order)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -569,7 +569,7 @@ class PurchaseOrderAddItemView(PurchaseOrderBaseView, generics.GenericAPIView):
         except Exception as e:
             logger.error(f"Error adding item to purchase order: {str(e)}")
             return Response(
-                {"error": "Error interno ao adicionar item"},
+                {"error": "Internal error adding item"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -608,7 +608,7 @@ class PurchaseOrderAddItemView(PurchaseOrderBaseView, generics.GenericAPIView):
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Itens só podem ser atualizados em pedidos pendentes'
+                        'example': 'Items can only be updated in pending orders'
                     }
                 }
             }
@@ -629,7 +629,7 @@ class PurchaseOrderUpdateItemView(PurchaseOrderBaseView, generics.GenericAPIView
                 unit_price=request.data.get('unit_price'),
                 user=request.user
             )
-            # Recarrega o pedido para incluir as alterações
+            # Reload the order to include the changes
             order = updated_item.purchase_order
             serializer = self.get_serializer(order)
             return Response(serializer.data)
@@ -641,7 +641,7 @@ class PurchaseOrderUpdateItemView(PurchaseOrderBaseView, generics.GenericAPIView
         except Exception as e:
             logger.error(f"Error updating purchase order item: {str(e)}")
             return Response(
-                {"error": "Error interno ao atualizar item"},
+                {"error": "Internal error updating item"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -660,7 +660,7 @@ class PurchaseOrderUpdateItemView(PurchaseOrderBaseView, generics.GenericAPIView
                 'properties': {
                     'error': {
                         'type': 'string',
-                        'example': 'Itens só podem ser removidos de pedidos pendentes'
+                        'example': 'Items can only be removed from pending orders'
                     }
                 }
             }
@@ -688,6 +688,6 @@ class PurchaseOrderRemoveItemView(PurchaseOrderBaseView, generics.GenericAPIView
         except Exception as e:
             logger.error(f"Error removing purchase order item: {str(e)}")
             return Response(
-                {"error": "Error interno ao remover item"},
+                {"error": "Internal error removing item"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

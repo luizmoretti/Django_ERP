@@ -21,27 +21,27 @@ from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
-# Lock para sincronização de acesso ao set
+# Lock for synchronization access to the set
 _orders_lock = Lock()
 _orders_being_deleted = set()
 
 def _mark_order_for_deletion(order_id):
     """
-    Marca um pedido para deleção de forma thread-safe
+    Marks an order for deletion in a thread-safe manner
     """
     with _orders_lock:
         _orders_being_deleted.add(str(order_id))
 
 def _unmark_order_for_deletion(order_id):
     """
-    Remove a marcação de deleção de forma thread-safe
+    Removes the deletion mark in a thread-safe manner
     """
     with _orders_lock:
         _orders_being_deleted.discard(str(order_id))
 
 def _is_order_being_deleted(order_id):
     """
-    Verifica de forma thread-safe se um pedido está sendo deletado.
+    Checks if an order is being deleted in a thread-safe manner
     """
     with _orders_lock:
         return str(order_id) in _orders_being_deleted
@@ -53,15 +53,15 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(post_save, sender=PurchaseOrder, dispatch_uid='notify_order_created')
     def notify_order_created(sender, instance, created, **kwargs):
         """
-        Notifica sobre criação de novo pedido.
-        Automaticamente chamado quando um novo PurchaseOrder é criado.
+        Notifies about the creation of a new order.
+        Automatically called when a new PurchaseOrder is created.
         """
-        if not created:  # Se não é uma nova ordem, ignora
+        if not created:  # If not a new order, ignore
             return
             
         def send_notification():
             try:
-                # Recarrega a ordem para ter certeza que temos os dados mais recentes
+                # Reload the order to make sure we have the latest data
                 order = PurchaseOrder.objects.get(pk=instance.pk)
                 
                 handler = PurchaseOrderNotificationHandler()
@@ -95,7 +95,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                 logger.error(f"Error sending order created notification: {str(e)}")
                 raise
         
-        # Agenda o envio da notificação para depois que a transação for commitada
+        # Schedule notification to be sent after transaction commit
         from django.db import transaction
         transaction.on_commit(send_notification)
     
@@ -103,14 +103,14 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(post_save, sender=PurchaseOrder, dispatch_uid='notify_order_updated')
     def notify_order_updated(sender, instance, created, **kwargs):
         """
-        Notifica sobre atualização de pedido de compra.
-        Automaticamente chamado quando um PurchaseOrder é atualizado.
+        Notifies about the update of a purchase order.
+        Automatically called when a PurchaseOrder is updated.
         """
         if created:
             return
             
         try:
-            # Verifica se houve mudança em algum campo além do total
+            # Check if any field changed besides total
             old_instance = sender.objects.get(pk=instance.pk)
             if (old_instance.supplier_id == instance.supplier_id and 
                 old_instance.status == instance.status and
@@ -119,7 +119,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                 old_instance.total == instance.total):
                 return
             
-            # Se apenas o total mudou, não notifica (pois já foi notificado na mudança do item)
+            # If only total changed, don't notify (already notified on item change)
             if (old_instance.supplier_id == instance.supplier_id and 
                 old_instance.status == instance.status and
                 old_instance.expected_delivery == instance.expected_delivery and
@@ -160,8 +160,8 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(pre_save, sender=PurchaseOrder, dispatch_uid='notify_order_status_changed')
     def notify_order_status_changed(sender, instance, **kwargs):
         """
-        Notifica sobre mudança de status do pedido.
-        Automaticamente chamado antes de salvar um PurchaseOrder.
+        Notifies about the change of order status.
+        Automatically called before saving a PurchaseOrder.
         """
         if not instance.pk:
             return
@@ -209,23 +209,23 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(post_save, sender=PurchaseOrderItem, dispatch_uid='notify_item_added')
     def notify_item_added(sender, instance, created, **kwargs):
         """
-        Notifica quando um novo item é adicionado a um pedido existente.
-        Automaticamente chamado quando um PurchaseOrderItem é criado.
+        Notifies when a new item is added to an existing order.
+        Automatically called when a PurchaseOrderItem is created.
         """
-        if not created:  # Se não é um novo item, ignora
+        if not created:  # If not a new item, ignore
             return
             
         def send_notification():
             try:
-                # Recarrega o item para ter certeza que temos os dados mais recentes
+                # Reload the item to make sure we have the latest data
                 item = PurchaseOrderItem.objects.select_related(
                     'purchase_order', 
                     'purchase_order__supplier',
                     'product'
                 ).get(pk=instance.pk)
                 
-                # Verifica se o item está sendo criado junto com o pedido
-                # Se o pedido tiver apenas este item, significa que está sendo criado agora
+                # Check if item is being created with the order
+                # If order has only this item, it means it's being created now
                 items_count = PurchaseOrderItem.objects.filter(
                     purchase_order=item.purchase_order
                 ).count()
@@ -267,7 +267,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                 logger.error(f"Error handling item added notification: {str(e)}")
                 raise
         
-        # Agenda o envio da notificação para depois que a transação for commitada
+        # Schedule notification to be sent after transaction commit
         from django.db import transaction
         transaction.on_commit(send_notification)
     
@@ -275,10 +275,10 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(pre_save, sender=PurchaseOrderItem, dispatch_uid='notify_item_changes')
     def notify_item_changes(sender, instance, **kwargs):
         """
-        Notifica sobre mudanças em quantidade e preço do item.
-        Automaticamente chamado antes de salvar um PurchaseOrderItem.
+        Notifies about changes in item quantity and price.
+        Automatically called before saving a PurchaseOrderItem.
         """
-        if not instance.pk:  # Se é um novo item, não verifica mudanças
+        if not instance.pk:  # If it's a new item, don't check changes
             return
             
         try:
@@ -289,18 +289,18 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
             if not (changes['quantity_changed'] or changes['price_changed']):
                 return
             
-            # Calcula o novo total do pedido
+            # Calculate the new total of the order
             order = instance.purchase_order
             new_total = 0
             for item in order.items.all():
                 if item.pk == instance.pk:
-                    # Para o item sendo atualizado, usa os novos valores
+                    # For the item being updated, use the new values
                     new_total += Decimal(str(instance.unit_price)) * Decimal(str(instance.quantity))
                 else:
-                    # Para os outros itens, usa os valores atuais
+                    # For the other items, use the current values
                     new_total += item.calculate_total()
             
-            # Notifica mudança de quantidade
+            # Notify quantity change
             if changes['quantity_changed']:
                 recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES['ITEM'])
                 recipient_ids = [str(user.id) for user in recipients]
@@ -313,7 +313,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     'product': instance.product.name,
                     'old_quantity': changes['old_quantity'],
                     'new_quantity': changes['new_quantity'],
-                    'total': float(new_total)  # Usa o novo total calculado
+                    'total': float(new_total)  # Use the new calculated total
                 }
                 
                 message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['ITEM_QUANTITY_CHANGED']] % {
@@ -321,7 +321,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     'order_number': instance.purchase_order.order_number,
                     'old_quantity': changes['old_quantity'],
                     'new_quantity': changes['new_quantity'],
-                    'total': float(new_total)  # Usa o novo total calculado
+                    'total': float(new_total)  # Use the new calculated total
                 }
                 
                 handler.send_to_recipients(
@@ -333,7 +333,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     data=data
                 )
             
-            # Notifica mudança de preço
+            # Notify price change
             if changes['price_changed']:
                 recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES['PRICE'])
                 recipient_ids = [str(user.id) for user in recipients]
@@ -346,7 +346,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     'product': instance.product.name,
                     'old_price': float(changes['old_price']),
                     'new_price': float(changes['new_price']),
-                    'total': float(new_total)  # Usa o novo total calculado
+                    'total': float(new_total)  # Use the new calculated total
                 }
                 
                 message = NOTIFICATION_MESSAGES[NOTIFICATION_TYPE['ITEM_PRICE_CHANGED']] % {
@@ -354,7 +354,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
                     'order_number': instance.purchase_order.order_number,
                     'old_price': float(changes['old_price']),
                     'new_price': float(changes['new_price']),
-                    'total': float(new_total)  # Usa o novo total calculado
+                    'total': float(new_total)  # Use the new calculated total
                 }
                 
                 handler.send_to_recipients(
@@ -376,7 +376,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(pre_delete, sender=PurchaseOrder, dispatch_uid='mark_order_for_deletion')
     def mark_order_for_deletion(sender, instance, **kwargs):
         """
-        Marca o pedido para deleção antes que os itens comecem a ser deletados.
+        Marks the order for deletion before the items start being deleted.
         """
         _mark_order_for_deletion(instance.id)
         logger.debug(f"Marked order {instance.id} for deletion")
@@ -386,8 +386,8 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(post_delete, sender=PurchaseOrder, dispatch_uid='notify_order_deleted')
     def notify_order_deleted(sender, instance, **kwargs):
         """
-        Notifica sobre deleção de pedido e remove a marcação.
-        Automaticamente chamado quando um PurchaseOrder é deletado.
+        Notifies about order deletion and removes the deletion mark.
+        Automatically called when a PurchaseOrder is deleted.
         """
         try:
             handler = PurchaseOrderNotificationHandler()
@@ -419,7 +419,7 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
             logger.error(f"Error sending order deletion notification: {str(e)}")
             raise
         finally:
-            # Remove a marcação após o pedido ser completamente deletado
+            # Remove the deletion mark after the order is completely deleted
             _unmark_order_for_deletion(instance.id)
             logger.debug(f"Unmarked order {instance.id} from deletion")
 
@@ -427,12 +427,12 @@ class PurchaseOrderNotificationHandler(BaseNotificationHandler):
     @receiver(post_delete, sender=PurchaseOrderItem, dispatch_uid='notify_item_deleted')
     def notify_item_deleted(sender, instance, **kwargs):
         """
-        Notifica sobre remoção de item do pedido.
-        Automaticamente chamado quando um PurchaseOrderItem é deletado.
-        IMPORTANTE: Não notifica quando o item é deletado devido à deleção do pedido.
+        Notifies about the removal of an item from the order.
+        Automatically called when a PurchaseOrderItem is deleted.
+        IMPORTANT: Does not notify when the item is deleted due to order deletion.
         """
         try:
-            # Usa a função thread-safe para verificar
+            # Use the thread-safe function to check
             if _is_order_being_deleted(instance.purchase_order.id):
                 logger.debug(f"Skipping item deletion notification for order {instance.purchase_order.id} as it is being deleted")
                 return
