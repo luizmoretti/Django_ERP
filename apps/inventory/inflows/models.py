@@ -41,6 +41,11 @@ class Inflow(BaseModel):
         verbose_name = 'Inflow'
         verbose_name_plural = 'Inflows'
         ordering = ['-created_at']
+        permissions = [
+            ("can_approve_inflow", "Can approve inflow"),
+            ("can_reject_inflow", "Can reject inflow"),
+            ("can_generate_inflow_reports", "Can generate inflow reports")
+        ]
         
     def __str__(self):
         return self.origin.name + ' -> ' + self.destiny.name
