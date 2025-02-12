@@ -419,6 +419,12 @@ LOGGING = {
             'propagate': True,
             'filters': ['ignore_repeated_errors'],
         },
+        'apps.inventory.load_order': {
+            'handlers': ['console', 'info_file', 'warning_file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+            'filters': ['ignore_repeated_errors'],
+        },
         'apps.notifications': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
@@ -689,7 +695,7 @@ SPECTACULAR_SETTINGS = {
         
         # Companies
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
-        {'name': 'Companies - Employees Soft Delete', 'description': 'Employee soft delete endpoints'},
+        # {'name': 'Companies - Employees Soft Delete', 'description': 'Employee soft delete endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
     ]
 }
