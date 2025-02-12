@@ -392,173 +392,173 @@ class EmployeerUpdateView(BaseEmployeerView, UpdateAPIView):
             })
 
 
-@extend_schema_view(
-    put=extend_schema(
-        tags=["Companies - Employees Soft Delete"],
-        operation_id="soft_delete_employeer_put",
-        summary="Soft delete employee (PUT)",
-        description="""
-        Marks an employee as inactive in the system (soft delete).
-        Use this endpoint for complete updates of the is_active status.
-        """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the employee to soft delete',
-                required=True,
-            ),
-        ],
-        request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'is_active': {'type': 'boolean'}
-                },
-                'required': ['is_active']
-            }
-        },
-        responses={
-            200: {
-                'description': 'Employee successfully deactivated',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'message': {'type': 'string'},
-                            'employee': {'$ref': '#/components/schemas/Employeer'}
-                        }
-                    }
-                }
-            },
-            404: {'description': 'Employee not found'}
-        }
-    ),
-    patch=extend_schema(
-        tags=["Companies - Employees Soft Delete"],
-        operation_id="soft_delete_employeer_patch",
-        summary="Soft delete employee (PATCH)",
-        description="""
-        Marks an employee as inactive in the system (soft delete).
-        Use this endpoint for partial updates of the is_active status.
-        """,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.UUID,
-                location=OpenApiParameter.PATH,
-                description='UUID of the employee to soft delete',
-                required=True,
-            ),
-        ],
-        responses={
-            200: {
-                'description': 'Employee successfully deactivated',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'message': {'type': 'string'},
-                            'employee': {'$ref': '#/components/schemas/Employeer'}
-                        }
-                    }
-                }
-            },
-            404: {'description': 'Employee not found'}
-        }
-    )
-)
-class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
-    """
-    View for soft deleting employee records.
+# @extend_schema_view(
+#     put=extend_schema(
+#         tags=["Companies - Employees Soft Delete"],
+#         operation_id="soft_delete_employeer_put",
+#         summary="Soft delete employee (PUT)",
+#         description="""
+#         Marks an employee as inactive in the system (soft delete).
+#         Use this endpoint for complete updates of the is_active status.
+#         """,
+#         parameters=[
+#             OpenApiParameter(
+#                 name='id',
+#                 type=OpenApiTypes.UUID,
+#                 location=OpenApiParameter.PATH,
+#                 description='UUID of the employee to soft delete',
+#                 required=True,
+#             ),
+#         ],
+#         request={
+#             'application/json': {
+#                 'type': 'object',
+#                 'properties': {
+#                     'is_active': {'type': 'boolean'}
+#                 },
+#                 'required': ['is_active']
+#             }
+#         },
+#         responses={
+#             200: {
+#                 'description': 'Employee successfully deactivated',
+#                 'content': {
+#                     'application/json': {
+#                         'type': 'object',
+#                         'properties': {
+#                             'message': {'type': 'string'},
+#                             'employee': {'$ref': '#/components/schemas/Employeer'}
+#                         }
+#                     }
+#                 }
+#             },
+#             404: {'description': 'Employee not found'}
+#         }
+#     ),
+#     patch=extend_schema(
+#         tags=["Companies - Employees Soft Delete"],
+#         operation_id="soft_delete_employeer_patch",
+#         summary="Soft delete employee (PATCH)",
+#         description="""
+#         Marks an employee as inactive in the system (soft delete).
+#         Use this endpoint for partial updates of the is_active status.
+#         """,
+#         parameters=[
+#             OpenApiParameter(
+#                 name='id',
+#                 type=OpenApiTypes.UUID,
+#                 location=OpenApiParameter.PATH,
+#                 description='UUID of the employee to soft delete',
+#                 required=True,
+#             ),
+#         ],
+#         responses={
+#             200: {
+#                 'description': 'Employee successfully deactivated',
+#                 'content': {
+#                     'application/json': {
+#                         'type': 'object',
+#                         'properties': {
+#                             'message': {'type': 'string'},
+#                             'employee': {'$ref': '#/components/schemas/Employeer'}
+#                         }
+#                     }
+#                 }
+#             },
+#             404: {'description': 'Employee not found'}
+#         }
+#     )
+# )
+# class EmployeerSoftDeleteView(BaseEmployeerView, UpdateAPIView):
+#     """
+#     View for soft deleting employee records.
     
-    Instead of permanently deleting the record, this view marks
-    the employee as inactive (is_active=False).
-    """
-    serializer_class = EmployeerSerializer
-    lookup_field = 'id'
+#     Instead of permanently deleting the record, this view marks
+#     the employee as inactive (is_active=False).
+#     """
+#     serializer_class = EmployeerSerializer
+#     lookup_field = 'id'
     
-    def get_queryset(self):
-        """
-        Override queryset to include all employees (active and inactive).
-        This is necessary to allow soft delete operations.
-        """
-        return Employeer.objects.select_related(
-            'user', 'companie', 'created_by', 'updated_by'
-        )
+#     def get_queryset(self):
+#         """
+#         Override queryset to include all employees (active and inactive).
+#         This is necessary to allow soft delete operations.
+#         """
+#         return Employeer.objects.select_related(
+#             'user', 'companie', 'created_by', 'updated_by'
+#         )
     
-    def validate_soft_delete(self, instance, data):
-        """
-        Validate if the soft delete operation can be performed.
+#     def validate_soft_delete(self, instance, data):
+#         """
+#         Validate if the soft delete operation can be performed.
         
-        Args:
-            instance: The employee instance
-            data: Request data
+#         Args:
+#             instance: The employee instance
+#             data: Request data
             
-        Raises:
-            ValidationError: If employee is already inactive
-        """
-        if not instance.is_active:
-            raise ValidationError({
-                'error': 'Inactive employee',
-                'detail': 'The employee is already deactivated.'
-            })
+#         Raises:
+#             ValidationError: If employee is already inactive
+#         """
+#         if not instance.is_active:
+#             raise ValidationError({
+#                 'error': 'Inactive employee',
+#                 'detail': 'The employee is already deactivated.'
+#             })
     
-    def update(self, request, *args, **kwargs):
-        """
-        Handle both PUT and PATCH requests for soft delete.
-        Validates the operation before proceeding.
-        """
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
+#     def update(self, request, *args, **kwargs):
+#         """
+#         Handle both PUT and PATCH requests for soft delete.
+#         Validates the operation before proceeding.
+#         """
+#         partial = kwargs.pop('partial', False)
+#         instance = self.get_object()
         
-        # Force is_active to False for soft delete
-        request.data['is_active'] = False
+#         # Force is_active to False for soft delete
+#         request.data['is_active'] = False
         
-        # Validate before proceeding
-        self.validate_soft_delete(instance, request.data)
+#         # Validate before proceeding
+#         self.validate_soft_delete(instance, request.data)
         
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
+#         serializer = self.get_serializer(instance, data=request.data, partial=partial)
+#         serializer.is_valid(raise_exception=True)
         
-        try:
-            employee_id = instance.id
-            employee_name = instance.name
+#         try:
+#             employee_id = instance.id
+#             employee_name = instance.name
             
-            # Perform soft delete
-            instance = serializer.save(
-                is_active=False,
-                updated_by=self.request.user
-            )
+#             # Perform soft delete
+#             instance = serializer.save(
+#                 is_active=False,
+#                 updated_by=self.request.user
+#             )
             
-            logger.info(
-                f"[EMPLOYEER VIEWS] - Employee soft deleted: {employee_name}",
-                extra={
-                    'employee_id': employee_id,
-                    'deactivated_by': self.request.user.id
-                }
-            )
+#             logger.info(
+#                 f"[EMPLOYEER VIEWS] - Employee soft deleted: {employee_name}",
+#                 extra={
+#                     'employee_id': employee_id,
+#                     'deactivated_by': self.request.user.id
+#                 }
+#             )
             
-            return Response({
-                'message': 'Employee successfully deactivated',
-                'employee': EmployeerSerializer(instance).data
-            }, status=HTTP_200_OK)
+#             return Response({
+#                 'message': 'Employee successfully deactivated',
+#                 'employee': EmployeerSerializer(instance).data
+#             }, status=HTTP_200_OK)
             
-        except Exception as e:
-            logger.error(
-                f"[EMPLOYEER VIEWS] - Error soft deleting employee: {str(e)}",
-                extra={
-                    'employee_id': instance.id,
-                    'user_id': self.request.user.id,
-                    'error': str(e)
-                },
-                exc_info=True
-            )
-            raise ValidationError({
-                'error': 'Error when deactivating employee',
-                'detail': str(e)
-            })
+#         except Exception as e:
+#             logger.error(
+#                 f"[EMPLOYEER VIEWS] - Error soft deleting employee: {str(e)}",
+#                 extra={
+#                     'employee_id': instance.id,
+#                     'user_id': self.request.user.id,
+#                     'error': str(e)
+#                 },
+#                 exc_info=True
+#             )
+#             raise ValidationError({
+#                 'error': 'Error when deactivating employee',
+#                 'detail': str(e)
+#             })
 
 @extend_schema_view(
     delete=extend_schema(
