@@ -16,12 +16,13 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 import logging
+from .permissions import InflowBasePermission
 
 logger = logging.getLogger(__name__)
 
 
 class InflowBaseView:
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, InflowBasePermission]
     
     def get_queryset(self):
         user = self.request.user

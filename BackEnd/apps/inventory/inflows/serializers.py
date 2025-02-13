@@ -57,7 +57,6 @@ class InflowSerializer(serializers.ModelSerializer):
         - Each item must have valid product and positive quantity
     """
     id = serializers.UUIDField(read_only=True)
-    companie = serializers.UUIDField(read_only=True)
     
     # Write-only fields for UUIDs
     origin = serializers.PrimaryKeyRelatedField(
@@ -89,12 +88,12 @@ class InflowSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     created_by = serializers.SerializerMethodField()
     updated_by = serializers.SerializerMethodField()
+    companie = serializers.UUIDField(read_only=True)
     
     class Meta:
         model = Inflow
         fields = [
             'id',
-            'companie',
             'origin',
             '_origin',
             'destiny',
@@ -106,7 +105,8 @@ class InflowSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'created_by',
-            'updated_by'
+            'updated_by',
+            'companie',
         ]
         read_only_fields = [
             'id', 
@@ -120,13 +120,13 @@ class InflowSerializer(serializers.ModelSerializer):
             'updated_by', 
         ]
     
-    def get_origin_name(self, obj) -> str | None:
-        """Get the name of the origin supplier"""
-        return obj.origin.name
+    # def get_origin_name(self, obj) -> str | None:
+    #     """Get the name of the origin supplier"""
+    #     return obj.origin.name
     
-    def get_destiny_name(self, obj) -> str | None:
-        """Get the name of the destiny customer"""
-        return obj.destiny.full_name
+    # def get_destiny_name(self, obj) -> str | None:
+    #     """Get the name of the destiny customer"""
+    #     return obj.destiny.full_name
     
     def get_created_by(self, obj) -> str | None:
         """Get the name of the user who created the inflow"""
@@ -143,21 +143,30 @@ class InflowSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """Validate the inflow data
         
-        Checks:
-            - At least one item is provided
-            - All items have valid products and quantities
-            - Origin supplier exists
-            - Destiny warehouse exists
+        Validates basic data requirements and formats:
+            - Required fields are present
+            - Data types are correct
+            - Basic value validations
         """
+        # Validate items_data structure
         if not attrs.get('items_data'):
             raise ValidationError({'items_data': 'At least one item is required'})
             
         items = attrs.get('items_data')
         for item in items:
+            if not isinstance(item, dict):
+                raise ValidationError({'items_data': 'Each item must be a dictionary'})
+                
             if not all(k in item for k in ('product', 'quantity')):
                 raise ValidationError({
-                    'items_data': 'Each item must have product and quantity'
+                    'items_data': 'Each item must have product and quantity fields'
                 })
+                
+            if not isinstance(item.get('quantity'), (int, float)):
+                raise ValidationError({
+                    'items_data': 'Quantity must be a number'
+                })
+                
             if item['quantity'] < 1:
                 raise ValidationError({
                     'items_data': 'Quantity must be positive'

@@ -7,3 +7,4 @@ class InflowsConfig(AppConfig):
 
     def ready(self):
         import apps.inventory.inflows.signals
+        import apps.inventory.inflows.notifications.handlers
