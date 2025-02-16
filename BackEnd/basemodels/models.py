@@ -28,18 +28,23 @@ class BaseModel(models.Model):
         
         if user and not isinstance(user, AnonymousUser):
             try:
-                # Importação tardia do Employeer para evitar importação circular
+                # Late import of Employer to avoid circular import
                 from apps.companies.employeers.models import Employeer
-                employeer = Employeer.objects.get(user=user)
-                if not self.created_by: # Only set created_by if it's a new instance
-                    self.created_by = employeer
-                self.updated_by = employeer
                 
-                # If the companie is not set, set it based on the companie associated with the employeer
-                if not self.companie and employeer.companie:
-                    self.companie = employeer.companie
+                # Skip employeer association if this is an Employeer instance being created
+                if not isinstance(self, Employeer):
+                    employeer = Employeer.objects.get(user=user)
+                    if not self.created_by: # Only set created_by if it's a new instance
+                        self.created_by = employeer
+                    self.updated_by = employeer
+                    
+                    # If the companie is not set, set it based on the companie associated with the employeer
+                    if not self.companie and employeer.companie:
+                        self.companie = employeer.companie
             except Employeer.DoesNotExist:
-                raise ValidationError('User does not exist or is not associated with an employee')
+                # Only raise error if this is not an Employeer instance being created
+                if not isinstance(self, Employeer):
+                    raise ValidationError('User does not exist or is not associated with an employee')
             
         super().save(*args, **kwargs)
             
