@@ -20,12 +20,12 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 app.conf.beat_schedule = {
     'generate-daily-inflow-report': {
         'task': 'generate_daily_inflow_report',
-        'schedule': crontab(minute='*/1'),  # Runs every 1 minute
+        'schedule': crontab(minute='*/59'),  # Runs every 1 minute
         'options': {'queue': 'warehouse'},
     },
     'check-low-stock': {
         'task': 'check_low_stock',
-        'schedule': crontab(minute='*/1'),  # Runs every 1 minute
+        'schedule': crontab(minute='*/59'),  # Runs every 1 minute
         'options': {'queue': 'warehouse'},
     },
     # 'check-specific-product': {

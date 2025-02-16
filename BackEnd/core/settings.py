@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+import sys
 
 # Loads the environment variables from the .env file
 load_dotenv()
@@ -210,12 +211,37 @@ TEMPLATES = [
 ################################
 ########## DATABASE ###########
 ################################
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DB_NAME = os.getenv("DATABASE_NAME")
+DB_USER = os.getenv("DATABASE_USER")
+DB_PASS = os.getenv("DATABASE_PASSWORD")
+DB_HOST = os.getenv("DATABASE_HOST")
+DB_PORT = os.getenv("DATABASE_PORT")
+
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # Using in-memory database for faster tests
+        }
     }
-}
+elif DB_NAME and DB_USER:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASS,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
+        },
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "db.sqlite3",
+        }
+    }
 
 ################################
 ####### AUTHENTICATION ########
@@ -497,37 +523,37 @@ DATE_INPUT_FORMATS = ['%Y-%m-%d']
 ######### STATIC FILES #########
 ################################
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# Configuração do WhiteNoise
 STORAGES = {
-    'staticfiles': {
-        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
-    'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    }
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
 
-# Ensure static directories exist
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure static and media directories exist
 if not os.path.exists(STATIC_ROOT):
     os.makedirs(STATIC_ROOT)
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)
 
-if not os.path.exists(os.path.join(BASE_DIR, 'static')):
-    os.makedirs(os.path.join(BASE_DIR, 'static'))
+################################
+########## MEDIA FILES #########
+################################
 
 ################################
 ########## URL CONFIG ##########
 ################################
 ROOT_URLCONF = 'core.urls'
 WSGI_APPLICATION = 'core.wsgi.application'
-
-################################
-########## MEDIA FILES #########
-################################
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 ################################
 ########## CACHE CONFIG ########
