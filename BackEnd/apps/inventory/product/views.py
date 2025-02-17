@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from .service.product_services import ProductServices
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 import logging
 
 from .models import Product
@@ -112,3 +115,81 @@ class ProductDestroyView(ProductBaseView, generics.DestroyAPIView):
     def perform_destroy(self, instance):
         logger.info(f"[PRODUCT VIEWS] - Product {instance.id} deleted successfully by {self.request.user}")
         instance.delete()
+        
+
+class HomeDepotActionsView(APIView):
+    """View for Home Depot related actions"""
+    permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+        tags=['Inventory - Products'],
+        summary='Execute Home Depot actions',
+        description='Execute Home Depot actions (search or update) for a product',
+        parameters=[
+            OpenApiParameter(
+                name='action',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description='Action to execute: "search" to find and save Home Depot ID, "update" to update product info',
+                required=True
+            )
+        ]
+    )
+    def post(self, request, pk=None):
+        """Execute Home Depot actions
+        
+        Args:
+            request: Request object with action parameter
+            pk: Product ID (optional, if not provided will execute for all products)
+            
+        Returns:
+            Response with action results
+        """
+        try:
+            action = request.query_params.get('action')
+            if not action:
+                return Response(
+                    {"error": "Action parameter is required (search or update)"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            if action not in ['search', 'update']:
+                return Response(
+                    {"error": "Invalid action. Must be 'search' or 'update'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Se não tiver ID, executar para todos os produtos da empresa
+            if not pk:
+                products = ProductServices.get_all_products()
+            else:
+                products = [{"id": pk}]
+                
+            results = []
+            for product in products:
+                if action == 'search':
+                    result = ProductServices.search_and_save_home_depot_id(product['id'])
+                else:  # update
+                    result = ProductServices.update_product_from_home_depot(product['id'])
+                    
+                results.append({
+                    "product_id": product['id'],
+                    **result
+                })
+                
+            # Contar sucessos e erros
+            success_count = sum(1 for r in results if r['status'] == 'success')
+            error_count = sum(1 for r in results if r['status'] == 'error')
+            
+            return Response({
+                "success_count": success_count,
+                "error_count": error_count,
+                "results": results
+            })
+            
+        except Exception as e:
+            logger.error(f"Error executing Home Depot action: {str(e)}")
+            return Response(
+                {"error": f"Error executing action: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

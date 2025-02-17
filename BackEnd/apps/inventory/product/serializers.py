@@ -1,8 +1,18 @@
 from rest_framework import serializers
-from .models import Product, ProductSku
+from .models import Product, ProductSku, ProductInStoreID
 from apps.inventory.brand.models import Brand
 from apps.inventory.categories.models import Category
+from apps.inventory.supplier.models import Supplier
 
+
+
+class ProductInStoreIDSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductInStoreID
+        fields=[
+            'in_store_id'
+        ]
+        
 
 class ProductSKUSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,11 +25,20 @@ class ProductSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=100, help_text='The name of the product', required=True)
     description = serializers.CharField(max_length=255, help_text='The description of the product', required=False)
     quantity = serializers.IntegerField(help_text='The total quantity of the product', read_only=True)
-    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all(), help_text='The brand of the product', required=False)
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), help_text='The category of the product', required=False)
-    price = serializers.DecimalField(max_digits=10, decimal_places=2, help_text='Current price of the product', required=False, default=0.00)
-    skus = ProductSKUSerializer(many=True, read_only=False, required=False)
     
+    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all(), help_text='The brand of the product', required=False, write_only=True)
+    _brand = serializers.CharField(source='brand.name', read_only=True)
+    
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), help_text='The category of the product', required=False, write_only=True)
+    _category = serializers.CharField(source='category.name', read_only=True)
+    
+    supplier = serializers.PrimaryKeyRelatedField(queryset=Supplier.objects.all(), help_text='The supplier of the product', required=False, write_only=True)
+    _supplier = serializers.CharField(source='supplier.name', read_only=True)
+    
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, help_text='Current price of the product', required=False, default=0.00)
+    
+    skus = ProductSKUSerializer(many=True, read_only=False, required=False)
+    store_ids = ProductInStoreIDSerializer(many=True, read_only=False, required=False)
     
     updated_by = serializers.SerializerMethodField(read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
@@ -32,10 +51,20 @@ class ProductSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'quantity',
+            
             'brand',
+            '_brand',
+            
             'category',
+            '_category',
+            
+            'supplier',
+            '_supplier',
+            
             'price',
             'skus',
+            'store_ids',
+            
             'created_at',
             'updated_at',
             'created_by',
@@ -43,7 +72,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'companie'
         ]
         read_only_fields = [
-            'quantity', 
+            'quantity',
+            '_brand',
+            '_category',
+            '_supplier',
             'created_at', 
             'updated_at',
             'created_by',
