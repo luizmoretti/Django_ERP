@@ -743,3 +743,7 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+
+SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY', '')
+SERPAPI_BASE_URL = os.getenv('SERPAPI_BASE_URL', '')

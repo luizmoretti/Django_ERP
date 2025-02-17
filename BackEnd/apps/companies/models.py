@@ -6,7 +6,7 @@ from core.constants.choices import COMPANIE_TYPE_CHOICES, COUNTRY_CHOICES
 class Companie(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
     name = models.CharField(max_length=100, blank=True, null=True)
-    type = models.CharField(choices=COMPANIE_TYPE_CHOICES, max_length=50, blank=True, null=True)
+    type = models.CharField(choices=COMPANIE_TYPE_CHOICES, max_length=50, blank=True, null=True, default='Headquarters')
     address = models.CharField(max_length=200, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
