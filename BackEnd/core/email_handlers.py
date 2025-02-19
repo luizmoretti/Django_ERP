@@ -127,12 +127,14 @@ class PurchaseOrderEmailHandler(BaseEmailHandler):
                 }
                 for item in items
             ],
+            'total': purchase_order.total,
             'notes': purchase_order.notes,
             'companie_name': purchase_order.companie.name
         }
         
         return self.send_email(
             subject=f"New Purchase Order #{purchase_order.order_number}",
+            from_email=purchase_order.companie.email,
             to_emails=[purchase_order.supplier.email],
             template=template,
             context=context

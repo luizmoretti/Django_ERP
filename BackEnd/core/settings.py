@@ -213,13 +213,44 @@ TEMPLATES = [
 ################################
 ########### EMAIL ##############
 ################################
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+if DEBUG:
+    # Choose one of the backends below to test:
+
+    # 1. Console Backend (default) - Shows emails in the console
+    # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    
+    # 2. File Backend - Saves emails in files
+    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'emails')
+    # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    
+    # 3. Local SMTP - Requires aiosmtpd running (python -m aiosmtpd -n -l localhost:8025)
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = 'localhost'
+    # EMAIL_PORT = 8025
+    
+    # 4. Mailtrap - Requires mailtrap.io running (https://mailtrap.io/)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+else:
+    # Production configurations
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@drywall.com')
+
+# Ensure email directory exists if using file backend
+if 'filebased' in EMAIL_BACKEND:
+    email_dir = os.path.join(BASE_DIR, 'tmp', 'emails')
+    if not os.path.exists(email_dir):
+        os.makedirs(email_dir)
 
 ################################
 ########## DATABASE ###########
