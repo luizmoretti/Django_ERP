@@ -1,0 +1,1 @@
+Utilizei React com Nestjs para criação do projeto, importei a Biblioteca do Shadcn para estilizar o projeto, no momento inicial só tem o sidebar com a tela inicial do projeto, para Rodar vai precisar do NPM instalado 
