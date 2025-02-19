@@ -23,6 +23,11 @@ services:
       - STRIPE_KEY=${STRIPE_KEY}
       - SERPAPI_API_KEY=${SERPAPI_API_KEY}
       - SERPAPI_BASE_URL=${SERPAPI_BASE_URL}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS}
     depends_on:
       db:
         condition: service_healthy
