@@ -21,6 +21,8 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - STRIPE_KEY=${STRIPE_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - SERPAPI_BASE_URL=${SERPAPI_BASE_URL}
     depends_on:
       db:
         condition: service_healthy

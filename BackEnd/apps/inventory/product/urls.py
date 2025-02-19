@@ -8,4 +8,7 @@ urlpatterns = [
     path('retrieve/<uuid:pk>/', views.ProductRetrieveView.as_view(), name='product-detail'),
     path('update/<uuid:pk>/', views.ProductUpdateView.as_view(), name='product-update'),
     path('delete/<uuid:pk>/', views.ProductDestroyView.as_view(), name='product-delete'),
+    
+    # Home Depot Actions
+    path('home-depot/', views.HomeDepotActionsView.as_view(), name='home-depot-actions'),
 ]
