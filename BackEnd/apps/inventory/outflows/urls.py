@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'outflows'
+
 urlpatterns = [
     path('', views.OutflowListView.as_view(), name='list_outflows'),
     path('create/', views.OutflowCreateView.as_view(), name='create_outflow'),
