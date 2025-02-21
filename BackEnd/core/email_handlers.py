@@ -139,3 +139,36 @@ class PurchaseOrderEmailHandler(BaseEmailHandler):
             template=template,
             context=context
         )
+        
+        
+class AuthEmailHandler(BaseEmailHandler):
+    """Handler for authentication related emails"""
+    
+    def send_password_reset_email(self, context: Dict[str, Any], to_email: str) -> bool:
+        """
+        Send password reset email to user
+        
+        Args:
+            context: Context for email template including:
+                - protocol: HTTP or HTTPS
+                - domain: Site domain
+                - uid: User id encoded
+                - token: Password reset token
+            to_email: Recipient email address
+        """
+        template = EmailTemplate('auth/password_reset')
+        
+        # Enrich the context with additional information if necessary
+        email_context = {
+            **context,
+            'app_name': 'Champion DryWall ERP',
+            'support_email': settings.DEFAULT_FROM_EMAIL,
+        }
+        
+        return self.send_email(
+            subject="Redefinição de senha - Champion DryWall",
+            to_emails=[to_email],
+            template=template,
+            context=email_context,
+            from_email=settings.DEFAULT_FROM_EMAIL
+        )
