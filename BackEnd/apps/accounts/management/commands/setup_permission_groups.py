@@ -14,6 +14,7 @@ Key Features:
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from core.constants.choices import USER_TYPE_CHOICES
@@ -30,6 +31,30 @@ class Command(BaseCommand):
     """
     
     help = "Setup user groups and assign permissions"
+    
+    def __sync_user_permissions(self):
+        """
+        Sincroniza as permissões dos usuários com base em seus grupos.
+        Isso garante que os usuários tenham todas as permissões dos grupos aos quais pertencem.
+        """
+        User = get_user_model()
+        logger.info("Sincronizando permissões dos usuários")
+        
+        for user in User.objects.all():
+            try:
+                # Limpa permissões existentes do usuário
+                user.user_permissions.clear()
+                
+                # Adiciona todas as permissões dos grupos do usuário
+                for group in user.groups.all():
+                    permissions = group.permissions.all()
+                    user.user_permissions.add(*permissions)
+                    
+                logger.info(f"Permissões sincronizadas para usuário: {user.email}")
+                
+            except Exception as e:
+                logger.error(f"Erro ao sincronizar permissões para usuário {user.email}: {str(e)}")
+    
 
     def __get_custom_permissions(self, app_label):
         """
@@ -229,5 +254,8 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(f"Error configuring group {group_name}: {str(e)}")
                 )
+        
+        # After processing all groups, sync user permissions
+        self.__sync_user_permissions()
         
         logger.info("Permission groups setup completed successfully")
