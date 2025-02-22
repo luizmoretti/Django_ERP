@@ -34,7 +34,7 @@ class PurchaseOrderService:
                 raise ValidationError("User does not have permission to approve orders")
                 
             order.status = 'approved'
-            order.updated_by = user.employeer_user
+            order.updated_by = user.employeer
             order.save()
             
             return order
@@ -65,7 +65,7 @@ class PurchaseOrderService:
                 raise ValidationError("User does not have permission to reject orders")
                 
             order.status = 'rejected'
-            order.updated_by = user.employeer_user
+            order.updated_by = user.employeer
             order.notes = reason
             order.save()
             
@@ -97,7 +97,7 @@ class PurchaseOrderService:
                 raise ValidationError("User does not have permission to cancel orders")
                 
             order.status = 'cancelled'
-            order.cancelled_by = user.employeer_user
+            order.cancelled_by = user.employeer
             order.cancelled_at = timezone.now()
             order.cancellation_reason = reason
             order.save()

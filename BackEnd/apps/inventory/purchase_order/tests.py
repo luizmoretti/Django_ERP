@@ -456,8 +456,8 @@ class PurchaseOrderAPITests(APITestCase):
         logger.info(f"User type: {self.admin_user.user_type}")
         logger.info(f"Order status: {order.status}")
         logger.info(f"Order company: {order.companie}")
-        logger.info(f"User company: {self.admin_user.employeer_user.companie}")
-        logger.info(f"User employeer: {self.admin_user.employeer_user}")
+        logger.info(f"User company: {self.admin_user.employeer.companie}")
+        logger.info(f"User employeer: {self.admin_user.employeer}")
         
         response = self.client.post(url)
         
