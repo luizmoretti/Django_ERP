@@ -1,6 +1,8 @@
 from django.urls import path, re_path
 from apps.companies.customers import views
 
+app_name = 'customers'
+
 urlpatterns = [
     path('', views.CustomerListView.as_view(), name='list_customers'),
     path('create/', views.CustomerCreateView.as_view(), name='create_customer'),
