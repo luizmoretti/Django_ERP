@@ -44,7 +44,7 @@ class BaseCustomerView:
         user = self.request.user
         try:
             # Filters only customers from the same company as the logged-in user
-            employeer = user.employeer_user
+            employeer = user.employeer
             return Customer.objects.select_related(
                 'companie', 'created_by', 'updated_by'
             ).filter(companie=employeer.companie, is_active=True)
@@ -202,7 +202,7 @@ class CustomerRetrieveByIdView(BaseCustomerView, RetrieveAPIView):
                 raise Http404('Customer not found')
                 
             # Check if user has permission to access this customer
-            if customer.companie != self.request.user.employeer_user.companie:
+            if customer.companie != self.request.user.employeer.companie:
                 raise PermissionDenied("You don't have permission to access this customer")
                 
             return customer
@@ -349,7 +349,7 @@ class CustomerRetrieveByNameView(BaseCustomerView, RetrieveAPIView):
             raise Http404("Customer not found")
             
         # Check if user has permission to access this customer
-        if customer.companie != self.request.user.employeer_user.companie:
+        if customer.companie != self.request.user.employeer.companie:
             raise PermissionDenied("You don't have permission to access this customer")
             
         return customer

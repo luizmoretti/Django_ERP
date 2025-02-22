@@ -25,8 +25,8 @@ class AttendanceBase:
     def get_queryset(self):
         user = self.request.user
         try:
-            if hasattr(user, 'employeer_user'):
-                employeer = user.employeer_user
+            if hasattr(user, 'employeer'):
+                employeer = user.employeer
                 base_queryset = super().get_queryset()
                 return base_queryset.select_related(
                     'employee', 'employee__companie'
