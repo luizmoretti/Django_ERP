@@ -51,7 +51,7 @@ class InflowService:
                 extra={
                     'inflow_id': inflow.id,
                     'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'company_id': user.employeer.companie.id
                 }
             )
             
@@ -97,7 +97,7 @@ class InflowService:
                 extra={
                     'inflow_id': inflow.id,
                     'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'company_id': user.employeer.companie.id
                 }
             )
             
@@ -137,7 +137,7 @@ class InflowService:
                 extra={
                     'inflow_id': inflow.id,
                     'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'company_id': user.employeer.companie.id
                 }
             )
             
@@ -171,7 +171,7 @@ class InflowService:
                 extra={
                     'inflow_id': inflow.id,
                     'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id,
+                    'company_id': user.employeer.companie.id,
                     'rejection_reason': rejection_reason
                 }
             )

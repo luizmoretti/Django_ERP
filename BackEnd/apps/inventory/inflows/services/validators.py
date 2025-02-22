@@ -22,7 +22,7 @@ class InflowBusinessValidator:
         Raises:
             ValidationError: If user tries to access resources from another company
         """
-        user_company = user.employeer_user.companie
+        user_company = user.employeer.companie
         
         # Validate origin supplier
         if data.get('origin') and data['origin'].companie != user_company:
