@@ -15,13 +15,13 @@ class InflowBasePermission(BasePermission):
             
         try:
             # Ensure user has an associated employee
-            employeer = request.user.employeer_user
+            employeer = request.user.employeer
             return True
         except Exception as e:
             logger.warning(
                 "User without employee profile tried to access inflow",
                 extra={
-                    'user_id': request.user.id,
+                    'user_email': request.user.email,
                     'error': str(e)
                 }
             )
@@ -29,7 +29,7 @@ class InflowBasePermission(BasePermission):
     
     def has_object_permission(self, request, view, obj):
         # Ensure user's company matches object's company
-        return obj.companie == request.user.employeer_user.companie
+        return obj.companie == request.user.employeer.companie
 
 
 class CanApproveInflow(InflowBasePermission):
@@ -46,7 +46,7 @@ class CanApproveInflow(InflowBasePermission):
         if not has_perm:
             logger.warning(
                 "User attempted to approve inflow without permission",
-                extra={'user_id': request.user.id}
+                extra={'user_email': request.user.email}
             )
         return has_perm
 
