@@ -25,7 +25,7 @@ class BaseBrandView:
     def get_queryset(self):
         user = self.request.user
         try:
-            employeer = user.employeer_user
+            employeer = user.employeer
             return Brand.objects.select_related(
                 'created_by', 'companie'
             ).filter(is_active=True, companie=employeer.companie)

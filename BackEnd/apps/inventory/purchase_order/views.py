@@ -25,7 +25,7 @@ class PurchaseOrderBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
-            employeer = user.employeer_user
+            employeer = user.employeer
             return self.queryset.select_related(
                 'companie',
                 'supplier',
@@ -337,8 +337,8 @@ class PurchaseOrderApproveView(PurchaseOrderBaseView, generics.GenericAPIView):
                 logger.info(f"User type: {request.user.user_type}")
                 logger.info(f"Order status: {order.status}")
                 logger.info(f"Order company: {order.companie}")
-                logger.info(f"User company: {request.user.employeer_user.companie}")
-                logger.info(f"User employeer: {request.user.employeer_user}")
+                logger.info(f"User company: {request.user.employeer.companie}")
+                logger.info(f"User employeer: {request.user.employeer}")
                 updated_order = PurchaseOrderService.approve_order(
                     order=order,
                     user=request.user

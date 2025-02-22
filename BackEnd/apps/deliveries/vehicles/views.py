@@ -25,7 +25,7 @@ class VehicleBaseView:
         user = self.request.user
         try:
             # Filtra apenas veículos da mesma empresa
-            employeer = user.employeer_user
+            employeer = user.employeer
             return Vehicle.objects.select_related(
                 'companie'
             ).filter(companie=employeer.companie)

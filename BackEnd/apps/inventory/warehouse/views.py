@@ -31,7 +31,7 @@ class WareHouseBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
-            employeer = user.employeer_user
+            employeer = user.employeer
             return Warehouse.objects.select_related(
                 'companie'
             ).filter(companie=employeer.companie)

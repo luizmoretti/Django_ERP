@@ -26,7 +26,7 @@ class ProductBaseView:
         """Get queryset filtered by user's company"""
         user = self.request.user
         try:
-            employeer = user.employeer_user
+            employeer = user.employeer
             return self.queryset.select_related(
                 'companie',
                 'created_by',
