@@ -18,7 +18,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from django.db import transaction
-from .models import NormalUser
+from .models import User
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
 import logging
@@ -26,7 +26,7 @@ from django.contrib.auth import user_logged_in
 
 logger = logging.getLogger(__name__)
 
-@receiver(post_save, sender=NormalUser)
+@receiver(post_save, sender=User)
 def create_company_for_user(sender, instance, created, **kwargs):
     """
     Signal handler to create a company record for new users when appropriate.
@@ -61,7 +61,7 @@ def create_company_for_user(sender, instance, created, **kwargs):
                 logger.error(f"Error creating company for user {instance.email}: {str(e)}")
                 raise
 
-@receiver(post_save, sender=NormalUser)
+@receiver(post_save, sender=User)
 def create_employee_and_assign_group(sender, instance, created, **kwargs):
     """
     Signal handler to create employee record and assign permission group for new users.
@@ -109,6 +109,48 @@ def create_employee_and_assign_group(sender, instance, created, **kwargs):
             logger.error(f"Error in post_save signal for user {instance.email}: {str(e)}")
             # Re-raise the exception to ensure proper error handling
             raise
+        
+@receiver(post_save, sender=Group)
+def resync_user_permissions(sender, instance, created, **kwargs):
+    """
+    Signal to re-sync user permissions when a group is created or updated.
+    
+    This signal handler ensures that when group permissions are modified,
+    all users in that group have their permissions properly updated to
+    reflect the changes.
+    
+    Args:
+        sender: The model class (Group)
+        instance: The actual group instance
+        created: Boolean indicating if this is a new record
+        **kwargs: Additional keyword arguments
+    """
+    try:
+        # Get all users in the group
+        users = instance.user_set.all()
+        
+        for user in users:
+            # Clear user's permissions
+            user.user_permissions.clear()
+            
+            # Add all permissions from all user's groups
+            for group in user.groups.all():
+                permissions = group.permissions.all()
+                user.user_permissions.add(*permissions)
+            
+            # Refresh user's permission cache
+            if hasattr(user, '_perm_cache'):
+                delattr(user, '_perm_cache')
+            if hasattr(user, '_user_perm_cache'):
+                delattr(user, '_user_perm_cache')
+            if hasattr(user, '_group_perm_cache'):
+                delattr(user, '_group_perm_cache')
+        
+        logger.info(f"User permissions successfully re-synced for group {instance.name}")
+    except Exception as e:
+        logger.error(f"Error re-syncing user permissions for group {instance.name}: {str(e)}")
+        # Re-raise the exception to ensure proper error handling
+        raise
 
 
 @receiver(user_logged_in)
@@ -119,7 +161,7 @@ def update_user_ip(sender, user, request, **kwargs):
     if hasattr(user, 'get_ip_on_login'):
         user.get_ip_on_login(request)
 
-@receiver(post_save, sender=NormalUser)
+@receiver(post_save, sender=User)
 def ensure_ip_on_create(sender, instance, created, **kwargs):
     """
     Signal para garantir que o IP seja salvo na criação do usuário

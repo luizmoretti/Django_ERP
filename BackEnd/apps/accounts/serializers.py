@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from django.contrib.auth.hashers import make_password
-from .models import NormalUser
-
+from .models import User
 
 class BaseUserSerializer(serializers.ModelSerializer):
     """
@@ -34,7 +33,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
-    user_type = serializers.CharField(read_only=True, default='Employee')
+    user_type = serializers.CharField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     is_active = serializers.BooleanField(required=False, read_only=True, default=True)
     last_login = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
@@ -42,7 +41,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
     ip = serializers.IPAddressField(read_only=True)
 
     class Meta:
-        model = NormalUser
+        model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'user_type', 'date_joined', 'is_active', 'last_login', 'img', 'ip'
@@ -193,3 +192,93 @@ class ListAllUsersSerializer(BaseUserSerializer):
         Uses all fields from BaseUserSerializer without modifications
     """
     pass
+
+
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for the login endpoint.
+    
+    Attributes:
+        email: User's email address
+        password: User's password (write-only)
+    """
+    email = serializers.EmailField(
+        required=True,
+        error_messages={
+            'required': 'Email is required',
+            'invalid': 'Enter a valid email address'
+        }
+    )
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        error_messages={
+            'required': 'Password is required'
+        }
+    )
+
+    def validate(self, attrs):
+        """
+        Validate the login data.
+        
+        Args:
+            attrs: Dictionary of field values
+            
+        Returns:
+            dict: Validated data
+        """
+        return attrs
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer for password reset confirmation.
+    
+    Validates that:
+    - Password meets minimum requirements
+    - Password confirmation matches
+    """
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=8,
+        style={'input_type': 'password'},
+        error_messages={
+            'required': 'New password is required',
+            'min_length': 'Password must be at least 8 characters long'
+        }
+    )
+    password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        error_messages={
+            'required': 'Password confirmation is required'
+        }
+    )
+
+    def validate_password(self, value):
+        """
+        Validate password strength.
+        """
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError('Password must contain at least one number')
+        if not any(char.isupper() for char in value):
+            raise serializers.ValidationError('Password must contain at least one uppercase letter')
+        if not any(char.islower() for char in value):
+            raise serializers.ValidationError('Password must contain at least one lowercase letter')
+        if not any(not char.isalnum() for char in value):
+            raise serializers.ValidationError('Password must contain at least one special character')
+        return value
+
+    def validate(self, attrs):
+        """
+        Validate that passwords match.
+        """
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({
+                'password_confirm': 'Passwords do not match'
+            })
+        return attrs
