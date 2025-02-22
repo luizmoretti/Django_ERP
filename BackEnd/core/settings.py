@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     # Apps
     'apps',
     'apps.accounts',
+    'apps.accounts.profiles',
     'apps.notifications',
     
     #Companie Manegement Apps
@@ -126,7 +127,7 @@ if not DEBUG:
 ################################
 ########## SECURITY ############
 ################################
-AUTH_USER_MODEL = 'accounts.NormalUser'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Django Axes Configuration (Proteção contra força bruta)
 AUTHENTICATION_BACKENDS = [
@@ -134,9 +135,9 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 AXES_ENABLED = True
-AXES_FAILURE_LIMIT = 5
+AXES_FAILURE_LIMIT = 10
 AXES_LOCK_OUT_AT_FAILURE = True
-AXES_COOLOFF_TIME = 1  # hours
+AXES_COOLOFF_TIME = 0.30  # 30 seconds
 AXES_LOCKOUT_TEMPLATE = None  # Returns JSON response instead of template
 AXES_LOCKOUT_URL = None
 AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]] # Adds 'ip_address' and 'user_agent' to the list of parameters checked
@@ -150,10 +151,16 @@ if DEBUG:  # In development
     SECURE_SSL_REDIRECT = False
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOW_CREDENTIALS = True
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
 else:  # In production
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -752,12 +759,14 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
         
         
-        # Users Management
-        {'name': 'Users - Authentication', 'description': 'User authentication endpoints'},
-        {'name': 'Users - Management', 'description': 'User management endpoints'},
+        # Accounts Management
+        {'name': 'Accounts - Authentication', 'description': 'Authentication endpoints'},
+        {'name': 'Accounts - Management', 'description': 'User management endpoints'},
+        {'name': 'Accounts - Profiles', 'description': 'User profile management endpoints'},
+        {'name': 'Accounts - Password Reset', 'description': 'Password reset endpoint'},
         
-        
-        # Organizations
+        # Useles endpoints
+        {'name': 'user', 'description': 'Non Useful endpoints'},
         
         
         # Teams
