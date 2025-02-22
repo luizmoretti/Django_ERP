@@ -156,7 +156,7 @@ class AuthEmailHandler(BaseEmailHandler):
                 - token: Password reset token
             to_email: Recipient email address
         """
-        template = EmailTemplate('auth/password_reset')
+        template = EmailTemplate('auth/password_reset_email')
         
         # Enrich the context with additional information if necessary
         email_context = {
