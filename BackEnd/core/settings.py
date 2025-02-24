@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'apps.inventory.categories',
     'apps.inventory.warehouse',
     'apps.inventory.inflows',
+    'apps.inventory.movements',
     'apps.inventory.outflows',
     'apps.inventory.transfer',
     'apps.inventory.brand',
@@ -611,20 +612,44 @@ WSGI_APPLICATION = 'core.wsgi.application'
 ################################
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/4'),
         'OPTIONS': {
-            'db': 0,
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'RETRY_ON_TIMEOUT': True,
+            'MAX_CONNECTIONS': 1000,
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
         },
-        'KEY_PREFIX': 'drywall',
-        'VERSION': 1,
-        'TIMEOUT': 300,  # 5 minutes default timeout
+        'KEY_PREFIX': 'drywallwarehouse',
+        'TIMEOUT': 300,  # 5 minutes default
+    },
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/5'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'TIMEOUT': 3600,  # 1 hour for sessions
     }
 }
 
-# Session configuration
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+# Use Redis for session storage
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+
+# Cache timeouts for different types of data (in seconds)
+CACHE_TIMEOUTS = {
+    'product': 3600,        # 1 hour
+    'warehouse': 1800,      # 30 minutes
+    'movements': 300,       # 5 minutes
+    'inventory': 300,       # 5 minutes
+    'customer': 3600,       # 1 hour
+    'supplier': 3600,       # 1 hour
+    'user': 3600,          # 1 hour
+    'company': 3600,       # 1 hour
+}
 
 # Use the default cache for axes
 AXES_CACHE = 'default'
@@ -748,6 +773,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Purchase Orders', 'description': 'Purchase order management endpoints'},
         {'name': 'Inventory - Products', 'description': 'Product management endpoints'},
         {'name': 'Inventory - Suppliers', 'description': 'Supplier management endpoints'},
+        {'name': 'Inventory - Movements', 'description': 'Movement management endpoints'},
         
         # Reports
         

@@ -186,7 +186,7 @@ def cache_get_or_set(
 CACHE_KEYS = {
     'product': 'product:{id}',
     'warehouse': 'warehouse:{id}',
-    'inventory': 'inventory:{warehouse_id}:{product_id}',
+    'movements': 'movements:{id}',
     'customer': 'customer:{id}',
     'supplier': 'supplier:{id}',
     'user': 'user:{id}',
@@ -198,13 +198,38 @@ def get_cache_key(key_type: str, **kwargs) -> str:
     Get a formatted cache key for a specific type of data.
     
     Args:
-        key_type: Type of cache key from CACHE_KEYS
-        **kwargs: Values to format the key with
+        key_type: Type of data (e.g., 'product', 'warehouse', 'movements')
+        **kwargs: Key-value pairs to format the cache key
     
     Returns:
-        Formatted cache key
+        Formatted cache key string
+    
+    Example:
+        >>> get_cache_key('movements', companie_id='123', method='GET', url='/api/v1/movements/', query_params='*')
+        'movements:123:GET:/api/v1/movements/:*'
     """
     if key_type not in CACHE_KEYS:
-        raise ValueError(f"Invalid cache key type: {key_type}")
+        raise ValueError(f"Invalid key_type: {key_type}. Must be one of {list(CACHE_KEYS.keys())}")
     
-    return CACHE_KEYS[key_type].format(**kwargs)
+    try:
+        # Get the key template
+        key_template = CACHE_KEYS[key_type]
+        
+        # For movements, handle query params specially
+        if key_type == 'movements' and 'query_params' in kwargs:
+            if isinstance(kwargs['query_params'], (dict, list)):
+                kwargs['query_params'] = hashlib.md5(
+                    json.dumps(kwargs['query_params'], sort_keys=True).encode()
+                ).hexdigest()
+        
+        # Format the key template with provided kwargs
+        return key_template.format(**kwargs)
+        
+    except KeyError as e:
+        missing_key = str(e).strip("'")
+        raise ValueError(
+            f"Missing required parameter '{missing_key}' for key_type '{key_type}'. "
+            f"Required parameters: {key_template.count('{')}"
+        )
+    except Exception as e:
+        raise ValueError(f"Error generating cache key: {str(e)}")
