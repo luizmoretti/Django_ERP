@@ -21,6 +21,14 @@ class ProductSKUSerializer(serializers.ModelSerializer):
             'sku'
         ]
         
+class HomeDepotActionResultSerializer(serializers.Serializer):
+    """Serializer for Home Depot action results"""
+    success_count = serializers.IntegerField()
+    error_count = serializers.IntegerField()
+    results = serializers.ListField(
+        child=serializers.DictField()
+    )
+        
 class ProductSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=100, help_text='The name of the product', required=True)
     description = serializers.CharField(max_length=255, help_text='The description of the product', required=False)

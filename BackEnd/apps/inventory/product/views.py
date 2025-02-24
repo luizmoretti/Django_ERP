@@ -4,11 +4,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .service.product_services import ProductServices
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 import logging
 
 from .models import Product
-from .serializers import ProductSerializer
+from .serializers import ProductSerializer, HomeDepotActionResultSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -116,50 +116,51 @@ class ProductDestroyView(ProductBaseView, generics.DestroyAPIView):
         logger.info(f"[PRODUCT VIEWS] - Product {instance.id} deleted successfully by {self.request.user}")
         instance.delete()
         
-
-class HomeDepotActionsView(APIView):
-    """View for Home Depot related actions"""
-    permission_classes = [IsAuthenticated]
-    
-    @extend_schema(
+@extend_schema_view(
+    post=extend_schema(
         tags=['Inventory - Products'],
         summary='Execute Home Depot actions',
         description='Execute Home Depot actions (search or update) for a product',
         parameters=[
             OpenApiParameter(
-                name='action',
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description='Action to execute: "search" to find and save Home Depot ID, "update" to update product info',
-                required=True
+                name="action",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Action to execute: 'search' to find and save Home Depot Product in Store ID, 'update' to update product info",
+                enum=['search', 'update']
             )
-        ]
+        ],
+        responses={
+            200: HomeDepotActionResultSerializer,
+            400: OpenApiTypes.OBJECT,
+            500: OpenApiTypes.OBJECT
+        }
     )
-    def post(self, request, pk=None):
+)
+class HomeDepotActionsView(APIView):
+    """View for Home Depot related actions"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = HomeDepotActionResultSerializer
+    
+    def post(self, request, action, pk=None):
         """Execute Home Depot actions
         
         Args:
-            request: Request object with action parameter
+            request: Request object
+            action: Action to execute (search or update)
             pk: Product ID (optional, if not provided will execute for all products)
             
         Returns:
             Response with action results
         """
         try:
-            action = request.query_params.get('action')
-            if not action:
-                return Response(
-                    {"error": "Action parameter is required (search or update)"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-                
             if action not in ['search', 'update']:
                 return Response(
                     {"error": "Invalid action. Must be 'search' or 'update'"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
-            # Se não tiver ID, executar para todos os produtos da empresa
+            # If no ID, run for all company products
             if not pk:
                 products = ProductServices.get_all_products()
             else:
@@ -177,15 +178,17 @@ class HomeDepotActionsView(APIView):
                     **result
                 })
                 
-            # Contar sucessos e erros
+            # Counting successes and errors
             success_count = sum(1 for r in results if r['status'] == 'success')
             error_count = sum(1 for r in results if r['status'] == 'error')
             
-            return Response({
+            response_data = {
                 "success_count": success_count,
                 "error_count": error_count,
                 "results": results
-            })
+            }
+            serializer = self.serializer_class(response_data)
+            return Response(serializer.data)
             
         except Exception as e:
             logger.error(f"Error executing Home Depot action: {str(e)}")
