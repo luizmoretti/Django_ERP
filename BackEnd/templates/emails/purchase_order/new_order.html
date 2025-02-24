@@ -8,9 +8,9 @@
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #333333;
             margin: 0;
-            padding: 0;
+            padding: 0; 
         }
         .container {
             max-width: 600px;
@@ -18,19 +18,24 @@
             padding: 20px;
         }
         .header {
-            background-color: #f8f9fa;
-            padding: 20px;
+            background-color: #1a56db;
+            color: white;
             text-align: center;
-            border-bottom: 2px solid #dee2e6;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
         }
         .content {
-            padding: 20px;
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0 0 5px 5px;
         }
         .order-details {
             margin-bottom: 30px;
         }
         .order-details h2 {
             text-align: center;
+            color: #333333;
         }
         .order-details__intro {
             text-align: center;
@@ -44,40 +49,52 @@
         .order-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid #e5e7eb;
         }
         .order-table th {
-            background-color: #f8f9fa;
+            background-color: #1a56db;
+            color: white;
         }
         .total-row {
             font-weight: bold;
-            background-color: #f8f9fa;
+            background-color: #f3f4f6;
         }
         .thanks {
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #e5e7eb;
             text-align: center;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
             text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
             font-size: 14px;
-            color: #6c757d;
         }
         .notes {
-            background-color: #f8f9fa;
+            background-color: #f3f4f6;
             padding: 15px;
-            border-radius: 4px;
+            border-radius: 5px;
             margin: 20px 0;
+            border: 1px solid #e5e7eb;
         }
         .text-right {
             text-align: right;
         }
         .text-center {
             text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background-color: #1a56db;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #1545a1;
         }
         @media only screen and (max-width: 600px) {
             .container {
@@ -94,7 +111,7 @@
     <div class="container">
         <div class="header">
             <h1>Purchase Order</h1>
-            <h1>{{ companie_name }}</h1>
+            <h2>{{ companie_name }}</h2>
         </div>
         
         <div class="content">
@@ -148,7 +165,7 @@
 
         <div class="footer">
             <p>This is an automated email from {{ companie_name }}</p>
-            <p>Please do not reply to this email</p>
+            <small>Please do not reply to this email</small>
         </div>
     </div>
 </body>
