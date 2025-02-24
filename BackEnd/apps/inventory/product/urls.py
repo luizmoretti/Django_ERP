@@ -12,5 +12,5 @@ urlpatterns = [
     path('delete/<uuid:pk>/', views.ProductDestroyView.as_view(), name='delete_product'),
     
     # Home Depot Actions
-    path('home-depot/', views.HomeDepotActionsView.as_view(), name='hd_actions'),
+    path('home-depot/<str:action>/', views.HomeDepotActionsView.as_view(), name='hd_actions'),
 ]
