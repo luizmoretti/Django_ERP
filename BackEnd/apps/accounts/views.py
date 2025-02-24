@@ -488,6 +488,10 @@ class UserListView(BaseUserView, ListAPIView):
                 }
             }
         }
+    ),
+    get=extend_schema(
+        tags=["Accounts - Authentication"],
+        summary="This method for login is for server uses only | Front Developer should ignore it and only use the POST method"
     )
 )
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -703,16 +707,28 @@ class CustomPasswordResetView(APIView):
         operation_id="password_reset_confirm",
         summary="Confirm password reset",
         description="Reset user's password using token from email",
+        parameters=[
+            OpenApiParameter(
+                name="uidb64",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Base64 encoded user ID"
+            ),
+            OpenApiParameter(
+                name="token",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Password reset token"
+            )
+        ],
         request={
             'application/json': {
                 'type': 'object',
                 'properties': {
                     'password': {'type': 'string', 'format': 'password'},
-                    'password_confirm': {'type': 'string', 'format': 'password'},
-                    'token': {'type': 'string'},
-                    'uidb64': {'type': 'string'}
+                    'password_confirm': {'type': 'string', 'format': 'password'}
                 },
-                'required': ['password', 'password_confirm', 'token', 'uidb64']
+                'required': ['password', 'password_confirm']
             }
         },
         responses={

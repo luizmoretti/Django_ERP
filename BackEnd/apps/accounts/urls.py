@@ -15,7 +15,7 @@ urlpatterns = [
     
     # Password Reset Flow
     path('password-reset/', CustomPasswordResetView.as_view(), name='password_reset'),
-    path('reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reset/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     
     
