@@ -7,7 +7,7 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 from .models import PurchaseOrder, PurchaseOrderItem
 from .serializers import PurchaseOrderSerializer
-from .services import PurchaseOrderService, PurchaseOrderItemService
+from .services.handlers import PurchaseOrderService, PurchaseOrderItemService
 import logging
 
 logger = logging.getLogger(__name__)

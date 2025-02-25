@@ -8,7 +8,7 @@ from apps.notifications.base import BaseNotificationHandler
 from django.db.models.signals import pre_save, post_save, pre_delete, post_delete
 from django.dispatch import receiver
 from ..models import PurchaseOrder, PurchaseOrderItem
-from ..services import PurchaseOrderItemChangeService
+from apps.inventory.purchase_order.services.handlers import PurchaseOrderItemChangeService
 from .constants import (
     APP_NAME,
     NOTIFICATION_TYPE,
