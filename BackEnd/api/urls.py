@@ -23,6 +23,7 @@ urlpatterns = [
 
     # User endpoints
     path('user/', include('apps.accounts.urls')),
+    path('profiles/', include('apps.accounts.profiles.urls')),
     
     # Customer endpoints
     path('customers/', include('apps.companies.customers.urls')),
