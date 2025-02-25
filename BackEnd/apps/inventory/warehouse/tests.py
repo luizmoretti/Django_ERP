@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from ..product.models import Product
 from .models import Warehouse, WarehouseProduct
 from apps.companies.models import Companie
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.companies.employeers.models import Employeer
 
 class WarehouseCapacityTests(TestCase):
@@ -18,8 +18,7 @@ class WarehouseCapacityTests(TestCase):
         
         # Create test user with unique username/email
         test_number = id(self)  # Use test instance id to generate unique values
-        self.user = NormalUser.objects.create(
-            username=f"testuser{test_number}",
+        self.user = User.objects.create(
             email=f"test{test_number}@example.com",
             first_name="Test",
             last_name="User",
