@@ -138,9 +138,7 @@ class Command(BaseCommand):
                 "suppliers", "barcodes", "stores", "categories", "brands"
             ] else [],
             
-            "Employee": lambda app_label: ["view"] if app_label in [
-                "employeers", "hr", "warehouse", "inventory"
-            ] else [],
+            "Employee": lambda app_label: ["view_own_profile", "change_own_profile"] if app_label == "profiles" else [],
             
             "HR": lambda app_label: ["view", "add", "change", "delete"] if app_label in [
                 "employeers", "hr"
