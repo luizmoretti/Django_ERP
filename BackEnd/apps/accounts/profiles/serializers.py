@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from apps.accounts.profiles.models import Profile
 from apps.accounts.serializers import UserSerializer
 from django.utils.translation import gettext
@@ -97,13 +98,13 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     def validate_social_links(self, value):
         """Validate social links format and URLs."""
         if not isinstance(value, dict):
-            raise serializers.ValidationError(
+            raise ValidationError(
                 gettext("Social links must be a dictionary of platform-URL pairs")
             )
         
         for platform, url in value.items():
             if not isinstance(url, str) or not url.startswith(('http://', 'https://')):
-                raise serializers.ValidationError(
+                raise ValidationError(
                     gettext("Invalid URL format for platform: {platform}")
                 )
         return value
@@ -111,7 +112,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     def validate_preferences(self, value):
         """Validate user preferences format."""
         if not isinstance(value, dict):
-            raise serializers.ValidationError(
+            raise ValidationError(
                 gettext("Preferences must be a dictionary")
             )
         return value
@@ -132,11 +133,11 @@ class ProfileAvatarSerializer(serializers.ModelSerializer):
         """Validate avatar file size and format."""
         if value:
             if value.size > 5 * 1024 * 1024:  # 5MB limit
-                raise serializers.ValidationError(
+                raise ValidationError(
                     gettext("Avatar file size cannot exceed 5MB")
                 )
             if not value.content_type.startswith('image/'):
-                raise serializers.ValidationError(
+                raise ValidationError(
                     gettext("Only image files are allowed for avatar")
                 )
         return value
