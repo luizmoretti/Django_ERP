@@ -76,9 +76,17 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     Allows updating of profile fields while maintaining
     data validation and security.
     """
+    user = serializers.PrimaryKeyRelatedField(
+        read_only=True,
+        default=serializers.CurrentUserDefault()
+    )
+    companie = serializers.PrimaryKeyRelatedField(read_only=True)
+    
     class Meta:
         model = Profile
         fields = [
+            'user',
+            'companie',
             'bio',
             'birth_date',
             'position',
@@ -116,6 +124,18 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 gettext("Preferences must be a dictionary")
             )
         return value
+        
+    def create(self, validated_data):
+        """Create a new profile."""
+        user = self.context['request'].user
+        try:
+            from apps.companies.employeers.models import Employeer
+            employeer = Employeer.objects.get(user=user)
+            validated_data['user'] = user
+            validated_data['companie'] = employeer.companie
+            return super().create(validated_data)
+        except Employeer.DoesNotExist:
+            raise ValidationError(gettext("User is not associated with an employee"))
 
 
 class ProfileAvatarSerializer(serializers.ModelSerializer):

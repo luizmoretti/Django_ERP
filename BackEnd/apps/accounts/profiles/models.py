@@ -43,6 +43,10 @@ class Profile(BaseAddressWithBaseModel):
         on_delete=models.CASCADE,
         related_name='profile'
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text=gettext("Whether this profile is active")
+    )
     bio = models.TextField(
         blank=True,
         help_text=gettext("A brief biography or description of the user")
@@ -86,8 +90,8 @@ class Profile(BaseAddressWithBaseModel):
         verbose_name_plural = 'Profiles'
         ordering = ['user__first_name', 'user__last_name']
         permissions = [
-            ("view_own_profile", "Can view own profile"),
-            ("edit_own_profile", "Can edit own profile"),
+            ("view_own_profile", "Can view own profile only"),
+            ("change_own_profile", "Can edit own profile only"),
         ]
 
     def __str__(self):
