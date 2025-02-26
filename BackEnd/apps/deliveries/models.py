@@ -7,6 +7,8 @@ from apps.inventory.warehouse.models import Warehouse
 from ..companies.customers.models import Customer 
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
+import datetime
+from django.utils import timezone
 from django.db import transaction
 from django.db import IntegrityError
 
@@ -44,9 +46,35 @@ class Delivery(BaseModel):
     status = models.CharField(
         max_length=100, 
         choices=DELIVERY_STATUS_CHOICES, 
-        null=True,
         blank=True,
-        help_text='The status of the delivery'
+        help_text='The status of the delivery',
+        default='pending'
+    )
+    
+    # Fields for tracking
+    is_tracking_enabled = models.BooleanField(
+        default=True,
+        help_text='If real-time tracking is enabled for this delivery'
+    )
+    estimated_start_time = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='Estimated start time of the delivery'
+    )
+    actual_start_time = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='Actual start time of the delivery'
+    )
+    estimated_delivery_time = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='Estimated delivery time of the delivery'
+    )
+    actual_delivery_time = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='Actual delivery time of the delivery'
     )
     
     class Meta:
@@ -56,6 +84,95 @@ class Delivery(BaseModel):
         
     def __str__(self):
         return f'Delivery {self.number} from {self.origin} to {self.destiny}'
+    
+    
+    def get_current_location(self):
+        """Returns the most recent delivery location."""
+        return self.location_updates.order_by('-created_at').first()
+    
+    def get_current_status(self):
+        """Returns the most recent delivery status."""
+        return self.status_updates.order_by('-created_at').first()
+    
+    def get_eta(self):
+        """
+        Calculates the estimated arrival time based on the current location and route.
+        
+        Returns:
+            datetime: The estimated arrival time, or None if it cannot be calculated.
+        """
+        try:
+            # Get the route information
+            try:
+                route = self.route
+            except:
+                return self.estimated_delivery_time
+            
+            # If no route is available, return the estimated delivery time
+            if not route or not route.estimated_arrival:
+                return self.estimated_delivery_time
+            
+            # Get the current location
+            current_location = self.get_current_location()
+            if not current_location:
+                return route.estimated_arrival
+            
+            # If there's no speed data, return the route's estimated arrival
+            if not current_location.speed or current_location.speed <= 0:
+                return route.estimated_arrival
+            
+            # Get the route geometry
+            if not route.route_geometry:
+                return route.estimated_arrival
+            
+            # Calculate remaining distance
+            from django.contrib.gis.geos import LineString
+            from django.contrib.gis.db.models.functions import Distance
+            
+            # Create a line from the current location to the end of the route
+            remaining_points = []
+            
+            # Find the closest point on the route to the current location
+            closest_point_found = False
+            min_distance = float('inf')
+            closest_index = 0
+            
+            for i, point in enumerate(route.route_geometry):
+                dist = current_location.location.distance(point)
+                if dist < min_distance:
+                    min_distance = dist
+                    closest_index = i
+                    closest_point_found = True
+            
+            # If we found a closest point, calculate the remaining route
+            if closest_point_found:
+                # Get the remaining points on the route
+                remaining_points = list(route.route_geometry[closest_index:])
+                
+                if len(remaining_points) > 1:
+                    # Calculate the remaining distance in meters
+                    remaining_line = LineString(remaining_points)
+                    remaining_distance = remaining_line.length
+                    
+                    # Calculate the estimated time to travel the remaining distance
+                    # Speed is in km/h, convert to m/s
+                    speed_m_s = current_location.speed * 1000 / 3600
+                    if speed_m_s > 0:
+                        remaining_time_seconds = remaining_distance / speed_m_s
+                        
+                        # Add the remaining time to the current time
+                        return timezone.now() + datetime.timedelta(seconds=remaining_time_seconds)
+            
+            # If we couldn't calculate a new ETA, return the original estimate
+            return route.estimated_arrival
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error calculating ETA for delivery {self.id}: {str(e)}")
+            return self.estimated_delivery_time
+    
+    
     
     
     def generate_unique_delivery_number(self):
