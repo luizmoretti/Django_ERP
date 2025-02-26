@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     
     # Security
     'axes',  # Proteção contra força bruta
@@ -83,6 +84,7 @@ INSTALLED_APPS = [
     
     #Delivery Manegement App
     'apps.deliveries',
+    'apps.deliveries.tracking',
     'apps.deliveries.vehicles',
     
     
@@ -280,7 +282,7 @@ if 'test' in sys.argv:
 elif DB_NAME and DB_USER:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.postgresql",
+            "ENGINE": "django.contrib.gis.db.backends.postgis",
             "NAME": DB_NAME,
             "USER": DB_USER,
             "PASSWORD": DB_PASS,
@@ -291,7 +293,7 @@ elif DB_NAME and DB_USER:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
+            "ENGINE": "django.contrib.gis.db.backends.spatialite",
             "NAME": "db.sqlite3",
         }
     }
@@ -837,3 +839,30 @@ SIMPLE_JWT = {
 
 SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY', '')
 SERPAPI_BASE_URL = os.getenv('SERPAPI_BASE_URL', '')
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
+
+
+# GeoDjango settings
+if os.name == 'nt':  # For Windows
+    # Define GDAL library paths directly
+    OSGEO4W_ROOT = r'C:\OSGeo4W'
+    
+    # Define GDAL library paths
+    if os.path.isdir(OSGEO4W_ROOT):
+        os.environ['OSGEO4W_ROOT'] = OSGEO4W_ROOT
+        # Usar o diretório proj para GDAL_DATA já que o diretório gdal não existe
+        os.environ['GDAL_DATA'] = os.path.join(OSGEO4W_ROOT, 'share', 'proj')
+        os.environ['PROJ_LIB'] = os.path.join(OSGEO4W_ROOT, 'share', 'proj')
+        os.environ['PATH'] = OSGEO4W_ROOT + r'\bin;' + os.environ['PATH']
+        
+        # Use specific paths for GDAL and GEOS
+        GDAL_LIBRARY_PATH = os.path.join(OSGEO4W_ROOT, 'bin', 'gdal310.dll')
+        GEOS_LIBRARY_PATH = os.path.join(OSGEO4W_ROOT, 'bin', 'geos_c.dll')
+    else:
+        # Fallback to environment variables
+        GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', '')
+        GDAL_DATA = os.getenv('GDAL_DATA', '')
+else:
+    # For non-Windows platforms
+    GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', '')
+    GDAL_DATA = os.getenv('GDAL_DATA', '')

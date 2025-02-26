@@ -274,11 +274,11 @@ VEHICLE_COLOR_CHOICES = [
 ]
 
 DELIVERY_STATUS_CHOICES = [
-    ('Pending', gettext('Pending')),
-    ('In Progress', gettext('In Progress')),
-    ('Delivered', gettext('Delivered')),
-    ('Returned', gettext('Returned')),
-    ('Cancelled', gettext('Cancelled')),
+    ('pending', gettext('Pending')),
+    ('in_transit', gettext('In Transit')),
+    ('delivered', gettext('Delivered')),
+    ('returned', gettext('Returned')),
+    ('failed', gettext('Failed')),
 ]
 
 
