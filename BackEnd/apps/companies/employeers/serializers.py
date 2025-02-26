@@ -113,7 +113,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
         """Retorna informações do usuário associado"""
         if obj.user:
             return {
-                'username': obj.user.username,
+                'email': obj.user.email,
                 'user_type': obj.user.user_type,
                 'is_active': obj.user.is_active
             }
