@@ -5,6 +5,7 @@ from crum import get_current_user
 from django.contrib.auth.models import AnonymousUser
 from apps.accounts.models import User
 from rest_framework_simplejwt.tokens import AccessToken
+from core.unified_middleware import UnifiedAuthMiddlewareStack
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from jwt.exceptions import InvalidTokenError
 
@@ -63,6 +64,10 @@ class TokenAuthMiddleware(BaseMiddleware):
 
         return await super().__call__(scope, receive, send)
 
+# Manter para compatibilidade com código existente
 def TokenAuthMiddlewareStack(inner):
-    """Helper function to wrap TokenAuthMiddleware around the ASGI application."""
-    return TokenAuthMiddleware(inner)
+    """
+    Deprecated: Use UnifiedAuthMiddlewareStack instead.
+    Kept for backward compatibility.
+    """
+    return UnifiedAuthMiddlewareStack(inner)
