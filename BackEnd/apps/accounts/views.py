@@ -120,8 +120,16 @@ class UserCreateView(BaseUserView, CreateAPIView):
     def perform_create(self, serializer):
         try:
             instance = serializer.save()
+            
+            
+            if not get_current_request():
+                from crum import CurrentRequestUserMiddleware
+                middleware = CurrentRequestUserMiddleware(get_response=lambda x: None)
+                middleware.process_request(self.request)
+            
             instance._request = self.request
             instance.get_ip_on_login(self.request)
+            
             logger.info(
                 f"User created successfully: {instance.email}",
                 extra={

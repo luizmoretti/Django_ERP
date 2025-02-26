@@ -19,6 +19,7 @@ from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from django.db import transaction
 from .models import User
+from django.contrib.auth.models import AnonymousUser
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
 import logging
@@ -43,23 +44,26 @@ def create_company_for_user(sender, instance, created, **kwargs):
         **kwargs: Additional keyword arguments
     """
     if created:  # Only execute on user creation
-        if instance.user_type in ['CEO', 'Owner', 'Admin'] or instance.is_superuser:
-            try:
-                with transaction.atomic():
-                    logger.info(f"Creating company for user {instance.email}")
-                    company = Companie.objects.create(
-                        name=f"{instance.first_name}'s Company",
-                        type='Headquarters',
-                        email=instance.email,
-                        is_active=True
-                    )
-                    # Store the company ID in the user instance for use in the next signal
-                    instance._company_id = company.id
-                    logger.info(f"Company created successfully for {instance.email} with the name: {company.name}")
-                    
-            except Exception as e:
-                logger.error(f"Error creating company for user {instance.email}: {str(e)}")
-                raise
+        from crum import get_current_user
+        creator = get_current_user()
+        if not creator or isinstance(creator, AnonymousUser):
+            if instance.user_type in ['CEO', 'Owner', 'Admin'] or instance.is_superuser:
+                try:
+                    with transaction.atomic():
+                        logger.info(f"Creating company for user {instance.email}")
+                        company = Companie.objects.create(
+                            name=f"{instance.first_name}'s Company",
+                            type='Headquarters',
+                            email=instance.email,
+                            is_active=True
+                        )
+                        # Store the company ID in the user instance for use in the next signal
+                        instance._company_id = company.id
+                        logger.info(f"Company created successfully for {instance.email} with the name: {company.name}")
+                        
+                except Exception as e:
+                    logger.error(f"Error creating company for user {instance.email}: {str(e)}")
+                    raise
 
 @receiver(post_save, sender=User)
 def create_employee_and_assign_group(sender, instance, created, **kwargs):

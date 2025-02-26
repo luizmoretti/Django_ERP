@@ -75,7 +75,11 @@ class UserSerializer(BaseUserSerializer):
         create: Creates new user with encrypted password
         update: Updates user data, handling password separately
     """
-    password = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        style={'input_type': 'password'}
+    )
     groups = serializers.SerializerMethodField()
     user_permissions = serializers.SerializerMethodField()
     is_staff = serializers.BooleanField(read_only=True, default=False)
@@ -152,11 +156,19 @@ class UserSerializer(BaseUserSerializer):
             NormalUser: Created user instance
         """
         password = validated_data.pop('password', None)
-        instance = self.Meta.model(**validated_data)
         if password:
-            instance.set_password(password)
-        instance.save()
-        return instance
+            user = self.Meta.model.objects.create_user(
+                email=validated_data.pop('email'),
+                password=password,
+                **validated_data
+            )
+        else:
+            user = self.Meta.model.objects.create_user(
+                email=validated_data.pop('email'),
+                **validated_data
+            )
+            
+        return user
 
     def update(self, instance, validated_data):
         """
@@ -169,12 +181,14 @@ class UserSerializer(BaseUserSerializer):
         Returns:
             NormalUser: Updated user instance
         """
+        
         password = validated_data.pop('password', None)
-        if password:
-            instance.set_password(password)
         
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
+        if password:
+            instance.set_password(password)
         
         instance.save()
         return instance
