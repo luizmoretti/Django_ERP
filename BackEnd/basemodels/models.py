@@ -21,31 +21,43 @@ class BaseModel(models.Model):
     def save(self, *args, **kwargs):
         # get the actual user
         user = kwargs.pop('user', None)
-        # Auto-populate created_by and updated_by fields based in the employeer that the actual user it's associated with
+
         if not user or isinstance(user, AnonymousUser):
             from crum import get_current_user
             user = get_current_user()
-        
+
         if user and not isinstance(user, AnonymousUser):
             try:
-                # Late import of Employer to avoid circular import
                 from apps.companies.employeers.models import Employeer
-                
-                # Skip employeer association if this is an Employeer instance being created
-                if not isinstance(self, Employeer):
+
+                if isinstance(self, Employeer):
+                    # Caso especial para criação de Employeer
+                    try:
+                        creator_employeer = Employeer.objects.get(user=user)
+                        if not self.created_by:
+                            self.created_by = creator_employeer
+                        self.updated_by = creator_employeer
+
+                        if not self.companie and creator_employeer.companie:
+                            self.companie = creator_employeer.companie
+                    except Employeer.DoesNotExist:
+                        # Se não encontrar o employeer do criador, não faz nada
+                        # Isso permite a criação do primeiro employeer do sistema
+                        pass
+                else:
+                    # Comportamento normal para outros modelos
                     employeer = Employeer.objects.get(user=user)
-                    if not self.created_by: # Only set created_by if it's a new instance
+                    if not self.created_by:
                         self.created_by = employeer
                     self.updated_by = employeer
-                    
-                    # If the companie is not set, set it based on the companie associated with the employeer
+
                     if not self.companie and employeer.companie:
                         self.companie = employeer.companie
+
             except Employeer.DoesNotExist:
-                # Only raise error if this is not an Employeer instance being created
+                # Só levanta erro se não for uma instância de Employeer
                 if not isinstance(self, Employeer):
                     raise ValidationError('User does not exist or is not associated with an employee')
-            
         super().save(*args, **kwargs)
             
         
