@@ -31,7 +31,7 @@ class BaseModel(models.Model):
                 from apps.companies.employeers.models import Employeer
 
                 if isinstance(self, Employeer):
-                    # Caso especial para criação de Employeer
+                    # Special case for creating an Employer
                     try:
                         creator_employeer = Employeer.objects.get(user=user)
                         if not self.created_by:
@@ -41,11 +41,11 @@ class BaseModel(models.Model):
                         if not self.companie and creator_employeer.companie:
                             self.companie = creator_employeer.companie
                     except Employeer.DoesNotExist:
-                        # Se não encontrar o employeer do criador, não faz nada
-                        # Isso permite a criação do primeiro employeer do sistema
+                        # If it doesn't find the creator's employeer, it doesn't do anything
+                        # This allows the creation of the system's first employeer
                         pass
                 else:
-                    # Comportamento normal para outros modelos
+                    # Normal behavior for other models
                     employeer = Employeer.objects.get(user=user)
                     if not self.created_by:
                         self.created_by = employeer
@@ -55,7 +55,6 @@ class BaseModel(models.Model):
                         self.companie = employeer.companie
 
             except Employeer.DoesNotExist:
-                # Só levanta erro se não for uma instância de Employeer
                 if not isinstance(self, Employeer):
                     raise ValidationError('User does not exist or is not associated with an employee')
         super().save(*args, **kwargs)
