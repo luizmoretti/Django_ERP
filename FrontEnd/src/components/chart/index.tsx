@@ -45,10 +45,10 @@ export default function ChartOverview(){
                             <XAxis type="number" />
                             <YAxis dataKey="name" type="category" />
                             <Tooltip />
-                            <Bar datakey="value" fill="#2563eb" />
+                            <Bar dataKey="value" fill="#2563eb" />
                             <ChartTooltip content={<ChartTooltipContent />} />
                             <Bar dataKey="desktop" fill="var(--color-desktop)"radius={4}/>
-                            <Bar datakey="mobile" fill="var(--color-desktop)"radius={4}/>
+                            <Bar dataKey="mobile" fill="var(--color-desktop)"radius={4}/>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
