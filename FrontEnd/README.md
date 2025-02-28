@@ -1,6 +1,5 @@
 #ERP Project
 
-
 ![Badge](https://img.shields.io/badge/Status-in%20Development-yellow)
 ![Badge](https://img.shields.io/badge/License-MIT-blue)
 
@@ -25,9 +24,12 @@ The **ERP Project** is a Front-End Development for an ERP plataform designed to 
 **State Management:** TanStack (React Query)
 **Packge Manager:** npm or yarn
 
-## Getting Started
+
+
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
 
 First, run the development server:
 
@@ -61,17 +63,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-### Prerequisites
-
-Before running the project, ensure you have the following installed on your machine:
-- Node.js(v16 or higher)
-- npm or yarn(as your package manager)
-- Next.js(for server-side rendering and running the application)
-
-### Installation
-
-1. Acess Django_ERP, cd frontend
-2. Install Dependecies: npm intall or yarn install
-3. npm run dev or yarn dev
-4. Open your browser and access the apllication at: http://localhost:3000
