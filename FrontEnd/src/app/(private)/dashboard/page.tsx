@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import ChartOverview from "@/components/chart";
 
-export default function Home() {
+export default function Dashboard() {
   const {isSidebarVisible} =  useSidebar();
 
   return (
