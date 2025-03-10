@@ -36,8 +36,8 @@ urlpatterns = [
     
     # Delivery Endpoints
     # path('delivery/', include('apps.deliveries.urls')),
-    path('tracking/', include('apps.deliveries.tracking.urls')),
-    path('vehicle/', include('apps.deliveries.vehicles.urls')),
+    # path('tracking/', include('apps.deliveries.tracking.urls')),
+    # path('vehicle/', include('apps.deliveries.vehicles.urls')),
     
     
     # Inventory Management endpoints
