@@ -10,7 +10,7 @@ export function Sidebar(){
     const {isSidebarVisible, setisSidebarVisible} = useSidebar()
     return(
         <div className="flex w-full flex-col bg-muted/40">
-            <header className="fixed margin-top left-0 z-20 h-14 w-full bg-background border-b flex items-center px-4">
+            <header className="fixed margin-top left-0 z-30 h-14 w-full bg-transparent border-b flex items-center px-4">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -56,7 +56,7 @@ export function Sidebar(){
 
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="/dashboard"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -69,7 +69,7 @@ export function Sidebar(){
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="/products"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -82,7 +82,7 @@ export function Sidebar(){
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="/"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
