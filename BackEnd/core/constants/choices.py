@@ -275,6 +275,7 @@ VEHICLE_COLOR_CHOICES = [
 
 DELIVERY_STATUS_CHOICES = [
     ('pending', gettext('Pending')),
+    ('pickup_in_progress', gettext('Pickup In Progress')),
     ('in_transit', gettext('In Transit')),
     ('delivered', gettext('Delivered')),
     ('returned', gettext('Returned')),
