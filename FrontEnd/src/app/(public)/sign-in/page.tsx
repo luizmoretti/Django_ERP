@@ -27,7 +27,7 @@ const form = useForm<TFormLogin>({
             <Card className="w-full max-w-sm">
             <div className="flex justify-center items-center">
                     <img
-                        src="/logo.png" alt="Logo" className="h-20 w-20" />
+                        src="/logo.png" alt="Logo" className="h-20 w-20"/>
                     <span className="sr-only" />
                 </div>
                 <CardHeader>

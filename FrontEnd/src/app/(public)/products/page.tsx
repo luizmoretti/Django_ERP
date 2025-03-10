@@ -100,7 +100,7 @@ export default function Products() {
 
     return (
         <main className={`p-4 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>
-        <div className="p-6 max-w-4xl mx-auto space-y-4">
+        <div className="flex border rounded-lg p-4 mx-auto space-y-4">
             <div className="flex items-center justify-between">
                 <form className="flex items-center gap-2">
                 </form>

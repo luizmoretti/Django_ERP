@@ -82,7 +82,7 @@ export function Sidebar(){
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href="/"
+                            <Link href="/categories"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -180,7 +180,7 @@ export function Sidebar(){
                                     <HousePlus className="h-5 w-5 transition-all"/>
                                      Warehouse
                                 </Link>
-                                <Link href="#"
+                                <Link href="/dashboard"
                                 className="flex items-center gap-4 px-2.5 text-muted-foreground
                                 hover:text-foreground"
                                 prefetch={false}
@@ -189,7 +189,7 @@ export function Sidebar(){
                                      Dashboard
                                 </Link>
 
-                                <Link href="#"
+                                <Link href="/products"
                                 className="flex items-center gap-4 px-2.5 text-muted-foreground
                                 hover:text-foreground"
                                 prefetch={false}
@@ -197,7 +197,7 @@ export function Sidebar(){
                                     <Package2 className="h-5 w-5 transition-all"/>
                                      Products
                                 </Link>
-                                <Link href="#"
+                                <Link href="/categories"
                                 className="flex items-center gap-4 px-2.5 text-muted-foreground
                                 hover:text-foreground"
                                 prefetch={false}
