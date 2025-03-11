@@ -75,6 +75,7 @@ cover/
 # Django stuff:
 logs/
 memory-bank/
+memory.json
 *.bak
 *.dat
 *.dir
