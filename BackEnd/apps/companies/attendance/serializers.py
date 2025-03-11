@@ -103,15 +103,15 @@ class AttendanceSerializer(serializers.ModelSerializer):
         
         try:
             with transaction.atomic():
-                # Criar o registro de atendimento com o employee
+                # Create the attendance record with the employee
                 attendance_register = AttendanceRegister.objects.create(
-                    employee=employee  # Passamos o employee diretamente
+                    employee=employee  # Pass the employee directly
                 )
                 
-                # Verificar o tipo de pagamento do funcionário
+                # Check the employee's payment type
                 payment_type = employee.payment_type
                 
-                # Processar cada entrada de trabalho
+                # Process each work entry
                 for entry in work_data:
                     if payment_type == 'Hour':
                         TimeTracking.objects.create(
@@ -141,18 +141,18 @@ class AttendanceSerializer(serializers.ModelSerializer):
         
         try:
             with transaction.atomic():
-                # Atualizar o registro de atendimento
+                # Update the attendance record
                 for attr, value in validated_data.items():
                     setattr(instance, attr, value)
                 instance.save()
                 
-                # Verificar o tipo de pagamento do funcionário
+                # Check the employee's payment type
                 payment_type = employee.payment_type
                 
-                # Processar cada entrada de trabalho
+                # Process each work entry
                 for entry in work_data:
                     if payment_type == 'Hour':
-                        # Atualizar ou criar novo registro de horas
+                        # Update or create new hour record
                         time_tracking, created = TimeTracking.objects.update_or_create(
                             register=instance,
                             employee=employee,
@@ -162,7 +162,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
                             }
                         )
                     elif payment_type == 'Day':
-                        # Atualizar ou criar novo registro diário
+                        # Update or create new day record
                         days_tracking, created = DaysTracking.objects.update_or_create(
                             register=instance,
                             employee=employee,
