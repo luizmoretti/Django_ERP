@@ -732,7 +732,12 @@ class VehicleMaintenanceRecordDetailView(generics.RetrieveUpdateDestroyAPIView, 
         summary='List fuel records',
         description='Returns a list of fuel records for a specific vehicle',
         parameters=[
-            OpenApiParameter(name="vehicle_id", location=OpenApiParameter.PATH, required=True, type=str)
+            OpenApiParameter(
+                name="vehicle_id", 
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                required=True
+            )
         ],
         responses={
             200: VehicleFuelRecordSerializer(many=True),
@@ -754,7 +759,12 @@ class VehicleMaintenanceRecordDetailView(generics.RetrieveUpdateDestroyAPIView, 
         summary='Create a fuel record',
         description='Creates a new fuel record for a specific vehicle',
         parameters=[
-            OpenApiParameter(name="vehicle_id", location=OpenApiParameter.PATH, required=True, type=str)
+            OpenApiParameter(
+                name="vehicle_id", 
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                required=True
+            )
         ],
         request=VehicleFuelRecordSerializer,
         responses={
@@ -863,7 +873,12 @@ class VehicleFuelRecordListView(generics.ListCreateAPIView, VehicleBaseView):
         summary='Retrieve a fuel record',
         description='Returns the details of a specific fuel record',
         parameters=[
-            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, required=True, type=str)
+            OpenApiParameter(
+                name="id", 
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                required=True
+            )
         ],
         responses={
             200: VehicleFuelRecordSerializer,
@@ -885,7 +900,12 @@ class VehicleFuelRecordListView(generics.ListCreateAPIView, VehicleBaseView):
         summary='Update a fuel record',
         description='Updates a fuel record with the provided data',
         parameters=[
-            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, required=True, type=str)
+            OpenApiParameter(
+                name="id", 
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                required=True
+            )
         ],
         request=VehicleFuelRecordSerializer,
         responses={
@@ -918,7 +938,12 @@ class VehicleFuelRecordListView(generics.ListCreateAPIView, VehicleBaseView):
         summary='Delete a fuel record',
         description='Deletes a fuel record',
         parameters=[
-            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, required=True, type=str)
+            OpenApiParameter(
+                name="id", 
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                required=True
+            )
         ],
         responses={
             204: None,
