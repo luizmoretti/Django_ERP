@@ -146,7 +146,7 @@ export default function Products() {
                                     </form>
                                     <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+                                            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-600 text-white rounded-md">
                                                 <PlusCircle className="w-4 h-4 mr-2" />
                                                 Add Product
                                             </Button>
@@ -219,7 +219,10 @@ export default function Products() {
 
                         <TableRow className="whitespace-nowrap justify-between">
                             <TableHead className="w-10">
-                                <Checkbox checked={selectAll} onCheckedChange={handleselectAll} />
+                                <Checkbox checked={selectAll} onCheckedChange={handleselectAll}
+                                 className="data-[state=checked]:bg-blue-600
+                                 data-[state=checked]:border-blue-600"
+                                 />
                             </TableHead>
                             <TableHead
                               className="cursor-pointer px-4 py-3 uppercase font-medium flex items-center gap-1"
@@ -248,6 +251,8 @@ export default function Products() {
                                     <Checkbox
                                         checked={selectedProducts[index]}
                                         onCheckedChange={() => handleCheckboxChange(index)}
+                                        className="data-[state=checked]:bg-blue-600
+                                        data-[state=checked]:border-blue-600"
                                      />
                                 </TableCell>
                                 <TableCell>

@@ -5,6 +5,8 @@ const publicRoutes = [
     { path: "/dashboard", whenAuthenticated: "next" },
     { path: "/products", whenAuthenticated: "next" },
     { path: "/categories", whenAuthenticated: "next" },
+    {path: "/brands", whenAuthenticated: "next"},
+    {path: "/stores", whenAuthenticated: "next"},
 ] as const;
 
 const REDIRECT_WHEN_NOT_AUTHENTICATED_ROUTE = '/sign-in';

@@ -2,31 +2,17 @@
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet"
-import {ArrowLeft, BriefcaseBusiness, ChartBar, Circle, HandCoins, HousePlus, Menu, Package, Package2, PackagePlus, PanelBottom, Store, Users } from "lucide-react"
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip"
+import {ArrowLeft, BriefcaseBusiness, ChartBar, Circle, HandCoins, HousePlus, Menu, Package, Package2, PackagePlus, Store, Users } from "lucide-react"
+import { TooltipProvider, Tooltip, TooltipTrigger } from "../ui/tooltip"
 import { useSidebar } from "./sidebarcontext";
+import { Header } from "../header"
+
 
 export function Sidebar(){
     const {isSidebarVisible, setisSidebarVisible} = useSidebar()
     return(
         <div className="flex w-full flex-col bg-muted/40">
-            <header className="fixed margin-top left-0 z-30 h-14 w-full bg-transparent border-b flex items-center px-4">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                            onClick={() => setisSidebarVisible(!isSidebarVisible)}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
-                            >
-                                {isSidebarVisible ?<ArrowLeft className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}
-                                <span className="sr-only">open sidebar</span>
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            </header>
-        
+            <Header />
             <aside className={`fixed inset-y-0 left-0 z-10 w-60 sm:flex flex-col transition-transform duration-300 ease-in-out ${
                 isSidebarVisible ? "translate-x-0":"-translate-x-full"
                 }`}
@@ -38,7 +24,6 @@ export function Sidebar(){
                         <Link href="#" className="flex h-10 w-10 shrink-0 items-center justify-center text-primary-foreground rounded-full">
                             <img
                                 src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-                            <span className="sr-only"></span>
                         </Link>
                         </div>
                         <div className="w-full">
@@ -51,7 +36,6 @@ export function Sidebar(){
                                     {isSidebarVisible && "Warehouses"}
                                 </button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Warehouses</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
@@ -65,7 +49,6 @@ export function Sidebar(){
                             {isSidebarVisible && "Dashboard"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Dashboard</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -78,7 +61,6 @@ export function Sidebar(){
                             {isSidebarVisible && "Products"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Products</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -91,11 +73,10 @@ export function Sidebar(){
                             {isSidebarVisible && "Categories"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Categories</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="/brands"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -104,11 +85,10 @@ export function Sidebar(){
                             {isSidebarVisible && "Brands"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Brands</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="/stores"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -117,11 +97,10 @@ export function Sidebar(){
                             {isSidebarVisible && "Stores"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Stores</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="#"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -130,11 +109,10 @@ export function Sidebar(){
                             {isSidebarVisible && "Suppliers"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Suppliers</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href=""
+                            <Link href="#"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
@@ -143,7 +121,6 @@ export function Sidebar(){
                             {isSidebarVisible && "Movements"}
                         </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Movements</TooltipContent>
                         </Tooltip>
                         </div>
                     </TooltipProvider>
@@ -157,7 +134,6 @@ export function Sidebar(){
                         <SheetTrigger asChild>
                             <Button size="icon" variant="outline" className="sm:hidden">
                                 <Menu className="w-5 h-5" />
-                                <span className="sr-only">Open / close menu</span>
                             </Button>
                         </SheetTrigger>
 
@@ -169,7 +145,6 @@ export function Sidebar(){
                                 prefetch={false}
                                 >
                                     <Package className="h-5 w-5 transition-all"/>
-                                    <span className="sr-only">Logo</span>
                                 </Link>
 
                                 <Link href="#"
@@ -205,7 +180,7 @@ export function Sidebar(){
                                     <Circle className="h-5 w-5 transition-all"/>
                                      Categories
                                 </Link>
-                                <Link href="#"
+                                <Link href="/brands"
                                 className="flex items-center gap-4 px-2.5 text-muted-foreground
                                 hover:text-foreground"
                                 prefetch={false}
@@ -213,7 +188,7 @@ export function Sidebar(){
                                     <BriefcaseBusiness className="h-5 w-5 transition-all"/>
                                      Brands
                                 </Link>
-                                <Link href="#"
+                                <Link href="/stores"
                                 className="flex items-center gap-4 px-2.5 text-muted-foreground
                                 hover:text-foreground"
                                 prefetch={false}
@@ -237,13 +212,11 @@ export function Sidebar(){
                                     <HandCoins className="h-5 w-5 transition-all"/>
                                      Movements
                                 </Link>
- 
                             </nav>
                         </SheetContent>
                     </Sheet>
                 </header>
             </div>
-
         </div>
     )
 }

@@ -112,7 +112,10 @@ export default function CategoriesTable(){
                         <TableHeader className="bg-gray-100 border-b">
                             <TableRow>
                                 <TableHead className="w-12 px-4">
-                                    <Checkbox checked={allSelected} onCheckedChange={toggleAllCheckboxes} />
+                                    <Checkbox checked={allSelected} onCheckedChange={toggleAllCheckboxes}
+                                    className="data-[state=checked]:bg-blue-600
+                                    data-[state=checked]:border-blue-600"
+                                    />
                                 </TableHead>
                                 <TableHead className="cursor-pointer flex items-center gap-1">
                                     Name
@@ -132,6 +135,8 @@ export default function CategoriesTable(){
                                                 [index]: !prev[index]
                                             }))
                                         }
+                                        className="data-[state=checked]:bg-blue-600
+                                        data-[state=checked]:border-blue-600"
                                         />
                                     </TableCell>
                                     <TableCell className="text-gray-600">{category.name}</TableCell>
