@@ -26,6 +26,7 @@ from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie, csrf_
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from crum import get_current_request, get_current_user
 
 import logging
 # Configure logger for the accounts app
@@ -121,7 +122,7 @@ class UserCreateView(BaseUserView, CreateAPIView):
         try:
             instance = serializer.save()
             
-            
+            # Ensure current request is available
             if not get_current_request():
                 from crum import CurrentRequestUserMiddleware
                 middleware = CurrentRequestUserMiddleware(get_response=lambda x: None)
@@ -208,7 +209,7 @@ class UserRetrieveView(BaseUserView, RetrieveAPIView):
     for any user in the system.
     """
     serializer_class = UserSerializer
-    lookup_field = 'id'
+    lookup_field = 'pk'
     
     def retrieve(self, request, *args, **kwargs):
         try:

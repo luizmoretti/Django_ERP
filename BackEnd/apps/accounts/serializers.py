@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from django.contrib.auth.hashers import make_password
 from .models import User
+from core.constants.choices import USER_TYPE_CHOICES
 
 class BaseUserSerializer(serializers.ModelSerializer):
     """
@@ -37,14 +38,13 @@ class BaseUserSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     is_active = serializers.BooleanField(required=False, read_only=True, default=True)
     last_login = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
-    img = serializers.ImageField(required=False)
     ip = serializers.IPAddressField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'date_joined', 'is_active', 'last_login', 'img', 'ip'
+            'user_type', 'date_joined', 'is_active', 'last_login','ip'
         ]
 
 
@@ -63,7 +63,8 @@ class UserSerializer(BaseUserSerializer):
         user_permissions (SerializerMethodField): User-specific permissions
         is_staff (BooleanField): Read-only admin access status
         is_superuser (BooleanField): Read-only superuser status
-    
+        user_type (CharField): Write-only field for user role classification
+        
     Validation Rules:
         Password must:
         - Be at least 8 characters long
@@ -81,13 +82,17 @@ class UserSerializer(BaseUserSerializer):
         style={'input_type': 'password'}
     )
     groups = serializers.SerializerMethodField()
+    user_type = serializers.ChoiceField(
+        choices=USER_TYPE_CHOICES,
+        required=True
+    )
     user_permissions = serializers.SerializerMethodField()
     is_staff = serializers.BooleanField(read_only=True, default=False)
     is_superuser = serializers.BooleanField(read_only=True, default=False)
 
     class Meta(BaseUserSerializer.Meta):
         fields = BaseUserSerializer.Meta.fields + [
-            'password', 'groups', 'user_permissions', 'is_staff', 'is_superuser'
+            'password', 'groups', 'user_permissions', 'is_staff', 'user_type', 'is_superuser'
         ]
         extra_kwargs = {'password': {'write_only': True}}
 
