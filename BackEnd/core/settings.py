@@ -123,6 +123,7 @@ MIDDLEWARE = [
     
     # Custom Middleware
     'custom_settings.custom_middlewares.middleware.JSONResponse404Middleware',
+    'custom_settings.custom_middlewares.middleware.AnonymousUserMiddleware',
 ]
 
 # Add SecurityMiddleware in production only
@@ -538,6 +539,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
+    'UNAUTHENTICATED_TOKEN': 'rest_framework_simplejwt.authentication.JWTAuthentication',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
@@ -823,17 +826,17 @@ SPECTACULAR_SETTINGS = {
         }
     ],
     
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    
     # Tag Sorting and Naming
     'TAGS': [
         # Authentication
         {'name': 'JWT - Auth', 'description': 'JWT authentication endpoints'},
         
-        
         # Vehicles
         {'name': 'Delivery - Vehicles', 'description': 'Vehicle management endpoints'},
         
         # Delivery
-        # {'name': 'Delivery - Tracking', 'description': 'Delivery tracking endpoints'},
         {'name': 'Delivery', 'description': 'Delivery management endpoints'},
         
         # Inventory Management
@@ -847,15 +850,8 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Suppliers', 'description': 'Supplier management endpoints'},
         {'name': 'Inventory - Movements', 'description': 'Movement management endpoints'},
         
-        # Reports
-        
-        
-        # Billing
-        
-        
         # Customers
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
-        
         
         # Accounts Management
         {'name': 'Accounts - Authentication', 'description': 'Authentication endpoints'},
@@ -863,16 +859,8 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Accounts - Profiles', 'description': 'User profile management endpoints'},
         {'name': 'Accounts - Password Reset', 'description': 'Password reset endpoint'},
         
-        # Useles endpoints
-        {'name': 'user', 'description': 'Non Useful endpoints'},
-        
-        
-        # Teams
-        
-        
         # Companies
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
-        # {'name': 'Companies - Employees Soft Delete', 'description': 'Employee soft delete endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
     ]
 }

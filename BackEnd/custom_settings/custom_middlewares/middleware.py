@@ -1,5 +1,7 @@
 import json
 from django.http import JsonResponse
+from django.http import HttpResponse
+from django.urls import resolve
 from django.http import Http404
 import logging
 
@@ -52,3 +54,28 @@ class JSONResponse404Middleware:
                 {'detail': 'Not found'},
                 status=404
             )
+            
+class AnonymousUserMiddleware:
+    """
+    Middleware to handle access to 'employeer' attributes in AnonymousUser
+    during access to API documentation.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    def __call__(self, request):
+        # Check if the request is for documentation
+        url_name = resolve(request.path_info).url_name
+        if url_name in ['redoc', 'swagger-ui', 'schema-json'] and not request.user.is_authenticated:
+            # Add a dummy employeer attribute to AnonymousUser
+            # for documentation purposes only
+            class DummyEmployeer:
+                def __init__(self):
+                    self.id = None
+                    self.companie_id = None
+                    
+            request.user.employeer = DummyEmployeer()
+            
+        response = self.get_response(request)
+        return response
