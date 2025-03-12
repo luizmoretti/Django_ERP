@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class ProfileBaseView:
     permission_classes = [IsAuthenticated]
+    queryset = Profile.objects.none()
     
     def get_queryset(self):
         user = self.request.user
