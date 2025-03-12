@@ -2,7 +2,7 @@ from django.db import models
 from basemodels.models import BaseModel
 from apps.inventory.product.models import Product
 from apps.companies.customers.models import Customer
-from apps.deliveries.vehicles.models import Vehicle
+from apps.vehicle.models import Vehicle
 from django.db import transaction, IntegrityError
 
 class LoadOrder(BaseModel):

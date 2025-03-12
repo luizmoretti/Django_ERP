@@ -257,10 +257,19 @@ class ProfileDeleteView(ProfileBaseView, DestroyAPIView):
         description='Updates the avatar image of a profile.',
         request=ProfileAvatarSerializer,
         responses={200: ProfileAvatarSerializer}
+    ),
+    patch=extend_schema(
+        tags=['Accounts - Profiles'],
+        operation_id='partial_update_profile_avatar',
+        summary='Partial update profile avatar',
+        description='Updates part of the avatar image of a profile.',
+        request=ProfileAvatarSerializer,
+        responses={200: ProfileAvatarSerializer}
     )
 )
 class ProfileAvatarView(ProfileBaseView, UpdateAPIView):
     serializer_class = ProfileAvatarSerializer
+    parser_classes = [MultiPartParser, FormParser]
     parser_classes = [MultiPartParser, FormParser]
     
     def update(self, request, *args, **kwargs):

@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from ..models import PurchaseOrder, PurchaseOrderItem
+from .validators import PurchaseOrderValidator
 
 class PurchaseOrderService:
     """Service for handling purchase order operations"""
@@ -27,11 +28,11 @@ class PurchaseOrderService:
             ValidationError: If the order cannot be approved
         """
         with transaction.atomic():
-            if order.status != 'pending':
-                raise ValidationError("Only pending orders can be approved")
-                
-            if not user.has_perm('purchase_order.can_approve_order'):
-                raise ValidationError("User does not have permission to approve orders")
+            # Validate status transition
+            PurchaseOrderValidator.validate_status_transition(order, 'approved', user)
+            
+            # Validate order has items
+            PurchaseOrderValidator.validate_order_has_items(order.id)
                 
             order.status = 'approved'
             order.updated_by = user.employeer
@@ -58,11 +59,8 @@ class PurchaseOrderService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status != 'pending':
-                raise ValidationError("Only pending orders can be rejected")
-                
-            if not user.has_perm('purchase_order.can_reject_order'):
-                raise ValidationError("User does not have permission to reject orders")
+            # Validate status transition
+            PurchaseOrderValidator.validate_status_transition(order, 'rejected', user)
                 
             order.status = 'rejected'
             order.updated_by = user.employeer
@@ -90,11 +88,8 @@ class PurchaseOrderService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status not in ['pending', 'approved']:
-                raise ValidationError("Only pending or approved orders can be cancelled")
-                
-            if not user.has_perm('purchase_order.can_cancel_order'):
-                raise ValidationError("User does not have permission to cancel orders")
+            # Validate status transition
+            PurchaseOrderValidator.validate_status_transition(order, 'cancelled', user)
                 
             order.status = 'cancelled'
             order.cancelled_by = user.employeer
@@ -128,11 +123,20 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             order = PurchaseOrder.objects.select_for_update().get(pk=order_id)
             
-            if order.status != 'pending':
-                raise ValidationError("Items can only be added to pending orders")
-                
+            # Validate can add item
+            PurchaseOrderValidator.validate_can_add_item(order)
+            
+            # Validate user permission
             if not user.has_perm('purchase_order.can_add_item'):
                 raise ValidationError("User does not have permission to add items")
+            
+            # Validate item data
+            item_data = {
+                'product': product_id,
+                'quantity': quantity,
+                'unit_price': unit_price
+            }
+            PurchaseOrderValidator.validate_purchase_order_item_data(item_data)
                 
             item = PurchaseOrderItem(
                 purchase_order=order,
@@ -164,11 +168,19 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
-            if item.purchase_order.status != 'pending':
-                raise ValidationError("Items can only be updated in pending orders")
+            # Validate can update item
+            PurchaseOrderValidator.validate_can_update_item(item)
                 
+            # Validate user permission
             if not user.has_perm('purchase_order.can_update_item'):
                 raise ValidationError("User does not have permission to update items")
+            
+            # Validate item data
+            if quantity is not None and quantity <= 0:
+                raise ValidationError({"quantity": "Quantity must be greater than zero"})
+            
+            if unit_price is not None and Decimal(unit_price) <= 0:
+                raise ValidationError({"unit_price": "Unit price must be greater than zero"})
                 
             if quantity is not None:
                 item.quantity = quantity
@@ -194,9 +206,10 @@ class PurchaseOrderItemService:
         with transaction.atomic():
             item = PurchaseOrderItem.objects.select_related('purchase_order').get(pk=item_id)
             
-            if item.purchase_order.status != 'pending':
-                raise ValidationError("Items can only be removed from pending orders")
+            # Validate can remove item
+            PurchaseOrderValidator.validate_can_remove_item(item)
                 
+            # Validate user permission
             if not user.has_perm('purchase_order.can_remove_item'):
                 raise ValidationError("User does not have permission to remove items")
                 

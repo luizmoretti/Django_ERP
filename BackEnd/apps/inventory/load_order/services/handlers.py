@@ -4,7 +4,7 @@ from django.utils.translation import gettext as _
 from ..models import LoadOrder, LoadOrderItem
 from apps.inventory.product.models import Product
 from apps.companies.customers.models import Customer
-from apps.deliveries.vehicles.models import Vehicle
+from apps.vehicle.models import Vehicle
 from .validators import LoadOrderValidator
 import logging
 
@@ -29,10 +29,7 @@ class LoadOrderHandler:
             load_order = LoadOrder(
                 customer=customer,
                 load_to=vehicle,
-                load_date=data['load_date'],
-                created_by=created_by,
-                updated_by=created_by,
-                companie=created_by.companie
+                load_date=data['load_date']
             )
             load_order.save()
             
@@ -42,10 +39,7 @@ class LoadOrderHandler:
                 LoadOrderItem.objects.create(
                     load_order=load_order,
                     product=product,
-                    quantity=item_data['quantity'],
-                    created_by=created_by,
-                    updated_by=created_by,
-                    companie=created_by.companie
+                    quantity=item_data['quantity']
                 )
             
             logger.info(f"[LOAD ORDER HANDLER] Created load order {load_order.order_number}")
@@ -88,10 +82,7 @@ class LoadOrderHandler:
                     LoadOrderItem.objects.create(
                         load_order=load_order,
                         product=product,
-                        quantity=item_data['quantity'],
-                        created_by=updated_by,
-                        updated_by=updated_by,
-                        companie=updated_by.companie
+                        quantity=item_data['quantity']
                     )
             
             logger.info(f"[LOAD ORDER HANDLER] Updated load order {load_order.order_number}")
