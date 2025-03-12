@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis',
     
     # Security
     'axes',  # Proteção contra força bruta
@@ -55,7 +54,6 @@ INSTALLED_APPS = [
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_gis',
     'django_filters',
     'corsheaders',
     'drf_spectacular',
@@ -284,7 +282,7 @@ if 'test' in sys.argv:
 elif DB_NAME and DB_USER:
     DATABASES = {
         "default": {
-            "ENGINE": "django.contrib.gis.db.backends.postgis",
+            "ENGINE": "django.db.backends.postgresql", 
             "NAME": DB_NAME,
             "USER": DB_USER,
             "PASSWORD": DB_PASS,
@@ -295,7 +293,7 @@ elif DB_NAME and DB_USER:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.contrib.gis.db.backends.spatialite",
+            "ENGINE": "django.db.backends.sqlite3",
             "NAME": "db.sqlite3",
         }
     }
@@ -734,59 +732,6 @@ TIME_INPUT_FORMATS = [
 ########## DATE FORMAT #########
 ################################
 DATE_FORMAT = "Y/M/d" # '2023/10/01'
-
-################################
-########## GDAL CONFIG #########
-################################
-
-# Configuration of spatial libraries for the delivery tracking system
-# Used by:
-# - DeliveryLocationUpdate (real-time GPS tracking)
-# - DeliveryRoute (planned routes and waypoints)
-# - DeliveryPickup (pickup sequence)
-
-if os.name == 'nt':  # For Windows
-    # Base directory of OSGeo4W and binaries
-    OSGEO4W_ROOT = r"C:\OSGeo4W"
-    OSGEO4W_BIN = os.path.join(OSGEO4W_ROOT, "bin")
-    
-    # Data directories for GDAL and PROJ
-    GDAL_DATA = os.path.join(OSGEO4W_ROOT, "apps", "gdal")
-    PROJ_LIB = os.path.join(OSGEO4W_ROOT, "share", "proj")
-    
-    # Spatial libraries for operations
-    GDAL_LIBRARY_PATH = os.path.join(OSGEO4W_BIN, "gdal310.dll")
-    GEOS_LIBRARY_PATH = os.path.join(OSGEO4W_BIN, "geos_c.dll")
-    
-    # Validation of critical components
-    spatial_components = {
-        'GDAL Library': GDAL_LIBRARY_PATH,
-        'GEOS Library': GEOS_LIBRARY_PATH,
-        'GDAL Data': GDAL_DATA,
-        'PROJ Data': PROJ_LIB
-    }
-    
-    # Check for missing components
-    missing = [name for name, path in spatial_components.items() 
-              if not os.path.exists(path)]
-    
-    if missing:
-        import warnings
-        warnings.warn(
-            "\nSpatial components not found:\n" + 
-            "\n".join(f"- {component}" for component in missing) +
-            "\n\nDelivery tracking system requires these components for:" +
-            "\n- Real-time GPS tracking" +
-            "\n- Route calculation and visualization" +
-            "\n- Geolocation of pickups and deliveries" +
-            "\n\nVerify OSGeo4W installation."
-        )
-else:
-    # Configuration for Linux/Unix environments
-    GDAL_LIBRARY_PATH = "/usr/lib/libgdal.so"
-    GEOS_LIBRARY_PATH = "/usr/lib/libgeos_c.so"
-    GDAL_DATA = "/usr/share/gdal"
-    PROJ_LIB = "/usr/share/proj"
 
 ################################
 ###### DEFAULT AUTO FIELD ######
