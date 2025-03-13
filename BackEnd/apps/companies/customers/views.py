@@ -44,10 +44,13 @@ class BaseCustomerView:
         user = self.request.user
         try:
             # Filters only customers from the same company as the logged-in user
-            employeer = user.employeer
-            return Customer.objects.select_related(
-                'companie', 'created_by', 'updated_by'
-            ).filter(companie=employeer.companie, is_active=True)
+            if not hasattr(user, 'employeer'):
+                queryset = Customer.objects.none()
+            else:
+                queryset = Customer.objects.select_related(
+                    'companie', 'created_by', 'updated_by'
+                ).filter(companie=user.employeer.companie, is_active=True)
+            return queryset
         except:
             return Customer.objects.none()
 
