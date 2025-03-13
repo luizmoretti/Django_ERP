@@ -21,13 +21,13 @@ class OutflowAdmin(admin.ModelAdmin):
     def get_origin_address(self, obj):
         if obj.origin:
             if obj.origin.companie:
-                return obj.origin.companie.pick_up_companie_address_companie.first().full_address
+                return obj.origin.companie.companie_pick_up_address.first().full_address
         return "-"
     get_origin_address.short_description = "Origin"
     
     def get_destiny_address(self, obj):
         if obj.destiny:
             if obj.destiny.another_shipping_address:
-                return obj.destiny.customer_project_address.first()
-        return "-"
+                return obj.destiny.project_address.first()
+        return obj.destiny.project_address.first()
     get_destiny_address.short_description = "Destiny"
