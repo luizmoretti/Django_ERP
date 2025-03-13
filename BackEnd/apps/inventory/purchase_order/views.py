@@ -24,20 +24,32 @@ class PurchaseOrderBaseView:
     
     def get_queryset(self):
         user = self.request.user
+
+        # If user is not authenticated, return no purchase orders
+        if not hasattr(user, 'employeer'):
+            logger.warning("Unauthenticated user attempted to access purchase order list")
+            return self.queryset.none()
+    
         try:
             employeer = user.employeer
-            return self.queryset.select_related(
-                'companie',
-                'supplier',
-                'created_by',
-                'updated_by'
-            ).prefetch_related(
-                'items',
-                'items__product'
-            ).filter(companie=employeer.companie)
-        except Exception as e:
-            logger.error(f"Error getting queryset: {str(e)}")
+        except AttributeError:
+            logger.warning(f"User {user.email} has no associated employeer")
             return self.queryset.none()
+
+        # Check if employeer has a company
+        if not employeer.companie:
+            logger.warning(f"User {user.email}'s employeer has no associated company")
+            return self.queryset.none()
+
+        return self.queryset.select_related(
+            'companie',
+            'supplier',
+            'created_by',
+            'updated_by'
+        ).prefetch_related(
+            'items',
+            'items__product'
+        ).filter(companie=employeer.companie)
 
 
 @extend_schema_view(
@@ -82,30 +94,25 @@ class PurchaseOrderListView(generics.ListAPIView, PurchaseOrderBaseView):
                         'type': 'string',
                         'description': 'UUID of the supplier',
                         'format': 'uuid',
-                        'required': True
                     },
                     'expected_delivery': {
                         'type': 'string',
                         'description': 'Expected delivery date',
                         'format': 'date',
-                        'required': True
                     },
                     'status': {
                         'type': 'string',
                         'description': 'Order status',
                         'maxLength': 20,
-                        'required': True
                     },
                     'notes': {
                         'type': 'string',
                         'description': 'Additional notes about the order',
                         'maxLength': 255,
-                        'required': False
                     },
                     'items_data': {
                         'type': 'array',
                         'description': 'List of items to be included in the order',
-                        'required': True,
                         'items': {
                             'type': 'object',
                             'properties': {
@@ -113,20 +120,17 @@ class PurchaseOrderListView(generics.ListAPIView, PurchaseOrderBaseView):
                                     'type': 'string',
                                     'description': 'UUID of the product',
                                     'format': 'uuid',
-                                    'required': True
                                 },
                                 'quantity': {
                                     'type': 'integer',
                                     'description': 'Quantity to order',
                                     'minimum': 1,
-                                    'required': True
                                 },
                                 'unit_price': {
                                     'type': 'number',
                                     'description': 'Price per unit',
                                     'format': 'decimal',
                                     'minimum': 0,
-                                    'required': True
                                 }
                             },
                             'required': ['product', 'quantity', 'unit_price']
@@ -241,20 +245,17 @@ class PurchaseOrderRetrieveView(PurchaseOrderBaseView, generics.RetrieveAPIView)
                     'supplier': {
                         'type': 'string',
                         'description': 'UUID of the supplier',
-                        'format': 'uuid',
-                        'required': False
+                        'format': 'uuid'
                     },
                     'expected_delivery': {
                         'type': 'string',
                         'description': 'Expected delivery date',
-                        'format': 'date',
-                        'required': False
+                        'format': 'date'
                     },
                     'notes': {
                         'type': 'string',
                         'description': 'Additional notes about the order',
-                        'maxLength': 255,
-                        'required': False
+                        'maxLength': 255
                     }
                 }
             }
@@ -338,6 +339,12 @@ class PurchaseOrderUpdateView(PurchaseOrderBaseView, generics.UpdateAPIView):
 
 
 @extend_schema_view(
+    put=extend_schema(
+        tags=['Inventory - Purchase Orders'],
+        operation_id='Update Purchase Order',
+        summary='Update purchase order',
+        description='Updates an existing purchase order with the provided data'
+    ),
     patch=extend_schema(
         tags=['Inventory - Purchase Orders'],
         operation_id='Partial Update Purchase Order',
@@ -515,8 +522,7 @@ class PurchaseOrderApproveView(PurchaseOrderBaseView, generics.GenericAPIView):
                     'reason': {
                         'type': 'string',
                         'description': 'Reason for rejection',
-                        'maxLength': 255,
-                        'required': True
+                        'maxLength': 255
                     }
                 },
                 'required': ['reason']
@@ -620,8 +626,7 @@ class PurchaseOrderRejectView(PurchaseOrderBaseView, generics.GenericAPIView):
                     'reason': {
                         'type': 'string',
                         'description': 'Reason for cancellation',
-                        'maxLength': 255,
-                        'required': True
+                        'maxLength': 255
                     }
                 },
                 'required': ['reason']
