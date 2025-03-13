@@ -12,7 +12,7 @@ class OutflowItemsInline(admin.TabularInline):
 @admin.register(Outflow)
 class OutflowAdmin(admin.ModelAdmin):
     inlines = [OutflowItemsInline]
-    list_display = ('get_origin_address', 'get_destiny_address', 'created_at', 'updated_at', 'created_by', 'updated_by')
+    list_display = ('get_origin_address', 'get_destiny_address', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by')
     list_filter = ('origin', 'destiny', 'created_at', 'updated_at')
     search_fields = ('origin__name', 'destiny__name')
     readonly_fields = ('id', 'companie', 'created_at', 'updated_at', 'created_by', 'updated_by')
