@@ -36,10 +36,14 @@ class BaseEmployeerView:
     def get_queryset(self):
         user = self.request.user
         try:
-            employeer = user.employeer
-            return Employeer.objects.select_related(
-                'companie'
-            ).filter(companie=employeer.companie)
+            if not hasattr(user, 'employeer'):
+                queryset = Employeer.objects.none()
+            else:
+                employeer = user.employeer
+                queryset = Employeer.objects.select_related(
+                    'companie'
+                ).filter(companie=employeer.companie)
+            return queryset
         except Employeer.DoesNotExist:
             return Employeer.objects.none()
 
