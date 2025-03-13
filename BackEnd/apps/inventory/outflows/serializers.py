@@ -76,7 +76,7 @@ class OutflowSerializer(serializers.ModelSerializer):
     )
     # Read-only fields for Destiny Customer
     _destiny = serializers.CharField(source='destiny.full_name', read_only=True)
-    destiny_address = serializers.CharField(source='display_destiny_address', read_only=True)
+    destiny_address = serializers.SerializerMethodField(read_only=True)
     
     
     # Write-only field for items
@@ -145,6 +145,14 @@ class OutflowSerializer(serializers.ModelSerializer):
         if obj.created_by:
             return obj.created_by.user.get_full_name()
         return None
+    
+    def get_destiny_address(self, obj):
+        if obj.destiny.another_shipping_address:
+            destiny_address = obj.destiny.project_address.first()
+            return f"{destiny_address.address}, {destiny_address.city}, {destiny_address.state}, {destiny_address.zip_code}"
+        else:
+            destiny_address = obj.destiny.project_address.first()
+            return f"{destiny_address.address}, {destiny_address.city}, {destiny_address.state}, {destiny_address.zip_code}"
     
     def get_updated_by(self, obj) -> str:
         """Get the name of the user who last updated the outflow"""
