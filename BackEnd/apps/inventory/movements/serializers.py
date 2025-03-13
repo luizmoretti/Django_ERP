@@ -1,35 +1,25 @@
 from rest_framework import serializers
-from .models import Movement
 
-class MovementSerializer(serializers.ModelSerializer):
+
+class MovementSerializer(serializers.Serializer):
     """Base serializer for movements"""
-    
-    class Meta:
-        model = Movement
-        fields = [
-            'id',
-            'date',
-            'type',
-            'origin',
-            'destination',
-            'status',
-            'total_items',
-            'total_value',
-            'data'
-        ]
+    id = serializers.UUIDField()
+    date = serializers.DateTimeField()
+    type = serializers.CharField()
+    origin = serializers.CharField()
+    destination = serializers.CharField()
+    status = serializers.CharField()
+    total_items = serializers.IntegerField()
+    total_value = serializers.DecimalField(max_digits=10, decimal_places=2)
+    data = serializers.JSONField()
 
-class MovementListSerializer(serializers.ModelSerializer):
+class MovementListSerializer(serializers.Serializer):
     """Simplified serializer for movement listings"""
-    
-    class Meta:
-        model = Movement
-        fields = [
-            'id',
-            'date',
-            'type',
-            'origin',
-            'destination',
-            'status',
-            'total_items',
-            'total_value'
-        ]
+    id = serializers.UUIDField()
+    date = serializers.DateTimeField()
+    type = serializers.CharField()
+    origin = serializers.CharField()
+    destination = serializers.CharField()
+    status = serializers.CharField()
+    total_items = serializers.IntegerField()
+    total_value = serializers.DecimalField(max_digits=10, decimal_places=2)
