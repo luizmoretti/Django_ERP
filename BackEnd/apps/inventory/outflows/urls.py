@@ -9,4 +9,9 @@ urlpatterns = [
     path('retrieve/<uuid:pk>/', views.OutflowRetrieveView.as_view(), name='retrieve_outflow'),
     path('update/<uuid:pk>/', views.OutflowUpdateView.as_view(), name='update_outflow'),
     path('delete/<uuid:pk>/', views.OutflowDestroyView.as_view(), name='delete_outflow'),
+
+    
+    # Actions Endpoints
+    path('approve/<uuid:pk>/', views.OutflowApproveView.as_view(), name='approve_outflow'),
+    path('reject/<uuid:pk>/', views.OutflowRejectView.as_view(), name='reject_outflow'),
 ]
