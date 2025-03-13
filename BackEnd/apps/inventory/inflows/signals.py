@@ -5,7 +5,6 @@ from django.db import transaction
 from django.db.models import F
 from django.core.exceptions import ValidationError
 from .models import Inflow, InflowItems
-from apps.inventory.movements.models import Movement, MovementType, MovementStatus
 from ..product.models import Product
 from ..warehouse.models import WarehouseProduct
 
@@ -25,6 +24,21 @@ def store_previous_quantity(sender, instance, **kwargs):
     else:
         instance._previous_quantity = 0
         logger.info("New InflowItems: previous quantity set to 0")
+
+@receiver(pre_save, sender=Inflow)
+def store_previous_inflow_status(sender, instance, **kwargs):
+    """Store previous inflow status before changes"""
+    if instance.pk:
+        try:
+            previous = Inflow.objects.get(pk=instance.pk)
+            instance._previous_status = previous.status
+            logger.info(f"Inflow ID {instance.pk}: Previous status stored: {previous.status}")
+        except Inflow.DoesNotExist:
+            instance._previous_status = None
+            logger.info(f"Inflow ID {instance.pk}: New record, no previous status")
+    else:
+        instance._previous_status = None
+        logger.info("New Inflow: no previous status")
 
 @receiver(pre_save, sender=InflowItems)
 def validate_inflow_capacity(sender, instance, **kwargs):
@@ -57,9 +71,159 @@ def validate_inflow_capacity(sender, instance, **kwargs):
             f"Limit: {warehouse.limit}"
         )
 
+# @receiver(post_save, sender=InflowItems)
+# def update_quantities_on_inflow(sender, instance, created, **kwargs):
+#     """Update quantities after successful validation, but only if inflow is approved"""
+#     # Verificar se o inflow está aprovado
+#     if instance.inflow.status != 'approved':
+#         logger.info(
+#             f"Skipping quantity update for inflow item {instance.id} because inflow status is '{instance.inflow.status}'"
+#         )
+#         return
+    
+#     with transaction.atomic():
+#         product = instance.product
+#         warehouse = instance.inflow.destiny
+        
+#         if not product or not warehouse:
+#             logger.warning(f"InflowItems ID {instance.id} has no associated product or warehouse.")
+#             return
+        
+#         try:
+#             # Get or create WarehouseProduct
+#             warehouse_product, wp_created = WarehouseProduct.objects.get_or_create(
+#                 warehouse=warehouse,
+#                 product=product,
+#                 defaults={'current_quantity': 0}
+#             )
+            
+#             if created:
+#                 # New inflow
+#                 quantity_change = instance.quantity
+#             else:
+#                 # Update - calculate difference
+#                 quantity_change = instance.quantity - getattr(instance, '_previous_quantity', 0)
+            
+#             # Update WarehouseProduct quantity
+#             warehouse_product.current_quantity += quantity_change
+#             warehouse_product.save()
+            
+#             # Update Product quantity
+#             product.quantity += quantity_change
+#             product.save()
+            
+#             # Update Warehouse total quantity
+#             warehouse.quantity = warehouse.get_total_quantity()
+#             warehouse.save()
+            
+            
+#             #Change inflow status to completed
+#             instance.inflow.status = 'completed'
+#             instance.inflow.save()
+            
+#             logger.info(
+#                 f"Updated quantities for inflow item {instance.id}. "
+#                 f"Product: {product.name}, New quantity: {product.quantity}, "
+#                 f"Warehouse product quantity: {warehouse_product.current_quantity}, "
+#                 f"Total warehouse quantity: {warehouse.quantity}"
+#             )
+            
+#         except Exception as e:
+#             logger.error(f"Error updating quantities for inflow item {instance.id}: {str(e)}")
+#             transaction.set_rollback(True)
+#             raise
+
+
+
+@receiver(post_save, sender=Inflow)
+def update_quantities_on_inflow_status_change(sender, instance, created, **kwargs):
+    """
+    Update quantities when inflow status changes to approved
+    This signal handles the case when an existing inflow is approved
+    """
+    # Ignorar se é uma criação (será tratado pelos signals de InflowItems)
+    if created:
+        return
+        
+    # Verificar se o status é 'approved' e se houve mudança de status
+    if instance.status == 'approved' and hasattr(instance, '_previous_status') and instance._previous_status != 'approved':
+        logger.info(f"Inflow {instance.id} status changed to 'approved'. Updating quantities...")
+        
+        with transaction.atomic():
+            # Processar todos os itens do inflow
+            for item in instance.items.all():
+                try:
+                    product = item.product
+                    warehouse = instance.destiny
+                    
+                    if not product or not warehouse:
+                        logger.warning(f"InflowItems ID {item.id} has no associated product or warehouse.")
+                        continue
+                    
+                    # Get or create WarehouseProduct
+                    warehouse_product, wp_created = WarehouseProduct.objects.get_or_create(
+                        warehouse=warehouse,
+                        product=product,
+                        defaults={'current_quantity': 0}
+                    )
+                    
+                    # Update WarehouseProduct quantity
+                    previous_quantity = warehouse_product.current_quantity
+                    warehouse_product.current_quantity += item.quantity
+                    warehouse_product.save()
+                    
+                    # Update Product quantity
+                    product_previous_quantity = product.quantity
+                    product.quantity += item.quantity
+                    product.save()
+                    
+                    #Change inflow status to completed
+                    instance.status = 'completed'
+                    instance.save()
+                    logger.info(f"Inflow {instance.id} status changed to {instance.status} successfully")
+                    
+                    logger.info(
+                        f"Updated quantities for inflow item {item.id} after approval. "
+                        f"Product: {product.name}, "
+                        f"Previous quantity: {product_previous_quantity}, "
+                        f"New quantity: {product.quantity}, "
+                        f"Warehouse product previous quantity: {previous_quantity}, "
+                        f"Warehouse product new quantity: {warehouse_product.current_quantity}"
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"Error updating quantities for inflow item {item.id} after approval: {str(e)}")
+                    transaction.set_rollback(True)
+                    raise
+            
+            # Update warehouse total quantity
+            if instance.destiny:
+                instance.destiny.update_total_quantity()
+                logger.info(f"Updated total quantity for warehouse {instance.destiny.id}")
+
+
+# Modificar o signal existente para evitar duplicação
 @receiver(post_save, sender=InflowItems)
-def update_quantities_on_inflow(sender, instance, created, **kwargs):
-    """Update quantities after successful validation"""
+def update_quantities_on_inflow_item_change(sender, instance, created, **kwargs):
+    """
+    Update quantities when inflow items are created or modified
+    This only applies to items in already approved inflows or when adding items to approved inflows
+    """
+    # Verificar se o inflow está aprovado
+    if instance.inflow.status != 'approved':
+        logger.info(
+            f"Skipping quantity update for inflow item {instance.id} because inflow status is '{instance.inflow.status}'"
+        )
+        return
+    
+    # Verificar se estamos no meio de uma aprovação de inflow
+    # Se sim, a atualização será tratada pelo signal update_quantities_on_inflow_status_change
+    if hasattr(instance.inflow, '_previous_status') and instance.inflow._previous_status != 'approved':
+        logger.info(
+            f"Skipping quantity update for inflow item {instance.id} because it's part of an inflow being approved"
+        )
+        return
+    
     with transaction.atomic():
         product = instance.product
         warehouse = instance.inflow.destiny
@@ -77,7 +241,7 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             )
             
             if created:
-                # New inflow
+                # New inflow item
                 quantity_change = instance.quantity
             else:
                 # Update - calculate difference
@@ -96,7 +260,7 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             warehouse.save()
             
             logger.info(
-                f"Updated quantities for inflow item {instance.id}. "
+                f"Updated quantities for inflow item {instance.id} (direct change). "
                 f"Product: {product.name}, New quantity: {product.quantity}, "
                 f"Warehouse product quantity: {warehouse_product.current_quantity}, "
                 f"Total warehouse quantity: {warehouse.quantity}"
@@ -106,10 +270,19 @@ def update_quantities_on_inflow(sender, instance, created, **kwargs):
             logger.error(f"Error updating quantities for inflow item {instance.id}: {str(e)}")
             transaction.set_rollback(True)
             raise
+        
 
 @receiver(post_delete, sender=InflowItems)
 def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
-    """Subtract quantities when inflow is deleted"""
+    """Subtract quantities when inflow is deleted, but only if inflow was completed"""
+    
+    # Verify if inflow was completed
+    if not hasattr(instance, 'inflow') or instance.inflow.status != 'completed':
+        logger.info(
+            f"Skipping quantity subtraction for deleted inflow item {instance.id} because inflow status is not 'completed'"
+        )
+        return
+    
     with transaction.atomic():
         try:
             product = instance.product
@@ -152,112 +325,3 @@ def subtract_quantities_on_inflow_delete(sender, instance, **kwargs):
             logger.error(f"Error subtracting quantities for inflow item {instance.id}: {str(e)}")
             transaction.set_rollback(True)
             raise
-
-
-
-@receiver(post_save, sender=InflowItems)
-def update_movement_on_items_change(sender, instance, created, **kwargs):
-    """Update movement record when inflow items change"""
-    # Avoid duplicate signal calls and check for valid inflow
-    if not instance.inflow_id or not instance.inflow.id:
-        return
-        
-    # Use transaction.on_commit to ensure data consistency and avoid duplicate calls
-    def _update_movement():
-        # Create new transaction for the update
-        with transaction.atomic():
-            try:
-                # Get inflow and lock it for update to prevent race conditions
-                inflow = instance.inflow.__class__.objects.select_for_update().get(id=instance.inflow.id)
-                
-                # Calculate totals using fresh data with select_related to minimize queries
-                items = inflow.items.all().select_related('product')
-                total_items = sum(item.quantity for item in items)
-                
-                # Calculate total value safely handling products without prices
-                total_value = 0
-                items_data = []
-                
-                for item in items:
-                    logger.info(
-                        f"[SIGNALS - INFLOWS]Calculating price for product {item.product.id} "
-                        f"(quantity: {item.quantity}) from supplier {inflow.origin.id if inflow.origin else 'None'}"
-                    )
-                    
-                    # Get current price for better performance
-                    current_price = item.product.supplier_prices.filter(
-                        is_current=True,
-                        supplier=inflow.origin
-                    ).first()
-                    
-                    if current_price:
-                        item_total = item.quantity * current_price.unit_price
-                        total_value += item_total
-                        logger.info(
-                            f"[SIGNALS - INFLOWS]Found price {current_price.unit_price} for product {item.product.id}. "
-                            f"Item total: {item_total}"
-                        )
-                    else:
-                        logger.warning(
-                            f"[SIGNALS - INFLOWS]No current price found for product {item.product.id} "
-                            f"from supplier {inflow.origin.id if inflow.origin else 'None'}. "
-                            f"Supplier prices count: {item.product.supplier_prices.count()}"
-                        )
-                    
-                    items_data.append({
-                        'product': item.product.name,
-                        'quantity': item.quantity,
-                        'unit_price': str(current_price.unit_price if current_price else 0)
-                    })
-                
-                logger.info(f"[SIGNALS - INFLOWS]Final total_value calculated: {total_value}")
-                
-                # Get or create movement with lock
-                movement, m_created = Movement.objects.select_for_update().get_or_create(
-                    type=MovementType.INFLOW.value,
-                    origin=inflow.origin.name if inflow.origin else None,
-                    destination=inflow.destiny.name if inflow.destiny else None,
-                    defaults={
-                        'companie': inflow.companie,
-                        'status': MovementStatus.PENDING.value,
-                        'total_items': total_items,
-                        'total_value': total_value,
-                        'created_by': inflow.created_by,
-                        'updated_by': inflow.updated_by,
-                        'data': {
-                            'inflow_id': str(inflow.id),
-                            'items': items_data
-                        }
-                    }
-                )
-                
-                # Update movement if not created
-                if not m_created:
-                    movement.status = MovementStatus.PENDING.value
-                    movement.total_items = total_items
-                    movement.total_value = total_value
-                    movement.updated_by = inflow.updated_by
-                    movement.data = {
-                        'inflow_id': str(inflow.id),
-                        'items': items_data
-                    }
-                    movement.save()
-                
-                logger.info(f"[SIGNALS - INFLOWS]{'Created' if m_created else 'Updated'} movement record for inflow {inflow.id}")
-                
-            except Exception as e:
-                logger.error(f"[SIGNALS - INFLOWS]Error updating movement record for inflow item {instance.id}: {str(e)}")
-                raise
-    
-    # Execute update after transaction commit
-    transaction.on_commit(_update_movement)
-
-@receiver(post_delete, sender=InflowItems)
-def update_movement_on_items_delete(sender, instance, **kwargs):
-    """Update movement record when inflow items are deleted"""
-    try:
-        # Try to update movement if inflow still exists
-        if instance.inflow_id:
-            update_movement_on_items_change(sender, instance, False)
-    except Exception as e:
-        logger.error(f"[SIGNALS - INFLOWS]Error updating movement after item deletion: {str(e)}")
