@@ -10,8 +10,9 @@ from drf_spectacular.utils import (
 from rest_framework.generics import (
     ListAPIView, CreateAPIView, 
     RetrieveAPIView, UpdateAPIView, 
-    DestroyAPIView
+    DestroyAPIView, GenericAPIView
 )
+from .services.handlers import OutflowService
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
@@ -386,4 +387,136 @@ class OutflowDestroyView(OutflowBaseView, DestroyAPIView):
             return Response(
                 {"detail": "Error deleting outflow"},
                 status=500
+            )
+
+@extend_schema(
+    tags=['Inventory - Outflows'],
+    operation_id='approve_outflow',
+    summary='Approve an outflow',
+    description='Approve a pending outflow to update inventory quantities',
+    parameters=[
+        OpenApiParameter(
+            name='id',
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.PATH,
+            description='UUID of the outflow to approve',
+            required=True
+        )
+    ],
+    responses={
+        200: OutflowSerializer,
+        400: {
+            'type': 'object',
+            'properties': {
+                'detail': {
+                    'type': 'string',
+                    'example': 'Only pending outflows can be approved'
+                }
+            }
+        }
+    }
+)
+class OutflowApproveView(OutflowBaseView, GenericAPIView):
+    """View for approving a pending outflow"""
+    serializer_class = OutflowSerializer
+    
+    def post(self, request, *args, **kwargs):
+        """Approve an outflow"""
+        try:
+            outflow = self.get_object()
+            
+            service = OutflowService()
+            approved_outflow = service.approve_outflow(outflow, request.user)
+            
+            serializer = self.get_serializer(approved_outflow)
+            
+            logger.info(f"Outflow approved successfully via API", extra={'outflow_id': outflow.id})
+            return Response(serializer.data)
+            
+        except ValidationError as e:
+            logger.warning(f"Validation error when approving outflow", extra={'error': str(e)})
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error approving outflow", extra={'error': str(e)}, exc_info=True)
+            return Response(
+                {'detail': 'An error occurred while approving the outflow'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema(
+    tags=['Inventory - Outflows'],
+    operation_id='reject_outflow',
+    summary='Reject an outflow',
+    description='Reject a pending outflow with a reason',
+    parameters=[
+        OpenApiParameter(
+            name='id',
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.PATH,
+            description='UUID of the outflow to reject',
+            required=True
+        )
+    ],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'rejection_reason': {
+                    'type': 'string',
+                    'description': 'Reason for rejecting the outflow',
+                    'example': 'Products not available in the requested quantities'
+                }
+            },
+            'required': ['rejection_reason']
+        }
+    },
+    responses={
+        200: OutflowSerializer,
+        400: {
+            'type': 'object',
+            'properties': {
+                'detail': {
+                    'type': 'string',
+                    'example': 'A valid rejection reason is required'
+                }
+            }
+        }
+    }
+)
+class OutflowRejectView(OutflowBaseView, GenericAPIView):
+    """View for rejecting a pending outflow"""
+    serializer_class = OutflowSerializer
+    
+    def post(self, request, *args, **kwargs):
+        """Reject an outflow"""
+        try:
+            outflow = self.get_object()
+            
+            # Get rejection reason from request data
+            rejection_reason = request.data.get('rejection_reason')
+            if not rejection_reason:
+                return Response(
+                    {'detail': 'Rejection reason is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            service = OutflowService()
+            rejected_outflow = service.reject_outflow(outflow, request.user, rejection_reason)
+            
+            serializer = self.get_serializer(rejected_outflow)
+            
+            logger.info(f"Outflow rejected successfully via API", extra={'outflow_id': outflow.id})
+            return Response(serializer.data)
+            
+        except ValidationError as e:
+            logger.warning(f"Validation error when rejecting outflow", extra={'error': str(e)})
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error rejecting outflow", extra={'error': str(e)}, exc_info=True)
+            return Response(
+                {'detail': 'An error occurred while rejecting the outflow'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
