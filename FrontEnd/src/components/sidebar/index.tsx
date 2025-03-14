@@ -100,7 +100,7 @@ export function Sidebar(){
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Link href="#"
+                            <Link href="/suppliers"
                         className="flex gap-3 px-4 py-2 shrink-0 items-center justify-center 
                         text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
                         >
