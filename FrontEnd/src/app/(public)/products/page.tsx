@@ -8,6 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Search, ArrowUp, ArrowDown } from "lucide-react";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
+import { useContext,useEffect } from "react";
+import {AuthContext} from "@/context/authcontext";
+import {useRouter} from "next/navigation";
 
 // Define the products array
 const products = [
@@ -36,6 +39,8 @@ const products = [
 ];
 
 export default function Products() {
+    const auth = useContext(AuthContext);
+    const router = useRouter();
     // Define the state variables
     const [itemsPerPage, setitemsPerPage] = useState(10);
     // Define the visible products
@@ -96,6 +101,14 @@ export default function Products() {
 
         setSelectedProducts(updatedSelection);
     };
+
+     useEffect(()=>{
+        if (!auth?.user){
+          router.push("/signin");
+        }
+    
+      }, [auth, router]);
+    
     
 
     return (

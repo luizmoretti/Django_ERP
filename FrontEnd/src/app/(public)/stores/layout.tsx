@@ -4,6 +4,8 @@ import "@/app/globals.css";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar/sidebarcontext";
+import { AuthProvider } from "@/context/authcontext";
+import { UserProvider } from "@/context/userContext";
 
 const inter = Inter({subsets: ["latin"]});
 
@@ -21,12 +23,16 @@ export default function RootLayout({
             <body className={cn("min-h-screen bg-background font-sans antialiased",
                 inter.className
             )}>
+                <AuthProvider>
+                    <UserProvider>
                 <SidebarProvider>
                     <div className="flex w-full flex-col bg-muted/40">
                     <Sidebar />
                     {children}
                     </div>
                 </SidebarProvider>
+                </UserProvider>
+                </AuthProvider>
             </body>
         </html>
     )

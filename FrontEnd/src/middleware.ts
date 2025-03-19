@@ -1,4 +1,5 @@
 import { type NextRequest, type MiddlewareConfig, NextResponse } from "next/server";
+import Cookies from "js-cookie";
 
 const publicRoutes = [
     { path: "/sign-in", whenAuthenticated: "redirect" },
@@ -13,6 +14,7 @@ const publicRoutes = [
 const REDIRECT_WHEN_NOT_AUTHENTICATED_ROUTE = '/sign-in';
 
 export function middleware(request: NextRequest) {
+    const user = Cookies.get("user");
     const path = request.nextUrl.pathname;
     const publicRoute = publicRoutes.find(route => route.path === path);
     const authToken = request.cookies.get('token');
