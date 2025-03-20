@@ -281,3 +281,159 @@ class AttendanceService:
                     'clock_out': entry.get('clock_out')
                 }
             )
+    
+    def clock_inout_with_code(self, acess_code):
+        """Register clock in or clock out using an access code
+        
+        This method automatically determines whether to register a clock in (create new tracking)
+        or clock out (update existing tracking) based on the employee's current status.
+        
+        Args:
+            acess_code: 6-digit access code
+            
+        Returns:
+            dict: Result of the operation containing tracking details and status
+            
+        Raises:
+            ValidationError: If access code is invalid or operation fails
+        """
+        try:
+            # Find attendance register by code
+            register = AttendanceRegister.objects.get(acess_code=acess_code)
+            employee = register.employee
+            
+            # Determine operation type (clock in or clock out)
+            if employee.payment_type == 'Hour':
+                # Check for open time tracking (without clock_out)
+                open_tracking = TimeTracking.objects.filter(
+                    register=register,
+                    employee=employee,
+                    clock_out__isnull=True
+                ).order_by('-created_at').first()
+                
+                current_time = timezone.now()
+                
+                if open_tracking:
+                    # CLOCK OUT - update existing tracking
+                    with transaction.atomic():
+                        open_tracking.clock_out = current_time
+                        open_tracking.save(update_fields=['clock_out'])
+                        
+                        logger.info(f"[ATTENDANCE SERVICE] - Clock out registered via access code", 
+                                   extra={'employee_id': employee.id, 'tracking_id': open_tracking.id})
+                        
+                        return {
+                            'operation': 'clock_out',
+                            'employee_id': str(employee.id),
+                            'employee_name': employee.name,
+                            'tracking_id': str(open_tracking.id),
+                            'clock_in': open_tracking.clock_in,
+                            'clock_out': open_tracking.clock_out,
+                            'duration': open_tracking.duration,
+                            'success': True
+                        }
+                else:
+                    # CLOCK IN - create new tracking
+                    with transaction.atomic():
+                        tracking = TimeTracking.objects.create(
+                            register=register,
+                            employee=employee,
+                            clock_in=current_time
+                        )
+                        
+                        logger.info(f"[ATTENDANCE SERVICE] - Clock in registered via access code", 
+                                   extra={'employee_id': employee.id, 'tracking_id': tracking.id})
+                        
+                        return {
+                            'operation': 'clock_in',
+                            'employee_id': str(employee.id),
+                            'employee_name': employee.name,
+                            'tracking_id': str(tracking.id),
+                            'clock_in': tracking.clock_in,
+                            'success': True
+                        }
+                        
+            elif employee.payment_type == 'Day':
+                # For daily workers, check if there's an entry for today
+                current_date = timezone.now().date()
+                current_time = timezone.now().time()
+                
+                today_tracking = DaysTracking.objects.filter(
+                    register=register,
+                    employee=employee,
+                    date=current_date
+                ).first()
+                
+                if today_tracking:
+                    # If entry exists for today but no clock_out, update it
+                    if today_tracking.clock_out is None:
+                        with transaction.atomic():
+                            today_tracking.clock_out = current_time
+                            today_tracking.save(update_fields=['clock_out'])
+                            
+                            logger.info(f"[ATTENDANCE SERVICE] - Clock out registered via access code (daily)", 
+                                       extra={'employee_id': employee.id, 'tracking_id': today_tracking.id})
+                            
+                            return {
+                                'operation': 'clock_out',
+                                'employee_id': str(employee.id),
+                                'employee_name': employee.name,
+                                'tracking_id': str(today_tracking.id),
+                                'date': today_tracking.date,
+                                'clock_in': today_tracking.clock_in,
+                                'clock_out': today_tracking.clock_out,
+                                'success': True
+                            }
+                    else:
+                        # Both clock_in and clock_out exist, can't modify further today
+                        logger.warning(f"[ATTENDANCE SERVICE] - Day already fully registered", 
+                                      extra={'employee_id': employee.id, 'tracking_id': today_tracking.id})
+                        
+                        return {
+                            'operation': 'none',
+                            'employee_id': str(employee.id),
+                            'employee_name': employee.name,
+                            'message': 'Day already fully registered with both clock in and clock out',
+                            'success': False
+                        }
+                else:
+                    # No entry for today, create new
+                    with transaction.atomic():
+                        tracking = DaysTracking.objects.create(
+                            register=register,
+                            employee=employee,
+                            date=current_date,
+                            clock_in=current_time
+                        )
+                        
+                        logger.info(f"[ATTENDANCE SERVICE] - Clock in registered via access code (daily)", 
+                                   extra={'employee_id': employee.id, 'tracking_id': tracking.id})
+                        
+                        return {
+                            'operation': 'clock_in',
+                            'employee_id': str(employee.id),
+                            'employee_name': employee.name,
+                            'tracking_id': str(tracking.id),
+                            'date': tracking.date,
+                            'clock_in': tracking.clock_in,
+                            'success': True
+                        }
+            else:
+                logger.error(f"[ATTENDANCE SERVICE] - Unsupported payment type: {employee.payment_type}", 
+                            extra={'employee_id': employee.id})
+                
+                return {
+                    'operation': 'none',
+                    'employee_id': str(employee.id),
+                    'employee_name': employee.name,
+                    'message': f'Unsupported payment type: {employee.payment_type}',
+                    'success': False
+                }
+        
+        except AttendanceRegister.DoesNotExist:
+            logger.error(f"[ATTENDANCE SERVICE] - Invalid access code: {acess_code}")
+            raise ValidationError(f"Invalid access code: {acess_code}")
+        except Exception as e:
+            logger.error(f"[ATTENDANCE SERVICE] - Error processing attendance via access code: {str(e)}", 
+                        exc_info=True)
+            raise ValidationError(f"Error processing attendance: {str(e)}")
