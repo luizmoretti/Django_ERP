@@ -745,7 +745,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
     'DESCRIPTION': 'API Documentation for DryWall WareHouse System',
     'VERSION': '0.0.1',
-    'SERVE_INCLUDE_SCHEMA': True,
+    # 'SERVE_INCLUDE_SCHEMA': True,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
     
     # UI Settings
@@ -758,6 +758,14 @@ SPECTACULAR_SETTINGS = {
         'filter': False,
         'persistAuthorization': True,
     },
+    
+    # 'DISABLE_ERRORS_AND_WARNINGS': True,
+    
+    # Settings to fix schema generation issues
+    # 'ENUM_NAME_OVERRIDES': {},
+    # 'COMPONENT_SPLIT_REQUEST': True,
+    # 'COMPONENT_NO_READ_ONLY_REQUIRED': False,
+    # 'SORT_OPERATIONS': False,
     
     # Authentication
     'SECURITY': [
