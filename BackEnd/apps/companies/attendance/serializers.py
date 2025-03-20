@@ -178,3 +178,49 @@ class AttendanceSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"[ATTENDANCE SERIALIZER] - Error updating attendance register: {str(e)}")
             raise serializers.ValidationError({"detail": "Error updating attendance register"})
+
+class AttendanceClockInRequestSerializer(serializers.Serializer):
+    """Serializer para validar requisições de registro de ponto (entrada/saída)"""
+    access_code = serializers.IntegerField(
+        required=True,
+        min_value=100000,  # Código de 6 dígitos (mínimo 100000)
+        max_value=999999,  # Código de 6 dígitos (máximo 999999)
+        error_messages={
+            'required': 'O código de acesso é obrigatório',
+            'min_value': 'O código de acesso deve ter 6 dígitos',
+            'max_value': 'O código de acesso deve ter 6 dígitos',
+            'invalid': 'O código de acesso deve ser um número inteiro'
+        }
+    )
+    
+    def validate_access_code(self, value):
+        """Validação adicional para o código de acesso"""
+        # Converte para string para verificar o comprimento
+        if len(str(value)) != 6:
+            raise serializers.ValidationError("O código de acesso deve ter exatamente 6 dígitos")
+        return value
+
+
+class AttendanceClockInOutResponseSerializer(serializers.Serializer):
+    """Serializer para padronizar a resposta da operação de registro de ponto"""
+    operation = serializers.CharField(
+        help_text="Operação realizada: clock_in ou clock_out"
+    )
+    employee_id = serializers.UUIDField(
+        help_text="UUID do funcionário"
+    )
+    employee_name = serializers.CharField(
+        help_text="Nome do funcionário"
+    )
+    success = serializers.BooleanField(
+        help_text="Indica se a operação foi bem-sucedida"
+    )
+    # Campos adicionais que podem ser incluídos na resposta
+    timestamp = serializers.DateTimeField(
+        help_text="Data e hora do registro",
+        required=False
+    )
+    message = serializers.CharField(
+        help_text="Mensagem adicional para o usuário",
+        required=False
+    )
