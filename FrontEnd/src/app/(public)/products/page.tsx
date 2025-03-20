@@ -108,6 +108,12 @@ export default function Products() {
         }
     
       }, [auth, router]);
+      // Este hook useEffect verifica se o usuário está autenticado antes de permitir o acesso à página.
+// - Se o objeto `auth` não existir ou não contiver a propriedade `user`, o usuário será redirecionado para a página de login ("/signin").
+// - O operador de encadeamento opcional (`?.`) é usado para evitar erros caso `auth` seja `null` ou `undefined`.
+// - O método `router.push` é usado para realizar a navegação programática para a página de login.
+// - O array de dependências `[auth, router]` garante que o efeito será executado apenas quando `auth` ou `router` mudarem.
+// Este código implementa uma proteção de rota, garantindo que apenas usuários autenticados possam acessar a página.
     
     
 

@@ -1,14 +1,21 @@
 "use client"
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {Table, TableHeader, TableHead, TableRow, TableBody, TableCell} from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+import { Plus, MoreVertical,Edit,Trash } from "lucide-react";
+import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { Dialog,DialogTrigger,DialogContent,DialogTitle,DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { AuthContext } from "@/context/authcontext";
+import {useRouter} from "next/navigation";
 
 export default function Brands(){
+    const auth = useContext(AuthContext);
+    const router = useRouter();
+    const [editBrand, setEditBrand] = useState<{name:string;description:string}|null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const {isSidebarVisible} = useSidebar();
     const [search, setSearch] = useState("");
     const [selectedRows, setSelectedRows] = useState<{[key: number]: boolean}>({});
@@ -50,6 +57,24 @@ export default function Brands(){
         setSelectedRows(newSelectedRows);
         setAllSelected(!allSelected);
     };
+
+    const handleEdit = (brand: {name:string;description:string})=>{
+        setEditBrand(brand);
+        setIsEditOpen(true);
+    };
+
+    const handleDelete = (brand:{name:string; description:string})=>{
+        const confirmDelete = window.confirm(`Are you sure you want to delete ${brand.name}`);
+        if(confirmDelete){
+            console.log("Deleting:",brand);
+        }
+    }
+
+   /* useEffect(()=>{
+        if(!auth?.user){
+            router.push("/signin");
+        }
+    },[auth,router]);*/
 
     return(
         <main className={`p-6 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>
@@ -140,10 +165,70 @@ export default function Brands(){
                                     </TableCell>
                                     <TableCell className="text-gray-600">{brands.name}</TableCell>
                                     <TableCell className="text-gray-600">{brands.description}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-2 rounded-md hover:bg-gray-200">
+                                                    <MoreVertical className="w-5 h-5"/>
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={()=> handleEdit(brands)}>
+                                                    <Edit className="w-4 h-4 mr-2"/>
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={()=> handleDelete(brands)}>
+                                                    <Trash className="w-4 h-4 mr-2 text-red-600"/>
+                                                    Delete
+                                                </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                </TableCell>
                                 </TableRow>
                                 ))}   
                         </TableBody>
                     </Table>
+                    <Dialog open = {isEditOpen} onOpenChange={setIsEditOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit Brand</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                                    <Input
+                                    placeholder="Name"
+                                    value={editBrand?.name || ""}
+                                    onChange={(e)=>
+                                        setEditBrand((prev)=>(prev?{...prev,name:e.target.value}:prev))
+                                    }
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                                    <Input
+                                    placeholder="Description"
+                                    value={editBrand?.description || ""}
+                                    onChange= {(e)=>
+                                        setEditBrand((prev)=> (prev ? {...prev,description:e.target.value}: prev))
+                                    }
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={()=> setIsEditOpen(false)}>Cancel</Button>
+                                <Button
+                                className="bg-blue-600"
+                                onClick={()=> {
+                                    console.log("Updating:", editBrand);
+                                    setIsEditOpen(false);
+                                }}
+                                >
+                                    Save
+                                </Button>
+                                </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <div className="flex justify-end items-center p-4 bg-white">
                     <span className="text-sm text-gray-600">Rows per page:</span>

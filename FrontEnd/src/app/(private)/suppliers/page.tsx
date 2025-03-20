@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useContext, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table,TableHead,TableHeader,TableBody,TableRow,TableCell,TableFooter } from "@/components/ui/table";
@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { Plus } from "lucide-react";
 import { Dialog,DialogContent,DialogTrigger,DialogTitle,DialogHeader,DialogFooter } from "@/components/ui/dialog";
+import { AuthContext } from "@/context/authcontext";
+import { useRouter } from "next/navigation";
 
 interface Supplier{
     id:number;
@@ -21,6 +23,8 @@ interface Supplier{
 }
 
 export default function Suppliers(){
+    const auth = useContext(AuthContext);
+    const router = useRouter();
     const {isSidebarVisible}= useSidebar();
     const[search, setSearch]= useState("");
     const[selectedRows, setSelectedRows]= useState<{[key:number]: boolean}>(
@@ -101,6 +105,12 @@ export default function Suppliers(){
         setSelectedRows(newSelectedRows);
         setAllSelected(!allSelected);
     };
+
+    useEffect(()=>{
+        if(!auth?.user){
+            router.push("/signin")
+        }
+    },[auth,router]);
 
     return(
         <main className={`p-6 transition-margin duration-300 ease-in-out ${useSidebar().isSidebarVisible ? "ml-64" : "ml-0"}`} 

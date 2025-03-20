@@ -1,14 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useContext,useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import {useSidebar} from "@/components/sidebar/sidebarcontext"
 import { Dialog,DialogTrigger,DialogContent,DialogHeader,DialogTitle,DialogFooter } from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+import {AuthContext} from "@/context/authcontext";
 
 export default function CategoriesTable(){
+    const auth = useContext(AuthContext);
+    const router = useRouter();
     const { isSidebarVisible } = useSidebar();
     const[search,setSearch] = useState("");
     const[selectedRows,setSelectedRows] = useState<{ [key: number]: boolean }>({});
@@ -50,6 +54,12 @@ export default function CategoriesTable(){
             setSelectedRows(newSelectedRows);
             setAllSelected(!allSelected);
         };
+        
+        useEffect(()=>{
+            if(!auth?.user){
+                router.push("/signin")
+            }
+        },[auth,router])
     
 
     return(
