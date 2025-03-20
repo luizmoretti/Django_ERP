@@ -25,6 +25,10 @@ class LoadOrderBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
+            #Verify if its swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return LoadOrder.objects.none()
+            
             employeer = user.employeer
             return LoadOrder.objects.select_related(
                 'companie'
