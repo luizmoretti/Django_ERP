@@ -31,6 +31,10 @@ class WareHouseBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
+            # Verify if it is a swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return Warehouse.objects.none()
+            
             employeer = user.employeer
             return Warehouse.objects.select_related(
                 'companie'
