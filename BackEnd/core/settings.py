@@ -786,8 +786,8 @@ SPECTACULAR_SETTINGS = {
         # Authentication
         {'name': 'JWT - Auth', 'description': 'JWT authentication endpoints'},
         
-        # Vehicles
-        {'name': 'Delivery - Vehicles', 'description': 'Vehicle management endpoints'},
+        # Vehicle
+        {'name': 'Vehicle', 'description': 'Vehicle management endpoints'},
         
         # Delivery
         {'name': 'Delivery', 'description': 'Delivery management endpoints'},
