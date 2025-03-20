@@ -5,7 +5,6 @@ from rest_framework.generics import (
     ListAPIView, CreateAPIView, 
     RetrieveAPIView, UpdateAPIView, 
     DestroyAPIView, GenericAPIView
-    DestroyAPIView, GenericAPIView
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
