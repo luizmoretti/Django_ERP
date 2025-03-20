@@ -395,12 +395,13 @@ class InflowDestroyView(InflowBaseView, DestroyAPIView):
             )
 
 
-@extend_schema(
-    tags=['Inventory - Inflows'],
-    operation_id='approve_inflow',
-    summary='Approve an inflow',
-    description='Approve a pending inflow to update inventory quantities',
-    parameters=[
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Inflows'],
+        operation_id='approve_inflow',
+        summary='Approve an inflow',
+        description='Approve a pending inflow to update inventory quantities',
+        parameters=[
         OpenApiParameter(
             name='id',
             type=OpenApiTypes.UUID,
@@ -439,6 +440,7 @@ class InflowDestroyView(InflowBaseView, DestroyAPIView):
             }
         }
     }
+    ),
 )
 class InflowApproveView(InflowBaseView, GenericAPIView):
     """
@@ -511,12 +513,13 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             )
 
 
-@extend_schema(
-    tags=['Inventory - Inflows'],
-    operation_id='reject_inflow',
-    summary='Reject an inflow',
-    description='Reject a pending inflow with a reason',
-    parameters=[
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Inflows'],
+        operation_id='reject_inflow',
+        summary='Reject an inflow',
+        description='Reject a pending inflow with a reason',
+        parameters=[
         OpenApiParameter(
             name='id',
             type=OpenApiTypes.UUID,
@@ -568,6 +571,7 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             }
         }
     }
+    ),
 )
 class InflowRejectView(InflowBaseView, GenericAPIView):
     """
