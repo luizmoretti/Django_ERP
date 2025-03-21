@@ -69,7 +69,7 @@ class DeliverySerializer(serializers.ModelSerializer):
     checkpoints = DeliveryCheckpointSerializer(many=True, read_only=True)
     
     # Audit fields
-    companie = serializers.UUIDField(read_only=True)
+    companie = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
     created_by = serializers.SerializerMethodField()
@@ -114,37 +114,41 @@ class DeliverySerializer(serializers.ModelSerializer):
             'updated_by',
         ]
         
-    def get_customer_name(self, obj):
+    def get_customer_name(self, obj) -> str:
         """Returns the full name of the customer."""
         return f"{obj.customer.first_name} {obj.customer.last_name}"
     
-    def get_driver_name(self, obj):
+    def get_driver_name(self, obj) -> str:
         """Returns the full name of the driver."""
         return f"{obj.driver.user.get_full_name()}"
     
-    def get_vehicle_info(self, obj):
+    def get_vehicle_info(self, obj) -> str:
         """Returns formatted vehicle information (name and plate)."""
         return f"{obj.vehicle.name} | {obj.vehicle.plate}"
     
-    def get_load_info(self, obj):
+    def get_load_info(self, obj) -> list:
         """Returns a list of load order IDs and order numbers."""
         return [{'id': load.id, 'order_number': load.order_number} for load in obj.load.all()]
     
-    def get_status_display(self, obj):
+    def get_status_display(self, obj) -> str:
         """Returns the human-readable status value."""
         return obj.get_status_display()
     
-    def get_created_by(self, obj):
+    def get_created_by(self, obj) -> str:
         """Returns the full name of the user who created the delivery."""
         if obj.created_by:
             return obj.created_by.user.get_full_name()
         return None
     
-    def get_updated_by(self, obj):
+    def get_updated_by(self, obj) -> str:
         """Returns the full name of the user who last updated the delivery."""
         if obj.updated_by:
             return obj.updated_by.user.get_full_name()
         return None
+    
+    def get_companie(self, obj) -> str:
+        """Returns the UUID of the companie."""
+        return f"[{obj.companie.type}] {obj.companie.name}"
     
     @transaction.atomic
     def create(self, validated_data):
