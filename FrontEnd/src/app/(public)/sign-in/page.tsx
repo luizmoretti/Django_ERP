@@ -45,8 +45,12 @@ const form = useForm<TFormLogin>({
                 email:data.email,
                 password:data.password,
             });
+            const {token,base,redirect_url} = response.data;
+
+
             const {acess,refresh} = response.data;
             
+            Cookies.set('acess_token', token,{secure:true,sameSite:'strict'});
             Cookies.set('acess_token', acess,{secure:true,sameSite:'strict'});
             Cookies.set('refresh_token', refresh, {secure:true,sameSite:'strict'});
             
@@ -59,7 +63,7 @@ const form = useForm<TFormLogin>({
             login(userResponse.data);
 
 
-            router.push("/dashboard");        
+            router.push("/products");        
         } catch(err){
             setError("Email ou senha inválidos.");
             console.error("Erro no login",err);

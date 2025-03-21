@@ -10,6 +10,8 @@ import { PlusCircle, Search, ArrowUp, ArrowDown, Edit, Trash, MoreVertical } fro
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { useContext, useEffect } from "react";
+import { useUser } from "@/context/userContext";
+import Cookies from "js-cookie";
 import { AuthContext } from "@/context/authcontext";
 import { useRouter } from "next/navigation";
 
@@ -40,6 +42,7 @@ const products = [
 ];
 
 export default function Products() {
+    const {user} = useUser();
     const auth = useContext(AuthContext);
     const router = useRouter();
     const [editProduct, setIsEditProduct] = useState<{ name: string; description: string; brand: string; quantity: number; category: string } | null>(null);
@@ -117,12 +120,13 @@ export default function Products() {
         }
     }
 
-   /* useEffect(() => {
-        if (!auth?.user) {
+    useEffect(() => {
+        const acessToken = Cookies.get('acess_token');
+        if (!acessToken) {
             router.push("/signin");
         }
 
-    }, [auth, router]);*/
+    }, [user,auth, router]);
     /** Este hook useEffect verifica se o usuário está autenticado antes de permitir o acesso à página.
      - Se o objeto `auth` não existir ou não contiver a propriedade `user`, o usuário será redirecionado para a página de login ("/signin").
      - O operador de encadeamento opcional (`?.`) é usado para evitar erros caso `auth` seja `null` ou `undefined`.

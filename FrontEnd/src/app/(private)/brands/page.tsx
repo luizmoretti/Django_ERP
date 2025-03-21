@@ -10,8 +10,11 @@ import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { Dialog,DialogTrigger,DialogContent,DialogTitle,DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { AuthContext } from "@/context/authcontext";
 import {useRouter} from "next/navigation";
+import { useUser } from "@/context/userContext";
+import Cookies from "js-cookie";
 
 export default function Brands(){
+    const {user}= useUser();
     const auth = useContext(AuthContext);
     const router = useRouter();
     const [editBrand, setEditBrand] = useState<{name:string;description:string}|null>(null);
@@ -70,11 +73,12 @@ export default function Brands(){
         }
     }
 
-   /* useEffect(()=>{
-        if(!auth?.user){
+    useEffect(()=>{
+        const acessToken = Cookies.get('acess_token');
+        if(!acessToken){
             router.push("/signin");
         }
-    },[auth,router]);*/
+    },[user,auth,router]);
 
     return(
         <main className={`p-6 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>

@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { AuthContext } from "@/context/authcontext";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/userContext";
+import Cookies from "js-cookie";
 
 interface Supplier {
     id: number;
@@ -24,6 +26,7 @@ interface Supplier {
 }
 
 export default function Suppliers() {
+    const {user}= useUser();
     const auth = useContext(AuthContext);
     const router = useRouter();
     const [editSupplier, setIsEditSupplier] = useState<{ name: string, address: string, city: string, state: string, zipCode: string, email: string, phone: string } | null>(null);
@@ -121,11 +124,12 @@ export default function Suppliers() {
         }
     }
 
-    /* useEffect(()=>{
-        if(!auth?.user){
+     useEffect(()=>{
+        const acessToken = Cookies.get('acess_token');
+        if(!acessToken){
             router.push("/signin")
         }
-    },[auth,router]);*/
+    },[user,auth,router]);
 
     return (
         <main className={`p-6 transition-margin duration-300 ease-in-out ${useSidebar().isSidebarVisible ? "ml-64" : "ml-0"}`}

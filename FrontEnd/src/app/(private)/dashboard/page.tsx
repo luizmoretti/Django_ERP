@@ -7,8 +7,11 @@ import DatePicker from "react-datepicker";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { useUser } from "@/context/userContext";
 
 export default function Dashboard() {
+  const {user}= useUser()
   const auth = useContext(AuthContext);
   const router = useRouter();
   const {isSidebarVisible} =  useSidebar();
@@ -21,11 +24,12 @@ export default function Dashboard() {
   };
 
   useEffect(()=>{
-    if (!auth?.user){
+    const acessToken = Cookies.get('acess_token');
+    if (!acessToken){
       router.push("/signin");
     }
 
-  }, [auth, router]);
+  }, [user,auth, router]);
 
   return (
     <main className={`p-4 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>

@@ -10,8 +10,12 @@ import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/authcontext";
+import { useUser } from "@/context/userContext";
+import Cookies from "js-cookie";
+
 
 export default function Stores(){
+    const {user} = useUser();
     const auth = useContext(AuthContext);
     const router = useRouter();
     const {isSidebarVisible} = useSidebar();
@@ -69,12 +73,13 @@ export default function Stores(){
         }
     }
 
-    /*useEffect(()=>{
-        if (!auth?.user){
+    useEffect(()=>{
+        const acesstoken = Cookies.get('acess_token');
+        if (!acesstoken){
             router.push("/signin");
           }
       
-    },[auth,router]);*/
+    },[user,auth,router]);
 
 
 

@@ -10,8 +10,11 @@ import {useSidebar} from "@/components/sidebar/sidebarcontext"
 import { Dialog,DialogTrigger,DialogContent,DialogHeader,DialogTitle,DialogFooter } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import {AuthContext} from "@/context/authcontext";
+import { useUser } from "@/context/userContext";
+import Cookies from "js-cookie";
 
 export default function CategoriesTable(){
+    const {user}= useUser();
     const auth = useContext(AuthContext);
     const router = useRouter();
     const [editCategorie, setIsEditCategorie]= useState<{name:string;description:string}|null>(null);
@@ -70,11 +73,12 @@ export default function CategoriesTable(){
             }
         }
         
-       /* useEffect(()=>{
-            if(!auth?.user){
+        useEffect(()=>{
+            const acessToken= Cookies.get('acess_token');
+            if(!acessToken){
                 router.push("/signin")
             }
-        },[auth,router]) */
+        },[user,auth,router]) 
     
 
     return(
