@@ -82,8 +82,7 @@ INSTALLED_APPS = [
     'apps.companies.attendance',
     
     #Delivery Manegement App
-    # 'apps.deliveries',
-    # 'apps.deliveries.tracking',
+    'apps.delivery',
     'apps.vehicle',
     
     
