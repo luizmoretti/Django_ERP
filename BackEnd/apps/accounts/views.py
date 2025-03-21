@@ -48,7 +48,11 @@ class BaseUserView:
     def get_queryset(self):
         user = self.request.user
         try:
-            # Filtra apenas usuários da mesma empresa
+            
+            # Verify if it is a swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return User.objects.none()
+            # Filter users from the same company
             employeer = user.employeer
             return User.objects.filter(
                 employeer__companie=employeer.companie

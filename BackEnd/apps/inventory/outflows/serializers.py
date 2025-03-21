@@ -146,7 +146,7 @@ class OutflowSerializer(serializers.ModelSerializer):
             return obj.created_by.user.get_full_name()
         return None
     
-    def get_destiny_address(self, obj):
+    def get_destiny_address(self, obj) -> str:
         if obj.destiny.another_shipping_address:
             destiny_address = obj.destiny.project_address.first()
             return f"{destiny_address.address}, {destiny_address.city}, {destiny_address.state}, {destiny_address.zip_code}"

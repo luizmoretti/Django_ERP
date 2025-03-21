@@ -16,6 +16,10 @@ class TransferBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
+            # Verify if it is a swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return Transfer.objects.none()
+            
             employeer = user.employeer
             return Transfer.objects.select_related(
                 'companie'

@@ -27,6 +27,10 @@ class OutflowBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
+            # Verify if it is a swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return Outflow.objects.none()
+            
             employeer = user.employeer
             return Outflow.objects.select_related(
                 'companie'

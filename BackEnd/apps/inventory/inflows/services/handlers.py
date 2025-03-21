@@ -17,7 +17,8 @@ class InflowService:
     def __init__(self):
         self.validator = InflowBusinessValidator()
     
-    def create_inflow(self, data, user):
+    @staticmethod
+    def create_inflow(data, user):
         """
         Create a new inflow with validation
         
@@ -67,7 +68,8 @@ class InflowService:
             
             return inflow
     
-    def update_inflow(self, inflow, data, user):
+    @staticmethod
+    def update_inflow(inflow, data, user):
         """
         Update an existing inflow with validation
         
@@ -120,7 +122,8 @@ class InflowService:
             
             return inflow
     
-    def approve_inflow(self, inflow, user):
+    @staticmethod
+    def approve_inflow(inflow, user):
         """
         Approve an inflow with validation
         
@@ -161,7 +164,8 @@ class InflowService:
             
             return inflow
     
-    def reject_inflow(self, inflow, user, rejection_reason):
+    @staticmethod
+    def reject_inflow(inflow, user, rejection_reason):
         """
         Reject an inflow with validation
         

@@ -82,8 +82,7 @@ INSTALLED_APPS = [
     'apps.companies.attendance',
     
     #Delivery Manegement App
-    # 'apps.deliveries',
-    # 'apps.deliveries.tracking',
+    'apps.delivery',
     'apps.vehicle',
     
     
@@ -110,6 +109,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -576,6 +576,17 @@ REST_FRAMEWORK = {
 ################################
 #### INTERNATIONALIZATION ######
 ################################
+LANGUAGES = [
+    ('pt-br', 'Português (Brasil)'),
+    ('en', 'English'),
+    ('es', 'Español'),
+]
+
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
+
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/New_York'
 USE_I18N = True
@@ -745,7 +756,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
     'DESCRIPTION': 'API Documentation for DryWall WareHouse System',
     'VERSION': '0.0.1',
-    'SERVE_INCLUDE_SCHEMA': True,
+    # 'SERVE_INCLUDE_SCHEMA': True,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
     
     # UI Settings
@@ -758,6 +769,14 @@ SPECTACULAR_SETTINGS = {
         'filter': False,
         'persistAuthorization': True,
     },
+    
+    # 'DISABLE_ERRORS_AND_WARNINGS': True,
+    
+    # Settings to fix schema generation issues
+    # 'ENUM_NAME_OVERRIDES': {},
+    # 'COMPONENT_SPLIT_REQUEST': True,
+    # 'COMPONENT_NO_READ_ONLY_REQUIRED': False,
+    # 'SORT_OPERATIONS': False,
     
     # Authentication
     'SECURITY': [
@@ -778,8 +797,8 @@ SPECTACULAR_SETTINGS = {
         # Authentication
         {'name': 'JWT - Auth', 'description': 'JWT authentication endpoints'},
         
-        # Vehicles
-        {'name': 'Delivery - Vehicles', 'description': 'Vehicle management endpoints'},
+        # Vehicle
+        {'name': 'Vehicle', 'description': 'Vehicle management endpoints'},
         
         # Delivery
         {'name': 'Delivery', 'description': 'Delivery management endpoints'},

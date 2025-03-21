@@ -174,14 +174,14 @@ class MovementBaseView:
                 name="type",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                enum=MovementType.values,
+                enum=['entry', 'exit', 'transfer'],
                 description="Filter by movement type"
             ),
             OpenApiParameter(
                 name="status",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                enum=MovementStatus.values,
+                enum=['pending', 'approved', 'rejected', 'cancelled', 'completed'],
                 description="Filter by movement status"
             ),
             OpenApiParameter(
@@ -247,10 +247,12 @@ class MovementListView(ListAPIView, MovementBaseView):
             return []
 
 
-@extend_schema(
-    tags=['Inventory - Movements'],
-    summary="Get movements from the last 7 days",
-    responses={200: MovementListSerializer(many=True)}
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Inventory - Movements'],
+        summary="Get movements from the last 7 days",
+        responses={200: MovementListSerializer(many=True)}
+    )
 )
 class MovementRecentView(GenericAPIView, MovementBaseView):
     serializer_class = MovementListSerializer
@@ -290,11 +292,13 @@ class MovementRecentView(GenericAPIView, MovementBaseView):
         return Response(serializer.data)
 
 
-@extend_schema(
-    tags=['Inventory - Movements'],
-    summary="Get movement statistics",
-    responses={200: OpenApiTypes.OBJECT}
-)    
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Inventory - Movements'],
+        summary="Get movement statistics",
+        responses={200: OpenApiTypes.OBJECT}
+    )
+)
 class MovementStatisticsView(GenericAPIView, MovementBaseView):
     def get(self, request):
         """Get movement statistics"""
