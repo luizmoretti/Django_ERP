@@ -34,11 +34,9 @@ urlpatterns = [
     # Attendance endpoints
     path('attendance/', include('apps.companies.attendance.urls')),
     
-    # Delivery Endpoints
-    # path('delivery/', include('apps.deliveries.urls')),
-    # path('tracking/', include('apps.deliveries.tracking.urls')),
-    # path('vehicle/', include('apps.vehicle.urls', namespace='vehicle')),
-    
+    # Delivery and Vehicle Endpoints
+    path('delivery/', include('apps.delivery.urls')),
+    path('vehicle/', include('apps.vehicle.urls')),
     
     # Inventory Management endpoints
     path('suppliers/', include('apps.inventory.supplier.urls')),
