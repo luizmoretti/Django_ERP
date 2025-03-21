@@ -136,7 +136,7 @@ export default function Products() {
 
     return (
         <main className={`p-4 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{ marginTop: "3.5rem" }}>
-            <div className="flex border rounded-lg p-4 mx-auto space-y-4">
+            <div className="flex border rounded-lg p-4 mx-auto space-y-4 dark:bg-gray-900">
                 <div className="flex items-center justify-between">
                     <form className="flex items-center gap-2">
                     </form>
@@ -257,7 +257,7 @@ export default function Products() {
                                     <TableHead className="w-10">
                                         <Checkbox checked={selectAll} onCheckedChange={handleselectAll}
                                             className="data-[state=checked]:bg-blue-600
-                                 data-[state=checked]:border-blue-600"
+                                 data-[state=checked]:border-blue-600 dark:bg-gray-600"
                                         />
                                     </TableHead>
                                     <TableHead
@@ -402,10 +402,10 @@ export default function Products() {
                                 </div>
                             </DialogContent>
                         </Dialog>
-                        <div className="flex justify-end items-center p-4 bg-white text-gray-600 text-sm">
+                        <div className="flex justify-end items-center p-4 bg-white text-gray-600 text-sm dark:bg-gray-900">
                             <span className="text-sm text-gray-600 ">Rows per page:</span>
                             <select
-                                className="border rounded px-2 py-1 ml-2"
+                                className="border rounded px-2 py-1 ml-2 dark:bg-gray-900"
                                 value={itemsPerPage}
                                 onChange={(e) => setitemsPerPage(Number(e.target.value))}
                             >

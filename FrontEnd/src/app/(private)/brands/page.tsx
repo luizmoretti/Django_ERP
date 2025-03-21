@@ -82,7 +82,7 @@ export default function Brands(){
 
     return(
         <main className={`p-6 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>
-            <div className="border rounded-lg p-4 space-y-4">
+            <div className="border rounded-lg p-4 space-y-4 bg-white dark:bg-gray-900">
                 <div className="flex justify-between items-center">
                     <h2 className="font-semibold text-lg">Brands</h2>
                     <div className="flex items-center gap-3">
@@ -135,25 +135,25 @@ export default function Brands(){
                     </div>
                 </div>
 
-                <div className="border rounded-lg overflow-hidden bg-white">
-                    <Table className="w-full">
-                        <TableHeader className="bg-gray-100 border-b">
+                <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+                    <Table className=" w-full border border-gray-200 dark:border-gray-700">
+                        <TableHeader className="bg-white justify-between dark:bg-gray-800 dark:text-gray-200 border-b">
                             <TableRow>
-                                <TableHead className="w-12 px-4">
+                                <TableHead className="w-12 px-4 border-gray-300 dark:border-gray-600">
                                     <Checkbox checked={allSelected} onCheckedChange={toggleAllCheckboxes}
                                     className="data-[state=checked]:bg-blue-600
-                                    data-[state=checked]:border-blue-600"
+                                    data-[state=checked]:border-blue-600 dark:border-gray-600"
                                     />
                                 </TableHead>
-                                <TableHead className="cursor-pointer flex items-center gap-1">
+                                <TableHead className="cursor-pointer flex items-center gap-1 dark:border-gray-600">
                                     Name
                                 </TableHead>
-                                <TableHead>Description</TableHead>
+                                <TableHead className="border border-gray-300 dark:border-gray-600">Description</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedBrands.map((brands, index)=>(
-                                <TableRow key={index} className="border-b hover:bg-gray-50">
+                                <TableRow key={index} className="border-b dark:bg-gray-900 text-gray-900 hover:bg-gray-50">
                                     <TableCell>
                                         <Checkbox
                                         checked={!!selectedRows[index]}
@@ -167,16 +167,16 @@ export default function Brands(){
                                         data-[state=checked]:border-blue-600"
                                         />
                                     </TableCell>
-                                    <TableCell className="text-gray-600">{brands.name}</TableCell>
-                                    <TableCell className="text-gray-600">{brands.description}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{brands.name}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{brands.description}</TableCell>
+                                    <TableCell className="text-right dark:text-gray-300">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <button className="p-2 rounded-md hover:bg-gray-200">
+                                                <button className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
                                                     <MoreVertical className="w-5 h-5"/>
                                                 </button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
+                                            <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700">
                                                 <DropdownMenuItem onClick={()=> handleEdit(brands)}>
                                                     <Edit className="w-4 h-4 mr-2"/>
                                                     Edit
@@ -234,10 +234,10 @@ export default function Brands(){
                         </DialogContent>
                     </Dialog>
                 </div>
-                <div className="flex justify-end items-center p-4 bg-white">
+                <div className="flex justify-end items-center p-4 bg-white dark:bg-gray-900">
                     <span className="text-sm text-gray-600">Rows per page:</span>
                     <select
-                        className="border rounded-md px-2 py-1 ml-2"
+                        className="border rounded-md px-2 py-1 ml-2 dark:bg-gray-900"
                         value={itemsPerPage}
                         onChange={(e)=> setItemsPerPage(Number(e.target.value))}
                     >

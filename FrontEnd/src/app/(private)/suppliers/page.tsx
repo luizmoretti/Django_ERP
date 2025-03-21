@@ -135,7 +135,7 @@ export default function Suppliers() {
         <main className={`p-6 transition-margin duration-300 ease-in-out ${useSidebar().isSidebarVisible ? "ml-64" : "ml-0"}`}
             style={{ marginTop: "3.5rem" }}
         >
-            <div className="border rounded-lg p-4 space-y-4">
+            <div className="border rounded-lg p-4 space-y-4 dark:bg-gray-900">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="font-semibold text-lg">Suppliers</h2>
                     <div className="flex items-center gap-3">
@@ -230,11 +230,11 @@ export default function Suppliers() {
                         </Dialog>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
+                <div className="overflow-x-auto dark:bg-gray-900">
+                    <Table className="border-gray-200 dark:border-gray-700">
+                        <TableHeader className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                             <TableRow>
-                                <TableHead>
+                                <TableHead className="dark:border-gray-600">
                                     <Checkbox checked={allSelected} onCheckedChange={(checked) => {
                                         const isChecked = checked === true;
                                         setAllSelected(isChecked);
@@ -248,21 +248,21 @@ export default function Suppliers() {
                                         }
                                     }}
                                         className="data-[state=checked]:bg-blue-600
-                                        data-[state=checked]:border-blue-600"
+                                        data-[state=checked]:border-blue-600 dark:border-gray-600"
                                     />
                                 </TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Address</TableHead>
-                                <TableHead>City</TableHead>
-                                <TableHead>State</TableHead>
-                                <TableHead>Zip Code</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">Name</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">Address</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">City</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">State</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">Zip Code</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">Email</TableHead>
+                                <TableHead className="border-gray-300 dark:border-gray-600">Phone</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedSuppliers.map((supplier) => (
-                                <TableRow key={supplier.id}>
+                                <TableRow key={supplier.id}className="bg-white dark:bg-gray-900 text-gray-900 hover:bg-gray-50" >
                                     <TableCell>
                                         <Checkbox
                                             checked={selectedRows[supplier.id] || false}
@@ -276,21 +276,21 @@ export default function Suppliers() {
                                         data-[state=checked]:border-blue-600"
                                         />
                                     </TableCell>
-                                    <TableCell>{supplier.name}</TableCell>
-                                    <TableCell>{supplier.address}</TableCell>
-                                    <TableCell>{supplier.city}</TableCell>
-                                    <TableCell>{supplier.state}</TableCell>
-                                    <TableCell>{supplier.zipCode}</TableCell>
-                                    <TableCell>{supplier.email}</TableCell>
-                                    <TableCell>{supplier.phone}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.name}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.address}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.city}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.state}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.zipCode}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.email}</TableCell>
+                                    <TableCell className="text-gray-600 dark:text-gray-300">{supplier.phone}</TableCell>
+                                    <TableCell className="text-right dark:text-gray-300">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <button className="p-2 rounded-md hover:bg-gray-200">
+                                                <button className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
                                                     <MoreVertical className="w-5 h-5" />
                                                 </button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
+                                            <DropdownMenuContent align="end"className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700">
                                                 <DropdownMenuItem onClick={() => handleEdit(supplier)}>
                                                     <Edit className="w-4 h-4 mr-2" />
                                                     Edit
@@ -391,10 +391,10 @@ export default function Suppliers() {
                         </DialogContent>
                     </Dialog>
                 </div>
-                <div className="flex justify-end items-center p-4 bg-white">
+                <div className="flex justify-end items-center p-4 bg-white dark:bg-gray-900">
                     <span className="text-sm text-gray-600">Rows per page:</span>
                     <select
-                        className="border rounded-md px-2 py-1 ml-2"
+                        className="border rounded-md px-2 py-1 ml-2 dark:bg-gray-900"
                         value={itemsPerPage}
                         onChange={(e) => setItemsPerPage(Number(e.target.value))}
                     >
