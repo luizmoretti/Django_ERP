@@ -6,11 +6,12 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 export default function ChartOverview(){
 
     const chartData = [
-        {name: "Loja 1", value: 1000},
-        {name: "Loja 2", value: 2000},
-        {name: "Loja 3", value: 3000},
-        {name: "Loja 4", value: 4000},
-        {name: "Loja 5", value: 5000}
+        {name: "Home Depot", value: 1000},
+        {name: "Loja 1", value: 2000},
+        {name: "Loja 2", value: 3000},
+        {name: "Loja 3", value: 4000},
+        {name: "Loja 4", value: 5000},
+        {name: "Loja 5", value: 6000}
     ];
 
     const chartConfig = {

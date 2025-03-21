@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+import { Plus,MoreVertical,Edit,Trash } from "lucide-react";
+import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {useSidebar} from "@/components/sidebar/sidebarcontext"
 import { Dialog,DialogTrigger,DialogContent,DialogHeader,DialogTitle,DialogFooter } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,8 @@ import {AuthContext} from "@/context/authcontext";
 export default function CategoriesTable(){
     const auth = useContext(AuthContext);
     const router = useRouter();
+    const [editCategorie, setIsEditCategorie]= useState<{name:string;description:string}|null>(null);
+    const [isEditOpen, setIsEditOpen]= useState(false);
     const { isSidebarVisible } = useSidebar();
     const[search,setSearch] = useState("");
     const[selectedRows,setSelectedRows] = useState<{ [key: number]: boolean }>({});
@@ -54,12 +57,24 @@ export default function CategoriesTable(){
             setSelectedRows(newSelectedRows);
             setAllSelected(!allSelected);
         };
+
+        const handleEdit = (categorie:{name:string;description:string})=>{
+            setIsEditCategorie(categorie);
+            setIsEditOpen(true);
+        }
+
+        const handleDelete = (categorie:{name:string;description:string})=>{
+            const confirmDelete = window.confirm(`Are you sure you want to delete ${categorie.name}`);
+            if(confirmDelete){
+                console.log("Deleting:", categorie);
+            }
+        }
         
-        useEffect(()=>{
+       /* useEffect(()=>{
             if(!auth?.user){
                 router.push("/signin")
             }
-        },[auth,router])
+        },[auth,router]) */
     
 
     return(
@@ -151,10 +166,68 @@ export default function CategoriesTable(){
                                     </TableCell>
                                     <TableCell className="text-gray-600">{category.name}</TableCell>
                                     <TableCell className="text-gray-600">{category.description}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-2 rounded-md hover:bg-gray-200">
+                                                    <MoreVertical className="w-5 h-5"/>
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={()=> handleEdit(category)}>
+                                                    <Edit className="w-4 h-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={()=> handleDelete(category)}>
+                                                    <Trash className="w-4 h-4 mr-2 text-red-600" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
+                    <Dialog open = {isEditOpen} onOpenChange={setIsEditOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit Categorie</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                                    <Input
+                                    placeholder="Name"
+                                    value={editCategorie?.name ||""}
+                                    onChange={(e)=> setIsEditCategorie((prev)=>(prev ?{...prev,name:e.target.value}:prev))
+                                }
+                                />  
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                                    <Input
+                                    placeholder="Description"
+                                    value={editCategorie?.description || ""}
+                                    onChange={(e)=> setIsEditCategorie((prev)=>(prev ?{...prev,description:e.target.value}: prev))
+                                }
+                                />
+                                </div>
+                            </div>
+                            <DialogFooter className="flex justify-end gap-2">
+                                <Button variant="outline"onClick={()=> setIsEditOpen(false)}>Cancel</Button>
+                                <Button
+                                className="bg-blue-600"
+                                onClick={()=>{
+                                    console.log("Updating:",editCategorie);
+                                    setIsEditOpen(false);
+                                }}
+                                >
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <div className="flex justify-end items-center p-4 bg-white">
                     <span className="text-sm text-gray-600">Rows per page:</span>

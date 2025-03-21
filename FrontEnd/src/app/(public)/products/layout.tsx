@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar/sidebarcontext";
 import { AuthContext, AuthProvider } from "@/context/authcontext";
 import { UserProvider } from "@/context/userContext";
+import { ThemeProvider } from "next-themes";
 
 const inter = Inter({subsets: ["latin"]});
 
@@ -25,12 +26,14 @@ export default function RootLayout({
       )}>
         <AuthProvider>
         <UserProvider>
+          <ThemeProvider attribute="class"defaultTheme="light" enableSystem>
         <SidebarProvider>
           <div className="flex w-full flex-col bg-muted/40">
         <Sidebar />
         {children}
         </div>
-      </SidebarProvider>
+        </SidebarProvider>
+        </ThemeProvider>
       </UserProvider>
       </AuthProvider>
       </body>

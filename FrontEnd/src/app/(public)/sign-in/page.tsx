@@ -12,7 +12,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 type TFormLogin= {
-    username : string;
+    email : string;
     password : string;
 }
 
@@ -31,7 +31,7 @@ const usernameRef = useRef<HTMLInputElement>(null); // Correctly implemented use
 
 const form = useForm<TFormLogin>({
     defaultValues: {
-        username: "",
+        email: "",
         password: ""
     },
 })
@@ -41,8 +41,8 @@ const form = useForm<TFormLogin>({
         setLoading(true);
 
         try{
-            const response = await axios.post('http://localhost:8000/api/v1/login/',{
-                username:data.username,
+            const response = await axios.post('http://localhost:8000/api/v1/user/login/',{
+                email:data.email,
                 password:data.password,
             });
             const {acess,refresh} = response.data;
@@ -50,7 +50,7 @@ const form = useForm<TFormLogin>({
             Cookies.set('acess_token', acess,{secure:true,sameSite:'strict'});
             Cookies.set('refresh_token', refresh, {secure:true,sameSite:'strict'});
             
-            const userResponse = await axios.get('http://localhost:8000/api/v1/login/',{
+            const userResponse = await axios.get('http://localhost:8000/api/v1/user/login/',{
                 headers:{
                     Authorization:`Bearer ${acess}`,
                 }
@@ -61,7 +61,7 @@ const form = useForm<TFormLogin>({
 
             router.push("/dashboard");        
         } catch(err){
-            setError("Usuário ou senha inválidos.");
+            setError("Email ou senha inválidos.");
             console.error("Erro no login",err);
             usernameRef.current?.focus();
         }finally{
@@ -77,15 +77,15 @@ const form = useForm<TFormLogin>({
                         src="/logo.png" alt="Logo" className="h-20 w-20"/>
                     <span className="sr-only" />
                 </div>
-                <CardHeader>
-                    <CardTitle>Sign-In</CardTitle> 
-                <CardDescription>
+                <CardHeader className="justify-center items-center">
+                    <CardTitle className="justify-center items-center">Sign-In</CardTitle> 
+                <CardDescription className="justify-center items-center">
                     Please login to your Account
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {error && (
-                        <p className="text-red-500 text-sm mb-2" aria-live="assertive">
+                        <p className="text-red-500 text-sm mb-2 text-center" aria-live="assertive">
                             {error}
                         </p>
                     )}
@@ -93,12 +93,11 @@ const form = useForm<TFormLogin>({
                         <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmitLogin)}>
                             <FormField
                                 control={form.control}
-                                name="username"
+                                name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Username</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Enter your username"{...field}disabled={loading}/>
+                                            <Input placeholder="Email"{...field}disabled={loading}/>
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -108,9 +107,8 @@ const form = useForm<TFormLogin>({
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" placeholder="Enter your password"{...field}disabled={loading}/>
+                                            <Input type="password" placeholder="password"{...field}disabled={loading}/>
                                         </FormControl>
                                     </FormItem>
                                 )}

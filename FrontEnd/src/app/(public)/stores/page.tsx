@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Table, TableHeader, TableHead, TableBody, TableRow, TableCell, TableFooter} from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash } from "lucide-react";
+import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/sidebar/sidebarcontext";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,8 @@ export default function Stores(){
     const auth = useContext(AuthContext);
     const router = useRouter();
     const {isSidebarVisible} = useSidebar();
+    const [editStore, setIsEditStore] = useState<{name: string}|null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [selectedRows, setSelectedRows] = useState<{[key: number]: boolean}>({});
     const [allSelected, setAllSelected] = useState(false);
@@ -54,12 +57,24 @@ export default function Stores(){
         setAllSelected(!allSelected);
     };
 
-    useEffect(()=>{
+    const handleEdit = (stores:{name: string})=>{
+        setIsEditStore(stores);
+        setIsEditOpen(true);
+    }
+
+    const handleDelete =(stores:{name: string})=>{
+        const confirmDelete = window.confirm(`Are you sure you want to delete ${stores.name}`);
+        if(confirmDelete){
+            console.log("Deleting:", stores);
+        }
+    }
+
+    /*useEffect(()=>{
         if (!auth?.user){
             router.push("/signin");
           }
       
-    },[auth,router]);
+    },[auth,router]);*/
 
 
 
@@ -142,10 +157,59 @@ export default function Stores(){
                                         />
                                     </TableCell>
                                     <TableCell className="text-gray-600">{stores.name}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-2 rounded-md hover:bg-gray-200">
+                                                    <MoreVertical className="w-5 h-5"/>
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={()=> handleEdit(stores)}>
+                                                    <Edit className="w-4 h-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={()=> handleDelete(stores)}>
+                                                    <Trash className="w-4 h-4 mr-2 text-red-600"/>
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
+                    <Dialog open = {isEditOpen} onOpenChange={setIsEditOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit Store</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                                    <Input
+                                    placeholder="Name"
+                                    value={editStore?.name || ""}
+                                    onChange={(e)=> setIsEditStore((prev)=> (prev ?{...prev,name:e.target.value}:prev))
+                                }
+                                />
+                                </div>
+                            </div>
+                            <DialogFooter className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={()=> setIsEditOpen(false)}>Cancel</Button>
+                                <Button
+                                className="bg-blue-600"
+                                onClick={()=>{
+                                    console.log("Updating:", editStore);
+                                    setIsEditOpen(false);
+                                }}
+                                >
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <div className="flex justify-end items-center p-4 bg-white">
                     <span className="text-sm text-gray-600">Rows per page:</span>

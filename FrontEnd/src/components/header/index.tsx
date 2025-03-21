@@ -1,18 +1,20 @@
 "use client";
 import { useState } from "react";
-import { LogOut, UserCircle, Menu, ArrowLeft } from "lucide-react";
+import { LogOut, UserCircle, Menu, ArrowLeft,Sun, Moon } from "lucide-react";
 import { useSidebar } from "../sidebar/sidebarcontext";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/userContext";
+import {useTheme} from "next-themes";
 
 export function Header(){
     const {isSidebarVisible, setisSidebarVisible}= useSidebar();
     const[MenuOpen, setMenuOpen]= useState(false);
     const router = useRouter()
     const {user, logout} = useUser();
+    const {theme, setTheme} = useTheme();
 
 
 
@@ -44,6 +46,12 @@ export function Header(){
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+            <div className="flex items-center gap-4">
+            <button onClick={()=> setTheme(theme === "dark"?"light":"dark")}
+            className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+                {theme === "dark"?<Sun className="h-6 w-6 text-yellow-400"/>:<Moon className="h-6 w-6 text-gray-800 dark:text-gray-200"/>}
+            </button>
             <div className="relative">
             <button onClick={()=> setMenuOpen(!MenuOpen)}className="focus:outline-none">
                 <Avatar className="w-10 h-10 border border-gray-300">
@@ -58,19 +66,20 @@ export function Header(){
                         <UserCircle className="w-12 h-12 text-gray-500"/>
                         <div>
                             <p className="font-bold">{user?.name}</p>
-                            <p className="text-sm text-gray-500">{user?.email}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                         </div>
                     </div>
-                    <hr className="my-3"/>
+                    <hr className="my-3 border-gray-300 dark:border-gray-700"/>
                     <button
-                    className="flex w-full items-center gap-2 text-red-600 hover:bg-red-50 p-2 rounded-md"
-                    onClick={(handleLogout)=> console.log("Logout")}
+                    className="flex w-full items-center gap-2 text-red-600 hover:bg-red-50 p-2 rounded-md dark:hover:bg-red-800"
+                    onClick={handleLogout}
                     >
                         <LogOut className="w-5 h-5"/>
                         Sign Out
                     </button>
                 </div>
             )}
+            </div>
             </div>
         </header>
     )
