@@ -4,8 +4,8 @@ import {useState, useContext, useRef} from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/authcontext";
 import { useUser } from "@/context/userContext";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -41,7 +41,10 @@ const form = useForm<TFormLogin>({
         setLoading(true);
 
         try{
-            const response = await axios.post('http://localhost:8000/api/v1/user/login/',{
+            const apiURL=process.env.NEXT_PUBLIC_API_URL;
+
+
+            const response = await axios.post(`${apiURL}/user/login/`,{
                 email:data.email,
                 password:data.password,
             });
@@ -54,7 +57,7 @@ const form = useForm<TFormLogin>({
             Cookies.set('acess_token', acess,{secure:true,sameSite:'strict'});
             Cookies.set('refresh_token', refresh, {secure:true,sameSite:'strict'});
             
-            const userResponse = await axios.get('http://localhost:8000/api/v1/user/login/',{
+            const userResponse = await axios.get(`${apiURL}/user/`,{
                 headers:{
                     Authorization:`Bearer ${acess}`,
                 }
