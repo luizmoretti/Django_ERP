@@ -48,7 +48,7 @@ def notify_delivery_status_change(delivery_id, old_status, new_status):
                 fail_silently=False
             )
             
-            logger.info(f"[DELIVERY TASK] Notificação de status enviada para o cliente {delivery.customer.name}")
+            logger.info(f"[DELIVERY TASK] Notificação de status enviada para o cliente {delivery.customer.full_name}")
         
         # Notificação para a empresa (gerentes)
         manager_emails = delivery.companie.get_manager_emails()
