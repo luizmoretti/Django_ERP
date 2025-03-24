@@ -41,7 +41,10 @@ const form = useForm<TFormLogin>({
         setLoading(true);
 
         try{
-            const response = await axios.post('http://localhost:8000/api/v1/user/login/',{
+            const apiURL= process.env.NEXT_PUBLIC_API_URL;
+
+
+            const response = await axios.post(`${apiURL}/user/login/`,{
                 email:data.email,
                 password:data.password,
             });
@@ -54,7 +57,7 @@ const form = useForm<TFormLogin>({
             Cookies.set('acess_token', acess,{secure:true,sameSite:'strict'});
             Cookies.set('refresh_token', refresh, {secure:true,sameSite:'strict'});
             
-            const userResponse = await axios.get('http://localhost:8000/api/v1/user/login/',{
+            const userResponse = await axios.get(`${apiURL}/user/`,{
                 headers:{
                     Authorization:`Bearer ${acess}`,
                 }
