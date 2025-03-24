@@ -38,7 +38,7 @@ class Command(BaseCommand):
         Isso garante que os usuários tenham todas as permissões dos grupos aos quais pertencem.
         """
         User = get_user_model()
-        logger.info("Sincronizando permissões dos usuários")
+        logger.info("Synchronizing user permissions")
         
         for user in User.objects.all():
             try:
@@ -50,10 +50,10 @@ class Command(BaseCommand):
                     permissions = group.permissions.all()
                     user.user_permissions.add(*permissions)
                     
-                logger.info(f"Permissões sincronizadas para usuário: {user.email}")
+                logger.info(f"Synchronized user permissions: {user.email}")
                 
             except Exception as e:
-                logger.error(f"Erro ao sincronizar permissões para usuário {user.email}: {str(e)}")
+                logger.error(f"Error synchronizing user permissions {user.email}: {str(e)}")
     
 
     def __get_custom_permissions(self, app_label):
@@ -129,13 +129,13 @@ class Command(BaseCommand):
                     "inflows", "outflows", "transfers", "products",
                     "suppliers", "barcodes"
                 ] else ["view"] if app_label in [
-                    "stores", "categories", "brands"
+                    "warehouse", "categories", "brands"
                 ] else []
             ),
             
             "Stocker": lambda app_label: ["view"] if app_label in [
                 "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "stores", "categories", "brands"
+                "suppliers", "barcodes", "warehouse", "categories", "brands"
             ] else [],
             
             "Employee": lambda app_label: ["view_own_profile", "change_own_profile"] if app_label == "profiles" else [],
