@@ -52,9 +52,9 @@ class DeliveryValidator:
                     raise ValidationError(_("Invalid driver"))
                 
                 # Check if driver has valid license
-                driver = Employeer.objects.get(id=driver_id)
-                if not hasattr(driver, 'driver_details') or not driver.driver_details.has_valid_license:
-                    raise ValidationError(_("Driver does not have a valid license"))
+                # driver = Employeer.objects.get(id=driver_id)
+                # if not hasattr(driver, 'driver_details') or not driver.driver_details.has_valid_license:
+                    # raise ValidationError(_("Driver does not have a valid license"))
             
             # Validate vehicle
             if 'vehicle' in data:

@@ -24,7 +24,7 @@ class Delivery(BaseModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f'{self.customer.name} - {self.vehicle.nickname} - {self.status}'
+        return f'{self.customer.full_name} - {self.vehicle.nickname} - {self.status}'
     
     
 
