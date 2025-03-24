@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import {useState, useContext, useRef} from "react";
+import {useState, useContext, useRef, useEffect} from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/authcontext";
 import { useUser } from "@/context/userContext";
@@ -27,6 +27,7 @@ const { login } = useUser();
 const router = useRouter();
 const [error, setError]= useState<string | null>(null);
 const [loading, setLoading]= useState(false);
+const [rememberMe, setRememberMe]= useState(false);
 const usernameRef = useRef<HTMLInputElement>(null); // Correctly implemented useRef
 
 const form = useForm<TFormLogin>({
@@ -35,6 +36,17 @@ const form = useForm<TFormLogin>({
         password: ""
     },
 })
+
+    useEffect(()=>{
+        const savedEmail = localStorage.getItem("rememberedEmail");
+        const savedPassword = localStorage.getItem("rememberedPassword");
+
+        if(savedEmail && savedPassword){
+            form.setValue("email", savedEmail);
+            form.setValue("password", savedPassword);
+            setRememberMe(true);
+        }
+    },[form]);
 
   async function handleSubmitLogin(data: TFormLogin) {
         setError(null);
@@ -47,10 +59,9 @@ const form = useForm<TFormLogin>({
                 email:data.email,
                 password:data.password,
             });
-            const {token,base,redirect_url} = response.data;
 
 
-            const {acess,refresh} = response.data;
+            const {token,acess,refresh} = response.data;
             
             Cookies.set('acess_token', token,{secure:true,sameSite:'strict'});
             Cookies.set('acess_token', acess,{secure:true,sameSite:'strict'});
@@ -63,6 +74,14 @@ const form = useForm<TFormLogin>({
             })
 
             login(userResponse.data);
+
+            if(rememberMe){
+                localStorage.setItem("rememberedEmail", data.email);
+                localStorage.setItem("rememberedPassword", data.password);
+            }else{
+                localStorage.removeItem("rememberedEmail");
+                localStorage.removeItem("rememberedPassword");
+            }
 
 
             router.push("/products");        
@@ -119,6 +138,36 @@ const form = useForm<TFormLogin>({
                                     </FormItem>
                                 )}
                             />
+                            <div className="flex items-center space-x-2">
+                                <input
+                                type="checkbox"
+                                id="rememberMe"
+                                checked={rememberMe}
+                                onChange={()=> setRememberMe(!rememberMe)}
+                                className="hidden peer"
+                                />
+                                <label htmlFor="rememberMe"
+                                className="w-5 h-5 flex items-center justify-center border-2 border-gray-300
+                                rounded-full cursor-pointer peer-checked:bg-blue-600 transition-all duration-200"
+                                >
+                                    {rememberMe && (
+                                        <svg
+                                        className="w-4 h-4 text-white"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    )}
+                                    </label>
+                                    <span className="text-sm text-gray-600 select-none"onClick={()=>
+                                        setRememberMe(!rememberMe)}>
+                                            Remember-me
+                                        </span>                            
+                                    </div>
                             <Button className="w-full" type="submit" disabled={loading}>
                               {loading ? "LogOn...": "SigIn"}</Button>   
                         </form>
