@@ -124,7 +124,7 @@ class DeliverySerializer(serializers.ModelSerializer):
     
     def get_vehicle_info(self, obj) -> str:
         """Returns formatted vehicle information (name and plate)."""
-        return f"{obj.vehicle.name} | {obj.vehicle.plate}"
+        return f"{obj.vehicle.nickname} | {obj.vehicle.plate_number}"
     
     def get_load_info(self, obj) -> list:
         """Returns a list of load order IDs and order numbers."""
