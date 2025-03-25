@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 type TFormLogin= {
     email : string;
@@ -192,7 +192,15 @@ const form = useForm<TFormLogin>({
                                         </span>                            
                                     </div>
                             <Button className="w-full" type="submit" disabled={loading}>
-                              {loading ? "LogOn...": "SigIn"}</Button>   
+                              {loading ?(
+                                <div className="flex items-center justify-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin"/>
+                                    <span>Signing in...</span>
+                                </div>
+                                ):(
+                                    "Sign In"
+                                )}
+                            </Button>   
                         </form>
                     </Form>
                 </CardContent>
