@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/authcontext";
 import { useUser } from "@/context/userContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { Eye, EyeOff } from "lucide-react";
 
 type TFormLogin= {
     email : string;
@@ -29,6 +30,7 @@ const [error, setError]= useState<string | null>(null);
 const [loading, setLoading]= useState(false);
 const [rememberMe, setRememberMe]= useState(false);
 const usernameRef = useRef<HTMLInputElement>(null); // Correctly implemented useRef
+const [showPassword, setShowPassword] = useState(false);
 
 const form = useForm<TFormLogin>({
     defaultValues: {
@@ -132,9 +134,30 @@ const form = useForm<TFormLogin>({
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormControl>
-                                            <Input type="password" placeholder="password"{...field}disabled={loading}/>
-                                        </FormControl>
+                                        <div className="relative">
+                                            <FormControl>
+                                                <Input type={showPassword ? "text": "password"}
+                                                placeholder="password"
+                                                disabled={loading}
+                                                {...field}
+                                                className="pr-10"
+                                                />
+                                            </FormControl>
+                                            <button
+                                            type="button"
+                                            onClick={()=> setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400
+                                            hover:text-gray-600 focus:outline-none"
+                                            disabled={loading}
+                                            >
+                                                {showPassword ? (
+                                                    <EyeOff className="h-4 w-4"/>
+                                                ):(
+                                                    <Eye className="h-4 w-4"/>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
