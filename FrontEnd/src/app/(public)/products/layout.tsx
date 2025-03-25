@@ -4,7 +4,7 @@ import "@/app/globals.css";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar/sidebarcontext";
-import { AuthContext, AuthProvider } from "@/context/authcontext";
+import { AuthProvider } from "@/context/authcontext";
 import { UserProvider } from "@/context/userContext";
 import { ThemeProvider } from "next-themes";
 
@@ -26,7 +26,7 @@ export default function RootLayout({
       )}>
         <AuthProvider>
         <UserProvider>
-          <ThemeProvider attribute="class"defaultTheme="light" enableSystem>
+          <ThemeProvider attribute="class"defaultTheme="system">
         <SidebarProvider>
           <div className="flex w-full flex-col bg-muted/40">
         <Sidebar />

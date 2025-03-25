@@ -26,7 +26,7 @@ export default function ChartOverview(){
     } satisfies ChartConfig
 
     return(
-        <Card className="w-full">
+        <Card className="w-full dark:bg-gray-900">
             <CardHeader>
                 <div className="flex items-center justify-center">
                     <CardTitle className="text-lg sm:text-xl text-gray-600">

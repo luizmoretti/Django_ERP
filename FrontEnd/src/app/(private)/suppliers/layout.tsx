@@ -15,6 +15,7 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
     return(
         <html lang="en">
         <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
+            
             <ThemeProvider attribute="class" defaultTheme="system">
             <SidebarProvider>
             <div className="flex w-full flex-col bg-muted/40">
