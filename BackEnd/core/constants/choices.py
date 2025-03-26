@@ -9,23 +9,15 @@ USER_TYPE_CHOICES = (
 
     # Management Level - Mid-level management and specialized roles
     ('Manager', gettext('Manager')),
-    ('HR', gettext('Human Resources')),
-    ('Accountant', gettext('Accountant')),
 
     # Operational Level - Day-to-day operations staff
     ('Employee', gettext('Employee')),
-    
     ('Installer', gettext('Installer')),
-    ('Installer_Helper', gettext('Installer Helper')),
-    
-    ('Stock_Controller', gettext('Stock Controller')),
     ('Stocker', gettext('Stocker')),
     ('Salesman', gettext('Sales man')),
-    
     ('Driver', gettext('Driver')),
-    ('Delivery_Helper', gettext('Delivery Helper')),
 
-    # External Users - Non-employee stakeholders
+    # External Users - (Limited Access)
     ('Customer', gettext('Customer')),
     ('Supplier', gettext('Supplier')),
 )
