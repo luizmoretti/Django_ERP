@@ -121,51 +121,25 @@ class Command(BaseCommand):
                 ] else []
             ),
             
-            "Stock_Controller": lambda app_label: (
-                (["view", "add", "change"] + 
-                 ["can_add_item", "can_update_item", "can_remove_item"])
-                if app_label == "purchase_order" else
-                ["view", "add", "change"] if app_label in [
-                    "inflows", "outflows", "transfers", "products",
-                    "suppliers", "barcodes"
-                ] else ["view"] if app_label in [
-                    "warehouse", "categories", "brands"
-                ] else []
-            ),
-            
             "Stocker": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "warehouse", "categories", "brands"
+                "products", "suppliers", "barcodes", "warehouse", 
+                "categories", "brands"
+            ] else ['add', 'change', 'delete'] if app_label in [
+                'inflows', 'outflows', 'transfers'
             ] else [],
             
             "Employee": lambda app_label: ["view_own_profile", "change_own_profile"] if app_label == "profiles" else [],
-            
-            "HR": lambda app_label: ["view", "add", "change", "delete"] if app_label in [
-                "employeers", "hr"
-            ] else ["view"] if app_label in [
-                "warehouse", "inventory"
-            ] else [],
-            
-            "Accountant": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "stores", "categories", "brands",
-                "employeers", "hr", "warehouse", "inventory"
-            ] else [],
             
             "Salesman": lambda app_label: ["view"] if app_label in [
                 "products", "categories", "brands", "customers"
             ] else [],
             
-            "Driver": lambda app_label: ["view"] if app_label in [
-                "vehicles", "deliveries"
+            "Driver": lambda app_label: ["view_own_delivery", "change_own_delivery_status"] if app_label in [
+                "delivery"
             ] else [],
             
-            "Deliveryman": lambda app_label: ["view"] if app_label in [
-                "deliveries"
-            ] else [],
-            
-            "Customer": lambda app_label: ["view"] if app_label in [
-                "products", "categories", "brands"
+            "Customer": lambda app_label: ["view_own_delivery"] if app_label in [
+                "delivery"
             ] else [],
             
             "Supplier": lambda app_label: ["view"] if app_label in [
