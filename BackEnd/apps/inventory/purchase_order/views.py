@@ -103,7 +103,7 @@ class PurchaseOrderListView(generics.ListAPIView, PurchaseOrderBaseView):
                     'status': {
                         'type': 'string',
                         'description': 'Order status',
-                        'maxLength': 20,
+                        'enum': ['draft', 'pending', 'approved', 'rejected', 'cancelled', 'completed'],
                     },
                     'notes': {
                         'type': 'string',
