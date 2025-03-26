@@ -91,7 +91,11 @@ class BaseUserView:
                     'password': {'type': 'string', 'format': 'password', 'minLength': 8},
                     'first_name': {'type': 'string', 'minLength': 1},
                     'last_name': {'type': 'string', 'minLength': 1},
-                    'user_type': {'type': 'string', 'enum': ['Employee', 'Customer', 'Supplier', 'Installer', 'Delivery_Helper']},
+                    'user_type': {
+                        'type': 'string',
+                        'description': 'The type of user',
+                        'enum': ['Owner', 'Employee', 'Customer', 'Supplier', 'Installer', 'Driver', 'Admin', 'Manager']
+                    },
                 },
                 'required': ['email', 'password', 'first_name', 'last_name', 'user_type']
             }

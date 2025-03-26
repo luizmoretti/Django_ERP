@@ -22,7 +22,11 @@ class Delivery(BaseModel):
         verbose_name = 'Delivery'
         verbose_name_plural = 'Deliveries'
         ordering = ['-created_at']
-        
+        permissions = [
+            # Delivery Custom Permissions for drivers and Customers
+            ('view_own_delivery', 'Can view own delivery'),
+            ('change_own_delivery_status', 'Can change own delivery status'),
+        ]
     def __str__(self):
         return f'{self.customer.full_name} - {self.vehicle.nickname} - {self.status}'
     

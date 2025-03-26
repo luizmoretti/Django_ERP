@@ -34,18 +34,18 @@ class Command(BaseCommand):
     
     def __sync_user_permissions(self):
         """
-        Sincroniza as permissões dos usuários com base em seus grupos.
-        Isso garante que os usuários tenham todas as permissões dos grupos aos quais pertencem.
+        Synchronizes user permissions based on their groups.
+        This ensures that users have all the permissions of the groups they belong to.
         """
         User = get_user_model()
         logger.info("Synchronizing user permissions")
         
         for user in User.objects.all():
             try:
-                # Limpa permissões existentes do usuário
+                # Clear existing user permissions
                 user.user_permissions.clear()
                 
-                # Adiciona todas as permissões dos grupos do usuário
+                # Add all permissions to the user's groups
                 for group in user.groups.all():
                     permissions = group.permissions.all()
                     user.user_permissions.add(*permissions)
@@ -121,51 +121,25 @@ class Command(BaseCommand):
                 ] else []
             ),
             
-            "Stock_Controller": lambda app_label: (
-                (["view", "add", "change"] + 
-                 ["can_add_item", "can_update_item", "can_remove_item"])
-                if app_label == "purchase_order" else
-                ["view", "add", "change"] if app_label in [
-                    "inflows", "outflows", "transfers", "products",
-                    "suppliers", "barcodes"
-                ] else ["view"] if app_label in [
-                    "warehouse", "categories", "brands"
-                ] else []
-            ),
-            
             "Stocker": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "warehouse", "categories", "brands"
+                "products", "suppliers", "barcodes", "warehouse", 
+                "categories", "brands"
+            ] else ['add', 'change', 'delete'] if app_label in [
+                'inflows', 'outflows', 'transfers'
             ] else [],
             
             "Employee": lambda app_label: ["view_own_profile", "change_own_profile"] if app_label == "profiles" else [],
-            
-            "HR": lambda app_label: ["view", "add", "change", "delete"] if app_label in [
-                "employeers", "hr"
-            ] else ["view"] if app_label in [
-                "warehouse", "inventory"
-            ] else [],
-            
-            "Accountant": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "stores", "categories", "brands",
-                "employeers", "hr", "warehouse", "inventory"
-            ] else [],
             
             "Salesman": lambda app_label: ["view"] if app_label in [
                 "products", "categories", "brands", "customers"
             ] else [],
             
-            "Driver": lambda app_label: ["view"] if app_label in [
-                "vehicles", "deliveries"
+            "Driver": lambda app_label: ["view_own_delivery", "change_own_delivery_status"] if app_label in [
+                "delivery"
             ] else [],
             
-            "Deliveryman": lambda app_label: ["view"] if app_label in [
-                "deliveries"
-            ] else [],
-            
-            "Customer": lambda app_label: ["view"] if app_label in [
-                "products", "categories", "brands"
+            "Customer": lambda app_label: ["view_own_delivery"] if app_label in [
+                "delivery"
             ] else [],
             
             "Supplier": lambda app_label: ["view"] if app_label in [
