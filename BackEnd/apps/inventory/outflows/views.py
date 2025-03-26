@@ -393,32 +393,34 @@ class OutflowDestroyView(OutflowBaseView, DestroyAPIView):
                 status=500
             )
 
-@extend_schema(
-    tags=['Inventory - Outflows'],
-    operation_id='approve_outflow',
-    summary='Approve an outflow',
-    description='Approve a pending outflow to update inventory quantities',
-    parameters=[
-        OpenApiParameter(
-            name='id',
-            type=OpenApiTypes.UUID,
-            location=OpenApiParameter.PATH,
-            description='UUID of the outflow to approve',
-            required=True
-        )
-    ],
-    responses={
-        200: OutflowSerializer,
-        400: {
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Only pending outflows can be approved'
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Outflows'],
+        operation_id='approve_outflow',
+        summary='Approve an outflow',
+        description='Approve a pending outflow to update inventory quantities',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the outflow to approve',
+                required=True
+            )
+        ],
+        responses={
+            200: OutflowSerializer,
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Only pending outflows can be approved'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class OutflowApproveView(OutflowBaseView, GenericAPIView):
     """View for approving a pending outflow"""
@@ -448,46 +450,47 @@ class OutflowApproveView(OutflowBaseView, GenericAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-@extend_schema(
-    tags=['Inventory - Outflows'],
-    operation_id='reject_outflow',
-    summary='Reject an outflow',
-    description='Reject a pending outflow with a reason',
-    parameters=[
-        OpenApiParameter(
-            name='id',
-            type=OpenApiTypes.UUID,
-            location=OpenApiParameter.PATH,
-            description='UUID of the outflow to reject',
-            required=True
-        )
-    ],
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'rejection_reason': {
-                    'type': 'string',
-                    'description': 'Reason for rejecting the outflow',
-                    'example': 'Products not available in the requested quantities'
-                }
-            },
-            'required': ['rejection_reason']
-        }
-    },
-    responses={
-        200: OutflowSerializer,
-        400: {
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'A valid rejection reason is required'
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Inventory - Outflows'],
+        operation_id='reject_outflow',
+        summary='Reject an outflow',
+        description='Reject a pending outflow with a reason',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the outflow to reject',
+                required=True
+            )
+        ],
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'rejection_reason': {
+                        'type': 'string',
+                        'description': 'Reason for rejecting the outflow',
+                        'example': 'Products not available in the requested quantities'
+                    }
+                },
+                'required': ['rejection_reason']
+            }
+        },
+        responses={
+            200: OutflowSerializer,
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'A valid rejection reason is required'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class OutflowRejectView(OutflowBaseView, GenericAPIView):
     """View for rejecting a pending outflow"""
