@@ -305,7 +305,7 @@ class DeliveryRetrieveView(DeliveryBaseView, RetrieveAPIView):
                     },
                     'status': {
                         'type': 'string',
-                        'enum': [status[0] for status in DELIVERY_STATUS_CHOICES],
+                        'enum': ['pending', 'pickup_in_progress', 'in_transit', 'delivered', 'returned', 'failed'],
                         'description': 'The current status of the delivery'
                     },
                     'estimated_departure': {
@@ -389,7 +389,7 @@ class DeliveryRetrieveView(DeliveryBaseView, RetrieveAPIView):
                     },
                     'status': {
                         'type': 'string',
-                        'enum': [status[0] for status in DELIVERY_STATUS_CHOICES],
+                        'enum': ['pending', 'pickup_in_progress', 'in_transit', 'delivered', 'returned', 'failed'],
                         'description': 'The current status of the delivery'
                     },
                     'estimated_departure': {
@@ -546,75 +546,76 @@ class DeliveryDestroyView(DeliveryBaseView, DestroyAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-@extend_schema(
-    tags=['Delivery'],
-    operation_id='update_delivery_location',
-    summary='Update delivery location',
-    description='Updates the current location of a delivery in transit.',
-    parameters=[
-        OpenApiParameter(
-            name='id',
-            location=OpenApiParameter.PATH,
-            type=OpenApiTypes.UUID,
-            description='Delivery ID',
-            required=True
-        )
-    ],
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'latitude': {
-                    'type': 'number',
-                    'format': 'float',
-                    'description': 'The latitude coordinate of the current delivery location'
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Delivery'],
+        operation_id='update_delivery_location',
+        summary='Update delivery location',
+        description='Updates the current location of a delivery in transit.',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Delivery ID',
+                required=True
+            )
+        ],
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'latitude': {
+                        'type': 'number',
+                        'format': 'float',
+                        'description': 'The latitude coordinate of the current delivery location'
+                    },
+                    'longitude': {
+                        'type': 'number',
+                        'format': 'float',
+                        'description': 'The longitude coordinate of the current delivery location'
+                    },
+                    'estimated_arrival': {
+                        'type': 'string',
+                        'format': 'date-time',
+                        'description': 'The estimated date and time when the delivery will arrive at its destination'
+                    },
+                    'create_checkpoint': {
+                        'type': 'boolean',
+                        'description': 'Whether to create a checkpoint record for this location update'
+                    },
+                    'notes': {
+                        'type': 'string',
+                        'description': 'Additional notes or information about this location update'
+                    }
                 },
-                'longitude': {
-                    'type': 'number',
-                    'format': 'float',
-                    'description': 'The longitude coordinate of the current delivery location'
-                },
-                'estimated_arrival': {
-                    'type': 'string',
-                    'format': 'date-time',
-                    'description': 'The estimated date and time when the delivery will arrive at its destination'
-                },
-                'create_checkpoint': {
-                    'type': 'boolean',
-                    'description': 'Whether to create a checkpoint record for this location update'
-                },
-                'notes': {
-                    'type': 'string',
-                    'description': 'Additional notes or information about this location update'
-                }
-            },
-            'required': ['latitude', 'longitude']
-        }
-    },
-    responses={
-        200: DeliverySerializer,
-        400: {
-            'description': 'Invalid data',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Error updating location'
-                }
+                'required': ['latitude', 'longitude']
             }
         },
-        404: {
-            'description': 'Delivery not found',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Delivery not found'
+        responses={
+            200: DeliverySerializer,
+            400: {
+                'description': 'Invalid data',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Error updating location'
+                    }
+                }
+            },
+            404:{
+                'description': 'Delivery not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Delivery not found'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class DeliveryLocationUpdateView(DeliveryBaseView, APIView):
     """View for updating a delivery's location."""
@@ -657,60 +658,62 @@ class DeliveryLocationUpdateView(DeliveryBaseView, APIView):
             )
 
 
-@extend_schema(
-    tags=['Delivery'],
-    operation_id='update_delivery_status',
-    summary='Update delivery status',
-    description='Updates the current status of a delivery.',
-    parameters=[
-        OpenApiParameter(
-            name='id',
-            location=OpenApiParameter.PATH,
-            type=OpenApiTypes.UUID,
-            description='Delivery ID',
-            required=True
-        )
-    ],
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'status': {
-                    'type': 'string',
-                    'enum': [status[0] for status in DELIVERY_STATUS_CHOICES],
-                    'description': 'The new status to set for the delivery'
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Delivery'],
+        operation_id='update_delivery_status',
+        summary='Update delivery status',
+        description='Updates the current status of a delivery.',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Delivery ID',
+                required=True
+            )
+        ],
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'status': {
+                        'type': 'string',
+                        'enum': ['pending', 'pickup_in_progress', 'in_transit', 'delivered', 'returned', 'failed'],
+                        'description': 'The new status to set for the delivery'
+                    },
+                    'notes': {
+                        'type': 'string',
+                        'description': 'Additional notes about the status change'
+                    }
                 },
-                'notes': {
-                    'type': 'string',
-                    'description': 'Additional notes about the status change'
-                }
-            },
-            'required': ['status']
-        }
-    },
-    responses={
-        200: DeliverySerializer,
-        400: {
-            'description': 'Invalid data',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Error updating status'
-                }
+                'required': ['status']
             }
         },
-        404: {
-            'description': 'Delivery not found',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Delivery not found'
+        responses={
+            200: DeliverySerializer,
+            400: {
+                'description': 'Invalid data',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Error updating status'
+                    }
+                }
+            },
+            404: {
+                'description': 'Delivery not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Delivery not found'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class DeliveryStatusUpdateView(DeliveryBaseView, APIView):
     """View for updating the status of a delivery."""
@@ -781,33 +784,35 @@ class DeliveryStatusUpdateView(DeliveryBaseView, APIView):
             )
 
 
-@extend_schema(
-    tags=['Delivery'],
-    operation_id='list_delivery_checkpoints',
-    summary='List delivery checkpoints',
-    description='Returns all checkpoints of a specific delivery.',
-    parameters=[
-        OpenApiParameter(
-            name='delivery_pk',
-            location=OpenApiParameter.PATH,
-            type=OpenApiTypes.UUID,
-            description='Delivery ID',
-            required=True
-        )
-    ],
-    responses={
-        200: DeliveryCheckpointSerializer(many=True),
-        404: {
-            'description': 'Delivery not found',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Delivery not found'
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Delivery'],
+        operation_id='list_delivery_checkpoints',
+        summary='List delivery checkpoints',
+        description='Returns all checkpoints of a specific delivery.',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Delivery ID',
+                required=True
+            )
+        ],
+        responses={
+            200: DeliveryCheckpointSerializer(many=True),
+            404: {
+                'description': 'Delivery not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Delivery not found'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class DeliveryCheckpointsListView(APIView):
     """List delivery checkpoints."""
@@ -815,11 +820,11 @@ class DeliveryCheckpointsListView(APIView):
     ordering_fields = ['timestamp']
     ordering = ['-timestamp']
     
-    def get(self, request, delivery_pk):
+    def get(self, request, pk):
         try:
             # Check access to delivery
             user = request.user
-            delivery_queryset = Delivery.objects.filter(id=delivery_pk)
+            delivery_queryset = Delivery.objects.filter(id=pk)
             
             if user.user_type == 'Manager':
                 delivery = get_object_or_404(delivery_queryset.filter(companie=user.companie))
@@ -850,39 +855,41 @@ class DeliveryCheckpointsListView(APIView):
             )
 
 
-@extend_schema(
-    tags=['Delivery'],
-    operation_id='generate_delivery_report',
-    summary='Generate delivery report',
-    description='Starts generating a detailed delivery report.',
-    parameters=[
-        OpenApiParameter(
-            name='pk',
-            location=OpenApiParameter.PATH,
-            type=OpenApiTypes.UUID,
-            description='Delivery ID',
-            required=True
-        )
-    ],
-    responses={
-        200: {
-            'type': 'object',
-            'properties': {
-                'message': {'type': 'string'},
-                'task_id': {'type': 'string'}
-            }
-        },
-        404: {
-            'description': 'Delivery not found',
-            'type': 'object',
-            'properties': {
-                'detail': {
-                    'type': 'string',
-                    'example': 'Delivery not found'
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Delivery'],
+        operation_id='generate_delivery_report',
+        summary='Generate delivery report',
+        description='Starts generating a detailed delivery report.',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.UUID,
+                description='Delivery ID',
+                required=True
+            )
+        ],
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'task_id': {'type': 'string'}
+                }
+            },
+            404: {
+                'description': 'Delivery not found',
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Delivery not found'
+                    }
                 }
             }
         }
-    }
+    )
 )
 class DeliveryReportView(DeliveryBaseView, APIView):
     """Generate delivery report."""
