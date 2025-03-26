@@ -16,7 +16,7 @@ urlpatterns = [
     path('status/<uuid:pk>/', views.DeliveryStatusUpdateView.as_view(), name='update_status'),
     
     # Checkpoint route
-    path('checkpoints/<uuid:delivery_pk>/', views.DeliveryCheckpointsListView.as_view(), name='list_checkpoints'),
+    path('checkpoints/<uuid:pk>/', views.DeliveryCheckpointsListView.as_view(), name='list_checkpoints'),
     
     # Report route
     path('report/<uuid:pk>/', views.DeliveryReportView.as_view(), name='generate_report'),
