@@ -224,3 +224,53 @@ class AttendanceClockInOutResponseSerializer(serializers.Serializer):
         help_text="Mensagem adicional para o usuário",
         required=False
     )
+
+class PayrollPaymentInputSerializer(serializers.Serializer):
+    """Serializer para validar dados de entrada para processamento de pagamento de folha"""
+    payment_method = serializers.ChoiceField(
+        choices=['bank_transfer', 'check', 'cash', 'online'],
+        required=True,
+        error_messages={
+            'required': 'The payment method is mandatory',
+            'invalid_choice': 'Invalid payment method. Choose between: bank_transfer, check, cash, online'
+        },
+        help_text="Payment method used"
+    )
+    payment_reference = serializers.CharField(
+        required=False,
+        allow_blank=False,
+        help_text="Payment reference (check number, transaction ID, etc.)"
+    )
+    payment_date = serializers.DateField(
+        required=False,
+        help_text="Payment date (format YYYY-MM-DD)"
+    )
+    
+    def validate_payment_date(self, value):
+        """Validate payment date"""
+        if value and value > datetime.date.today():
+            raise serializers.ValidationError("Payment date cannot be in the future")
+        return value
+    
+    def validate(self, data):
+        """Custom validation for specific method and reference combinations"""
+        payment_method = data.get('payment_method')
+        payment_reference = data.get('payment_reference')
+        
+        # Verify if reference is required for certain payment methods
+        if payment_method in ['bank_transfer', 'check'] and not payment_reference:
+            raise serializers.ValidationError({
+                'payment_reference': f'Payment reference is required for {payment_method}'
+            })
+            
+        return data
+
+class PayrollPaymentResponseSerializer(serializers.Serializer):
+    """Serializer to standardize the response of the payroll payment operation"""
+    success = serializers.BooleanField(
+        help_text="Indicates if the operation was successful"
+    )
+    payment_details = serializers.DictField(
+        help_text="Details of the processed payment",
+        child=serializers.JSONField()
+    )
