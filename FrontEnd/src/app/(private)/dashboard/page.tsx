@@ -23,13 +23,13 @@ export default function Dashboard() {
     console.log("Filtrando de", startDate, "até", endDate);
   };
 
-  /*useEffect(()=>{
+  useEffect(()=>{
     const acessToken = Cookies.get('acess_token');
     if (!acessToken){
       router.push("/signin");
     }
 
-  }, [user,auth, router]);*/
+  }, [user,auth, router]);
 
   return (
     <main className={`p-4 transition-margin duration-300 ease-in-out ${isSidebarVisible ? "ml-64" : "ml-0"}`} style={{marginTop: "3.5rem"}}>
