@@ -4,7 +4,7 @@ from ..models import AttendanceRegister, TimeTracking, DaysTracking, Payroll, Pa
 from apps.companies.employeers.models import Employeer
 from django.utils import timezone
 import datetime
-from decimal import Decimal
+from django.core.exceptions import ValidationError
 from .validators import AttendanceBusinessValidator
 
 logger = logging.getLogger(__name__)
@@ -437,3 +437,169 @@ class AttendanceService:
             logger.error(f"[ATTENDANCE SERVICE] - Error processing attendance via access code: {str(e)}", 
                         exc_info=True)
             raise ValidationError(f"Error processing attendance: {str(e)}")
+        
+class PayrollService:
+    """
+    Service class for handling payroll payment processing operations.
+    """
+    
+    def __init__(self):
+        self.validator = AttendanceBusinessValidator()
+    
+    @transaction.atomic
+    def process_payment(self, payroll_id, payment_data, user):
+        """Process payment for a specific payroll
+        
+        Args:
+            payroll_id: ID of the payroll to process
+            payment_data (dict): Payment details including method, reference, etc.
+            user: User processing the payment
+            
+        Returns:
+            dict: Result with payment details and updated payroll
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        try:
+            # Retrieve and validate payroll
+            payroll = Payroll.objects.get(id=payroll_id)
+            
+            # Validate company access
+            self.validator.validate_company_access(payroll.employee, user)
+            
+            # Validate payment data
+            self.validator.validate_payment_data(payment_data)
+            
+            # Validate payroll can be paid
+            self.validator.validate_payroll_can_be_paid(payroll)
+            
+            # Process payment
+            payment_method = payment_data.get('payment_method')
+            payment_reference = payment_data.get('payment_reference')
+            payment_date = payment_data.get('payment_date', timezone.now().date())
+            
+            # Store original information for logging
+            employee_id = str(payroll.employee.id)
+            employee_name = payroll.employee.name
+            amount = payroll.amount
+            
+            # Update payroll status - o signal vai criar o PayrollHistory
+            payroll.status = 'Paid'
+            payroll.save(update_fields=['status'])
+            
+            # COMPLETE RESET: Create new AttendanceRegister for next period
+            employee = payroll.employee
+            register = payroll.register
+            
+            # 1. Create a new AttendanceRegister
+            new_register = AttendanceRegister.objects.create(
+                employee=employee,
+                companie=register.companie
+            )
+            
+            # 2. Create a new zeroed Payroll associated with the new record
+            new_payroll = Payroll.objects.create(
+                employee=employee,
+                register=new_register,  # Associate with the new register
+                period_start=timezone.now().date(),
+                period_end=timezone.now().date(),
+                days_worked=0,
+                hours_worked=0,
+                amount=0,
+                status='Pending'
+            )
+            
+            # 3. Log dos novos registros
+            logger.info(
+                f"[PAYROLL SERVICE] - Complete reset after payment: created new AttendanceRegister {new_register.id} "
+                f"and new Payroll {new_payroll.id} for employee {employee.name}"
+            )
+            
+            # Get the PayrollHistory created by signal
+            payment_history = PayrollHistory.objects.filter(payroll=payroll).first()
+            
+            # Log payment details
+            payment_details = {
+                'payment_id': str(payment_history.id) if payment_history else "N/A",
+                'payroll_id': str(payroll.id),
+                'employee_id': employee_id,
+                'employee_name': employee_name,
+                'amount': str(amount),
+                'payment_method': payment_method,
+                'payment_reference': payment_reference,
+                'payment_date': payment_date.isoformat(),
+                'processed_by': user.employeer.name if hasattr(user, 'employeer') else str(user),
+                'processed_at': timezone.now().isoformat()
+            }
+            
+            logger.info(f"[PAYROLL SERVICE] - Payment processed successfully for payroll {payroll.id}",
+                       extra={'payroll_id': payroll.id, 'payment_id': payment_history.id if payment_history else "N/A"})
+            
+            return {
+                'payroll': payroll,
+                'payment_history': payment_history,
+                'new_register': new_register,
+                'new_payroll': new_payroll,
+                'payment_details': payment_details,
+                'success': True
+            }
+            
+        except Payroll.DoesNotExist:
+            logger.error(f"[PAYROLL SERVICE] - Payroll not found: {payroll_id}")
+            raise ValidationError(f"Payroll not found: {payroll_id}")
+        except Exception as e:
+            logger.error(f"[PAYROLL SERVICE] - Error processing payment: {str(e)}", exc_info=True)
+            raise ValidationError(f"Error processing payment: {str(e)}")
+    
+    @transaction.atomic
+    def batch_process_payments(self, payroll_ids, payment_data, user):
+        """Process payments for multiple payrolls in batch
+        
+        Args:
+            payroll_ids: List of payroll IDs to process
+            payment_data (dict): Common payment details
+            user: User processing the payment
+            
+        Returns:
+            dict: Summary of batch processing results
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        try:
+            # Validate batch data
+            self.validator.validate_payment_data(payment_data)
+            
+            results = {
+                'total': len(payroll_ids),
+                'successful': 0,
+                'failed': 0,
+                'details': []
+            }
+            
+            # Process each payroll
+            for payroll_id in payroll_ids:
+                try:
+                    result = self.process_payment(payroll_id, payment_data, user)
+                    results['successful'] += 1
+                    results['details'].append({
+                        'payroll_id': payroll_id,
+                        'status': 'success',
+                        'payment_id': str(result['payment_history'].id)
+                    })
+                except Exception as e:
+                    results['failed'] += 1
+                    results['details'].append({
+                        'payroll_id': payroll_id,
+                        'status': 'failed',
+                        'error': str(e)
+                    })
+            
+            logger.info(f"[PAYROLL SERVICE] - Batch payment processed: {results['successful']} successful, {results['failed']} failed")
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"[PAYROLL SERVICE] - Error in batch payment processing: {str(e)}", exc_info=True)
+            raise ValidationError(f"Error in batch payment processing: {str(e)}")

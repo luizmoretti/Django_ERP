@@ -237,3 +237,57 @@ class AttendanceBusinessValidator:
                     continue
         
         raise ValueError(f"Invalid time format: {value}")
+    
+    def validate_payment_data(self, payment_data):
+        """Validate payment data structure and values
+        
+        Args:
+            payment_data (dict): Payment data to validate
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        if not payment_data:
+            raise ValidationError("Payment data is required")
+        
+        # Required fields
+        required_fields = ['payment_method']
+        for field in required_fields:
+            if field not in payment_data:
+                raise ValidationError(f"Missing required field: {field}")
+        
+        # Validate payment method
+        valid_methods = ['bank_transfer', 'check', 'cash', 'online']
+        if payment_data.get('payment_method') not in valid_methods:
+            raise ValidationError(f"Invalid payment method. Must be one of: {', '.join(valid_methods)}")
+        
+        # Validate payment reference if provided
+        if 'payment_reference' in payment_data and not payment_data['payment_reference']:
+            raise ValidationError("Payment reference cannot be empty when provided")
+        
+        # Validate payment date if provided
+        if 'payment_date' in payment_data:
+            try:
+                if isinstance(payment_data['payment_date'], str):
+                    datetime.strptime(payment_data['payment_date'], '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError("Invalid payment date format. Use YYYY-MM-DD")
+
+    def validate_payroll_can_be_paid(self, payroll):
+        """Validate if a payroll can be paid
+        
+        Args:
+            payroll: Payroll instance to validate
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        if payroll.status == 'Paid':
+            raise ValidationError(f"Payroll {payroll.id} has already been paid")
+        
+        if payroll.status != 'Pending':
+            raise ValidationError(f"Only payrolls with 'Pending' status can be paid. Current status: {payroll.status}")
+        
+        # Validate payroll has amount
+        if payroll.amount <= 0:
+            raise ValidationError(f"Payroll amount must be greater than zero")
