@@ -530,7 +530,6 @@ if not os.path.exists('logs'):
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
@@ -539,14 +538,20 @@ REST_FRAMEWORK = {
     ),
     'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
     'UNAUTHENTICATED_TOKEN': 'rest_framework_simplejwt.authentication.JWTAuthentication',
+    
+    # Enhanced throttling configuration with more granular control
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',  
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
-        'user': '1000/day'
+        'user': '1000/day',
+        'login': '5/min',         
+        'password_reset': '3/hour' 
     },
+    
     'NON_FIELD_ERRORS_KEY': 'detail',
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -559,18 +564,36 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ),
+    
+    # Optimized pagination settings
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_VERSIONING_CLASS': None,
     'DEFAULT_VERSION': None,
     'ALLOWED_VERSIONS': None,
     'VERSION_PARAM': 'version',
     
+    # JWT specific settings for better token management
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+        'ROTATE_REFRESH_TOKENS': False,
+        'BLACKLIST_AFTER_ROTATION': True,
+        'UPDATE_LAST_LOGIN': True,
+    },
+    
+    # Standardized datetime formats
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
     'DATETIME_INPUT_FORMATS': ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S'],
-    'DATE_INPUT_FORMATS': ['%Y-%m-%d']
+    'DATE_INPUT_FORMATS': ['%Y-%m-%d'],
+    
+    # Optional performance enhancement for production
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 ################################
