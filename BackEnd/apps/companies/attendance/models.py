@@ -19,6 +19,9 @@ class AttendanceRegister(BaseModel):
         if self.acess_code is not None and len(str(self.acess_code)) != 6:
             raise ValidationError('Acess code must be 6 digits long')
         super().clean()
+        
+    def __str__(self):
+        return f"{self.employee.name}"
 
 class TimeTracking(BaseModel):
     register = models.ForeignKey(AttendanceRegister, on_delete=models.CASCADE, related_name='attendance_time_tracking', null=True, blank=True)
@@ -112,6 +115,9 @@ class Payroll(BaseModel):
             seconds = int((decimal_part * 60 % 1) * 60)
             return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         return "00:00:00"
+    
+    def __str__(self):
+        return f"{self.employee.name}"
     
 class PayrollHistory(BaseModel):
     employee = models.ForeignKey(Employeer, on_delete=models.CASCADE, related_name='attendance_payroll_history_employeer')
