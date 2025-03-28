@@ -22,6 +22,15 @@ from ..transfer.serializers import TransferSerializer
 
 logger = logging.getLogger(__name__)
 
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Inventory - Movements'],
+        summary="List all movements",
+        description="List all movements.",
+        responses={200: MovementSerializer(many=True)},
+    )
+)
 class MovementListView(ListAPIView):
     """
     List all movements.
