@@ -52,6 +52,10 @@ class Transfer(BaseModel):
     def __str__(self):
         return str(self.id)
     
+    @property
+    def type(self) -> str:
+        return "Transfer"
+    
 class TransferItems(BaseModel):
     """Transfer Items model is responsible for storing the each product that is part of a transfer
     

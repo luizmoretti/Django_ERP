@@ -51,6 +51,11 @@ class Inflow(BaseModel):
         return self.origin.name + ' -> ' + self.destiny.name
     
     
+    @property
+    def type(self):
+        return "Entry"
+    
+    
 class InflowItems(BaseModel):
     """ Inflow Items models is responsible for storing the each product that is part of an inflow
     Fields:

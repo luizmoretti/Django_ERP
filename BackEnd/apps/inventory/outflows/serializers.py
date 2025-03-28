@@ -109,6 +109,7 @@ class OutflowSerializer(serializers.ModelSerializer):
             
             'destiny',
             '_destiny',
+            'type',
             'destiny_address',
             
             

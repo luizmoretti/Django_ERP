@@ -29,7 +29,7 @@ class OutflowBaseView:
         try:
             # Verify if it is a swagger fake view
             if getattr(self, 'swagger_fake_view', False):
-                return Outflow.objects.none()
+                    return OutflowSerializer
             
             employeer = user.employeer
             return Outflow.objects.select_related(
@@ -82,6 +82,10 @@ class OutflowListView(OutflowBaseView, ListAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Exit'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -99,7 +103,7 @@ class OutflowListView(OutflowBaseView, ListAPIView):
                         }
                     }
                 },
-                'required': ['origin', 'destiny', 'items_data']
+                'required': ['origin', 'destiny', 'items_data', 'type']
             }
         },
         responses={
@@ -135,7 +139,7 @@ class OutflowCreateView(OutflowBaseView, CreateAPIView):
         except Exception as e:
             logger.error(f"[OUTFLOW VIEWS] - Error creating outflow: {str(e)}")
             return Response(
-                {"detail": "Error creating outflow"},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -180,8 +184,8 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
         except Exception as e:
             logger.error(f"[OUTFLOW VIEWS] - Error retrieving outflow: {str(e)}")
             return Response(
-                {"detail": "Error retrieving outflow"},
-                status=500
+                {"detail": str(e)},
+                status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -212,6 +216,10 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Exit'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -229,7 +237,7 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
                         }
                     }
                 },
-                'required': ['origin', 'destiny', 'items_data']
+                'required': ['origin', 'destiny', 'items_data', 'type']
             }
         },
         responses={
@@ -243,12 +251,12 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
                     }
                 }
             },
-            404: {
+            500: {
                 'type': 'object',
                 'properties': {
                     'detail': {
                         'type': 'string',
-                        'example': 'Not found.'
+                        'example': 'Error updating outflow'
                     }
                 }
             }
@@ -280,6 +288,10 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Exit'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -309,12 +321,12 @@ class OutflowRetrieveView(OutflowBaseView, RetrieveAPIView):
                     }
                 }
             },
-            404: {
+            500: {
                 'type': 'object',
                 'properties': {
                     'detail': {
                         'type': 'string',
-                        'example': 'Not found.'
+                        'example': 'Error updating outflow'
                     }
                 }
             }
@@ -339,13 +351,13 @@ class OutflowUpdateView(OutflowBaseView, UpdateAPIView):
             logger.error(f"[OUTFLOW VIEWS] - Validation error updating outflow: {str(e)}")
             return Response(
                 {"detail": str(e)},
-                status=400
+                status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             logger.error(f"[OUTFLOW VIEWS] - Error updating outflow: {str(e)}")
             return Response(
-                {"detail": "Error updating outflow"},
-                status=500
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 

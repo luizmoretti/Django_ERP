@@ -15,7 +15,7 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 import logging
 from .permissions import InflowBasePermission, CanApproveInflow, CanRejectInflow
 
@@ -28,8 +28,8 @@ class InflowBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
-            if not hasattr(user, 'employeer'):
-                queryset = Inflow.objects.none()
+            if getattr(self, 'swagger_fake_view', False):
+                return InflowSerializer
             else:
                 employeer = user.employeer
                 queryset = Inflow.objects.select_related(
@@ -83,6 +83,10 @@ class InflowListView(InflowBaseView, ListAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Entry'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -100,7 +104,7 @@ class InflowListView(InflowBaseView, ListAPIView):
                         }
                     }
                 },
-                'required': ['origin', 'destiny', 'items_data']
+                'required': ['origin', 'destiny', 'items_data', 'type']
             }
         },
         responses={
@@ -213,6 +217,10 @@ class InflowRetrieveView(InflowBaseView, RetrieveAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Entry'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -230,7 +238,7 @@ class InflowRetrieveView(InflowBaseView, RetrieveAPIView):
                         }
                     }
                 },
-                'required': ['origin', 'destiny', 'items_data']
+                'required': ['origin', 'destiny', 'items_data', 'type']
             }
         },
         responses={
@@ -280,6 +288,10 @@ class InflowRetrieveView(InflowBaseView, RetrieveAPIView):
                     'destiny': {
                         'type': 'string',
                         'format': 'uuid'
+                    },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Entry'
                     },
                     'items_data': {
                         'type': 'array',
@@ -495,7 +507,10 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
                     'error': str(e)
                 }
             )
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
             
         except Exception as e:
             logger.error(
@@ -508,8 +523,21 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
                 exc_info=True
             )
             return Response(
-                {'detail': 'An error occurred while approving the inflow'},
+                {'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except PermissionDenied as e:
+            logger.warning(
+                f"Permission denied when approving inflow",
+                extra={
+                    'inflow_id': kwargs.get('pk'),
+                    'user_id': request.user.id,
+                    'error': str(e)
+                }
+            )
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_403_FORBIDDEN
             )
 
 
@@ -648,6 +676,19 @@ class InflowRejectView(InflowBaseView, GenericAPIView):
                 exc_info=True
             )
             return Response(
-                {'detail': 'An error occurred while rejecting the inflow'},
+                {'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except PermissionDenied as e:
+            logger.warning(
+                f"Permission denied when rejecting inflow",
+                extra={
+                    'inflow_id': kwargs.get('pk'),
+                    'user_id': request.user.id,
+                    'error': str(e)
+                }
+            )
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_403_FORBIDDEN
             )
