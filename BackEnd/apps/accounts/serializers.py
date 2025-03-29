@@ -297,7 +297,5 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         Validate that passwords match.
         """
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({
-                'password_confirm': 'Passwords do not match'
-            })
+            raise serializers.ValidationError('Passwords do not match')
         return attrs
