@@ -347,15 +347,15 @@ class InflowUpdateView(InflowBaseView, UpdateAPIView):
             )
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            return Response(serializer.data)
+            return Response(serializer.data, status=200)
         except ValidationError as e:
-            logger.error(f"[INFLOW VIEWS] - Validation error updating inflow: {str(e)}")
+            logger.error(f"[INFLOW VIEW] Validation error updating inflow: {str(e)}")
             return Response(
                 {"detail": str(e)},
                 status=400
             )
         except Exception as e:
-            logger.error(f"[INFLOW VIEWS] - Error updating inflow: {str(e)}")
+            logger.error(f"[INFLOW VIEW] Error updating inflow: {str(e)}")
             return Response(
                 {"detail": "Error updating inflow"},
                 status=500
@@ -400,7 +400,7 @@ class InflowDestroyView(InflowBaseView, DestroyAPIView):
             self.perform_destroy(instance)
             return Response(status=204)
         except Exception as e:
-            logger.error(f"[INFLOW VIEWS] - Error deleting inflow: {str(e)}")
+            logger.error(f"[INFLOW VIEW] Error deleting inflow: {str(e)}")
             return Response(
                 {"detail": "Error deleting inflow"},
                 status=500
@@ -414,12 +414,12 @@ class InflowDestroyView(InflowBaseView, DestroyAPIView):
         summary='Approve an inflow',
         description='Approve a pending inflow to update inventory quantities',
         parameters=[
-        OpenApiParameter(
-            name='id',
-            type=OpenApiTypes.UUID,
-            location=OpenApiParameter.PATH,
-            description='UUID of the inflow to approve',
-            required=True
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the inflow to approve',
+                required=True
         )
     ],
     responses={
@@ -483,16 +483,15 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             service = InflowService()
             
             # Approve inflow
-            approved_inflow = service.approve_inflow(inflow, request.user)
+            approved_inflow = service.approve_inflow(inflow)
             
             # Serialize and return
             serializer = self.get_serializer(approved_inflow)
             
             logger.info(
-                f"Inflow approved successfully via API",
+                f"[INFLOW VIEW] Inflow approved successfully via API",
                 extra={
-                    'inflow_id': inflow.id,
-                    'user_id': request.user.id
+                    'inflow_id': inflow.id
                 }
             )
             
@@ -500,7 +499,7 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             
         except ValidationError as e:
             logger.warning(
-                f"Validation error when approving inflow",
+                f"[INFLOW VIEW] Validation error when approving inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
                     'user_id': request.user.id,
@@ -514,7 +513,7 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             
         except Exception as e:
             logger.error(
-                f"Error approving inflow",
+                f"[INFLOW VIEW] Error approving inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
                     'user_id': request.user.id,
@@ -528,7 +527,7 @@ class InflowApproveView(InflowBaseView, GenericAPIView):
             )
         except PermissionDenied as e:
             logger.warning(
-                f"Permission denied when approving inflow",
+                f"[INFLOW VIEW] Permission denied when approving inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
                     'user_id': request.user.id,
@@ -638,16 +637,15 @@ class InflowRejectView(InflowBaseView, GenericAPIView):
             service = InflowService()
             
             # Reject inflow
-            rejected_inflow = service.reject_inflow(inflow, request.user, rejection_reason)
+            rejected_inflow = service.reject_inflow(inflow, rejection_reason)
             
             # Serialize and return
             serializer = self.get_serializer(rejected_inflow)
             
             logger.info(
-                f"Inflow rejected successfully via API",
+                f"[INFLOW VIEW] Inflow rejected successfully via API",
                 extra={
                     'inflow_id': inflow.id,
-                    'user_id': request.user.id,
                     'reason': rejection_reason
                 }
             )
@@ -656,10 +654,9 @@ class InflowRejectView(InflowBaseView, GenericAPIView):
             
         except ValidationError as e:
             logger.warning(
-                f"Validation error when rejecting inflow",
+                f"[INFLOW VIEW] Validation error when rejecting inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
-                    'user_id': request.user.id,
                     'error': str(e)
                 }
             )
@@ -667,10 +664,9 @@ class InflowRejectView(InflowBaseView, GenericAPIView):
             
         except Exception as e:
             logger.error(
-                f"Error rejecting inflow",
+                f"[INFLOW VIEW] Error rejecting inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
-                    'user_id': request.user.id,
                     'error': str(e)
                 },
                 exc_info=True
@@ -681,10 +677,9 @@ class InflowRejectView(InflowBaseView, GenericAPIView):
             )
         except PermissionDenied as e:
             logger.warning(
-                f"Permission denied when rejecting inflow",
+                f"[INFLOW VIEW] Permission denied when rejecting inflow",
                 extra={
                     'inflow_id': kwargs.get('pk'),
-                    'user_id': request.user.id,
                     'error': str(e)
                 }
             )
