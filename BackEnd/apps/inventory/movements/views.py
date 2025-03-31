@@ -56,9 +56,9 @@ class MovementListView(ListAPIView):
                 Transfer.objects.select_related('origin', 'destiny', 'created_by', 'companie')
             )
             
-            logger.debug(f"Total inflows: {base_inflow_query.count()}")
-            logger.debug(f"Total outflows: {base_outflow_query.count()}")
-            logger.debug(f"Total transfers: {base_transfer_query.count()}")
+            logger.debug(f"[MOVEMENTS VIEW] Total inflows: {base_inflow_query.count()}")
+            logger.debug(f"[MOVEMENTS VIEW] Total outflows: {base_outflow_query.count()}")
+            logger.debug(f"[MOVEMENTS VIEW] Total transfers: {base_transfer_query.count()}")
             
             #Check if user_type is [Manager, Admin, or Owner] if so, return all movements
             if user.user_type in ['Manager', 'Admin', 'Owner']:
