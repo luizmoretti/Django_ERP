@@ -16,8 +16,8 @@ NOTIFICATION_TYPE = {
 
 # Notification titles
 NOTIFICATION_TITLES = {
-    NOTIFICATION_TYPE['INFLOW_CREATED']: gettext("New Inflow Created"),
-    NOTIFICATION_TYPE['INFLOW_UPDATED']: gettext("Inflow Updated"),
+    NOTIFICATION_TYPE['INFLOW_CREATED']: gettext("New Inflow"),
+    NOTIFICATION_TYPE['INFLOW_UPDATED']: gettext("Inflow Has Been Updated"),
     NOTIFICATION_TYPE['INFLOW_APPROVED']: gettext("Inflow Approved"),
     NOTIFICATION_TYPE['INFLOW_REJECTED']: gettext("Inflow Rejected"),
     NOTIFICATION_TYPE['INFLOW_DELETED']: gettext("Inflow Deleted"),
@@ -28,16 +28,16 @@ NOTIFICATION_TITLES = {
 # Notification messages
 NOTIFICATION_MESSAGES = {
     NOTIFICATION_TYPE['INFLOW_CREATED']: gettext(
-        "New inflow created from %(origin)s to %(destiny)s the total items are %(items_count)d and the total value is $%(total_value).2f"
+        "New inflow from %(origin)s to %(destiny)s, the total items are %(items_count)d and the total value is $%(total_value).2f"
     ),
     NOTIFICATION_TYPE['INFLOW_UPDATED']: gettext(
         "Inflow updated from %(origin)s to %(destiny)s, the total items are now %(items_count)d and the total value is $%(total_value).2f"
     ),
     NOTIFICATION_TYPE['INFLOW_APPROVED']: gettext(
-        "Inflow Approved by: %(approved_by)s for origin %(origin)s and destiny %(destiny)s, the total items are %(items_count)d and the total value is $%(total_value).2f"
+        "Inflow Approved by: %(approved_by)s from origin %(origin)s and destiny %(destiny)s, the total items are %(items_count)d and the total value is $%(total_value).2f"
     ),
     NOTIFICATION_TYPE['INFLOW_REJECTED']: gettext(
-        "Inflow Rejected by: %(rejected_by)s for origin %(origin)s and destiny %(destiny)s, the total items are %(items_count)d. Reason: %(reason)s"
+        "Inflow Rejected by: %(rejected_by)s from origin %(origin)s and destiny %(destiny)s, the total items are %(items_count)d. Reason: %(reason)s"
     ),
     NOTIFICATION_TYPE['INFLOW_DELETED']: gettext(
         "Inflow deleted from %(origin)s to %(destiny)s by %(deleted_by)s"
@@ -70,11 +70,11 @@ NOTIFICATION_PRIORITIES = {
 
 # Recipient types for each notification
 RECIPIENT_TYPES = {
-    NOTIFICATION_TYPE['INFLOW_CREATED']: ['Stock_Controller', 'Manager', 'Admin'],
-    NOTIFICATION_TYPE['INFLOW_UPDATED']: ['Stock_Controller', 'Manager', 'Admin'],
-    NOTIFICATION_TYPE['INFLOW_APPROVED']: ['Stock_Controller', 'Manager', 'Owner', 'CEO', 'Admin'],
-    NOTIFICATION_TYPE['INFLOW_REJECTED']: ['Stock_Controller', 'Manager', 'Owner', 'CEO', 'Admin'],
-    NOTIFICATION_TYPE['INFLOW_DELETED']: ['Stock_Controller', 'Manager', 'Owner', 'CEO', 'Admin'],
-    NOTIFICATION_TYPE['STOCK_UPDATED']: ['Stock_Controller', 'Stocker', 'Manager'],
-    NOTIFICATION_TYPE['LOW_STOCK_ALERT']: ['Stock_Controller', 'Manager', 'Admin', 'Owner', 'CEO']
+    NOTIFICATION_TYPE['INFLOW_CREATED']: ['Stocker', 'Manager', 'Admin'],
+    NOTIFICATION_TYPE['INFLOW_UPDATED']: ['Stocker', 'Manager', 'Admin'],
+    NOTIFICATION_TYPE['INFLOW_APPROVED']: ['Stocker', 'Manager', 'Owner', 'CEO', 'Admin'],
+    NOTIFICATION_TYPE['INFLOW_REJECTED']: ['Stocker', 'Manager', 'Owner', 'CEO', 'Admin'],
+    NOTIFICATION_TYPE['INFLOW_DELETED']: ['Stocker', 'Manager', 'Owner', 'CEO', 'Admin'],
+    NOTIFICATION_TYPE['STOCK_UPDATED']: ['Stocker', 'Manager'],
+    NOTIFICATION_TYPE['LOW_STOCK_ALERT']: ['Stocker', 'Manager', 'Admin', 'Owner', 'CEO']
 }
