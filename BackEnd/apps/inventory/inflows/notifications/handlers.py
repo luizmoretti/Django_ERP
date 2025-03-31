@@ -59,7 +59,7 @@ class InflowNotificationHandler(BaseNotificationHandler):
                 # Determine notification type
                 if created:
                     notification_type = NOTIFICATION_TYPE['INFLOW_CREATED']
-                elif instance.status == 'approved':
+                elif instance.status in ['approved', 'completed']:
                     notification_type = NOTIFICATION_TYPE['INFLOW_APPROVED']
                 elif instance.status == 'rejected':
                     notification_type = NOTIFICATION_TYPE['INFLOW_REJECTED']
