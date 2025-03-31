@@ -17,8 +17,7 @@ class InflowService:
     def __init__(self):
         self.validator = InflowBusinessValidator()
     
-    @staticmethod
-    def create_inflow(data, user):
+    def create_inflow(self, data, user):
         """
         Create a new inflow with validation
         
@@ -68,8 +67,7 @@ class InflowService:
             
             return inflow
     
-    @staticmethod
-    def update_inflow(inflow, data, user):
+    def update_inflow(self, inflow, data, user):
         """
         Update an existing inflow with validation
         
@@ -106,14 +104,11 @@ class InflowService:
                 InflowItems.objects.create(
                     inflow=inflow,
                     product=item_data['product'],
-                    quantity=item_data['quantity'],
-                    companie=user.employeer.companie,
-                    created_by=user.employeer,
-                    updated_by=user.employeer
+                    quantity=item_data['quantity']
                 )
             
             logger.info(
-                f"Inflow updated successfully",
+                f"[INFLOW SERVICE] Inflow updated successfully",
                 extra={
                     'inflow_id': inflow.id,
                     'user_id': user.id
@@ -122,8 +117,7 @@ class InflowService:
             
             return inflow
     
-    @staticmethod
-    def approve_inflow(inflow, user):
+    def approve_inflow(self, inflow):
         """
         Approve an inflow with validation
         
@@ -151,21 +145,18 @@ class InflowService:
         with transaction.atomic():
             # Update status
             inflow.status = 'approved'
-            inflow.updated_by = user.employeer
             inflow.save()
             
             logger.info(
-                f"Inflow approved successfully",
+                f"[INFLOW SERVICE] Inflow approved successfully",
                 extra={
-                    'inflow_id': inflow.id,
-                    'user_id': user.id
+                    'inflow_id': inflow.id
                 }
             )
             
             return inflow
     
-    @staticmethod
-    def reject_inflow(inflow, user, rejection_reason):
+    def reject_inflow(self, inflow, rejection_reason):
         """
         Reject an inflow with validation
         
@@ -189,14 +180,12 @@ class InflowService:
         # Reject inflow
         inflow.status = 'rejected'
         inflow.rejection_reason = rejection_reason
-        inflow.updated_by = user.employeer
         inflow.save()
         
         logger.info(
-            f"Inflow rejected successfully",
+            f"[INFLOW SERVICE] Inflow rejected successfully",
             extra={
                 'inflow_id': inflow.id,
-                'user_id': user.id,
                 'reason': rejection_reason
             }
         )
