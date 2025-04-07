@@ -15,7 +15,7 @@ from rest_framework.generics import (
 )
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
-    OpenApiParameter, OpenApiTypes
+    OpenApiParameter, OpenApiTypes, OpenApiExample
 )
 from .models import User
 from .serializers import UserSerializer, ListAllUsersSerializer, LoginSerializer, PasswordResetConfirmSerializer
@@ -100,6 +100,38 @@ class BaseUserView:
                 'required': ['email', 'password', 'first_name', 'last_name', 'user_type']
             }
         },
+        examples=[
+            OpenApiExample(
+                name="Create Owner User",
+                value={
+                    "email": "owner@example.com",
+                    "password": "owner123@",
+                    "first_name": "Owner",
+                    "last_name": "User",
+                    "user_type": "Owner"
+                }
+            ),
+            OpenApiExample(
+                name="Create Employee User",
+                value={
+                    "email": "employee@example.com",
+                    "password": "employee123@",
+                    "first_name": "Employee",
+                    "last_name": "User",
+                    "user_type": "Employee"
+                }
+            ),
+            OpenApiExample(
+                name="Create Customer User",
+                value={
+                    "email": "customer@example.com",
+                    "password": "customer123@",
+                    "first_name": "Customer",
+                    "last_name": "User",
+                    "user_type": "Customer"
+                }
+            )
+        ],
         responses={
             201: UserSerializer,
             400: {
