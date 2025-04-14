@@ -36,7 +36,8 @@ class VehicleSerializer(serializers.ModelSerializer):
     assigned_driver = serializers.PrimaryKeyRelatedField(
         queryset=Employeer.objects.all(),
         required=False,
-        allow_null=True
+        allow_null=True,
+        write_only=True
     )
     _assigned_driver = serializers.SerializerMethodField(read_only=True)
     full_name = serializers.CharField(read_only=True) #source='full_name'
@@ -83,7 +84,7 @@ class VehicleSerializer(serializers.ModelSerializer):
     def get__assigned_driver(self, obj) -> str:
         """Get the name of the assigned driver"""
         if obj.assigned_driver:
-            return f"{obj.assigned_driver.first_name} {obj.assigned_driver.last_name}"
+            return f"{obj.assigned_driver.name}"
         return None
     
     def get_companie(self, obj) -> str:

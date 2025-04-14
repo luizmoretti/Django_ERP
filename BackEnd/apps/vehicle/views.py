@@ -24,7 +24,7 @@ class VehicleBaseView:
     def get_queryset(self):
         """Get queryset filtered by user's company"""
         return Vehicle.objects.filter(
-            companie=self.request.user.companie
+            companie=self.request.user.employeer.companie
         ).select_related('assigned_driver')
 
 
