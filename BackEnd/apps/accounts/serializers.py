@@ -30,7 +30,6 @@ class BaseUserSerializer(serializers.ModelSerializer):
         that need to implement additional functionality.
     """
     id = serializers.UUIDField(read_only=True)
-    username = serializers.CharField(read_only=True)
     email = serializers.EmailField(required=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
@@ -43,7 +42,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
+            'id', 'email', 'first_name', 'last_name',
             'user_type', 'date_joined', 'is_active', 'last_login','ip'
         ]
 
