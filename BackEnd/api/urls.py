@@ -49,4 +49,8 @@ urlpatterns = [
     path('movements/', include('apps.inventory.movements.urls')),
     path('load-orders/', include('apps.inventory.load_order.urls')),
     path('purchase-orders/', include('apps.inventory.purchase_order.urls')),
+    
+    
+    #Scheduller endpoints
+    path('scheduller/', include('apps.scheduller.urls')),
 ]

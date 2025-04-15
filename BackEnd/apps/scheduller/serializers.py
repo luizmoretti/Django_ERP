@@ -18,5 +18,13 @@ class JobsTypeSchedullerRegisterSerializer(serializers.ModelSerializer):
         elif JobsTypeSchedullerRegister.objects.filter(name=name).exists():
             raise ValidationError('Name already exists')
         return attrs
+    
+    def create(self, validated_data) -> JobsTypeSchedullerRegister:
+        return JobsTypeSchedullerRegister.objects.create(**validated_data)
+    
+    def update(self, instance, validated_data) -> JobsTypeSchedullerRegister:
+        instance.name = validated_data.get('name', instance.name)
+        instance.save()
+        return instance
         
     
