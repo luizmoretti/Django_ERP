@@ -19,6 +19,7 @@ from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from django.db import transaction
 from .models import User
+from core.constants.choices import USER_TYPE_CHOICES
 from django.contrib.auth.models import AnonymousUser
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
@@ -27,7 +28,39 @@ from django.contrib.auth import user_logged_in
 
 logger = logging.getLogger(__name__)
 
+
+def get_user_type_from_group_name(group_name):
+    """
+    Get the user type from the group name.
+    
+    Args:
+        group_name (str): The name of the group to look up
+    
+    Returns:
+        str: The user type associated with the group name
+    """
+    for user_type, group in USER_TYPE_CHOICES:
+        if group == group_name:
+            return user_type
+    return None
+
+def get_group_name_from_user_type(user_type):
+    """
+    Get the group name from the user type.
+    
+    Args:
+        user_type (str): The user type to look up
+    
+    Returns:
+        str: The group name associated with the user type
+    """
+    for user_type, group in USER_TYPE_CHOICES:
+        if user_type == user_type:
+            return group
+    return None
+    
 @receiver(post_save, sender=User)
+
 def create_company_for_user(sender, instance, created, **kwargs):
     """
     Signal handler to create a company record for new users when appropriate.
