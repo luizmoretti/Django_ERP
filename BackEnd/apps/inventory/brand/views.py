@@ -7,7 +7,7 @@ from rest_framework.generics import (
     DestroyAPIView
 )
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
     OpenApiParameter, OpenApiTypes
@@ -35,7 +35,7 @@ class BaseBrandView:
     
 @extend_schema_view(
     get=extend_schema(
-        tags=["Inventory - Brand"],
+        tags=["Inventory - Brands"],
         operation_id="list_brands",
         description="List all brands",
         request=BrandSerializer,
@@ -52,7 +52,7 @@ class BrandListView(BaseBrandView, ListAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Inventory - Brand"],
+        tags=["Inventory - Brands"],
         operation_id="create_brand",
         description="Create a new brand",
         request=BrandSerializer,
@@ -78,7 +78,7 @@ class BrandCreateView(BaseBrandView, CreateAPIView):
     
 @extend_schema_view(
     get=extend_schema(
-        tags=["Inventory - Brand"],
+        tags=["Inventory - Brands"],
         operation_id="retrieve_brand",
         description="Retrieve a specific brand by ID",
         parameters=[
@@ -86,7 +86,6 @@ class BrandCreateView(BaseBrandView, CreateAPIView):
                 name="id",
                 description="ID of the brand to retrieve",
                 required=True,
-                example="0re1e234-5678-90ab-cdef-1234567890ab",
                 type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH
             )
@@ -106,7 +105,7 @@ class BrandRetrieveView(BaseBrandView, RetrieveAPIView):
     
 @extend_schema_view(
     put=extend_schema(
-        tags=["Inventory - Brand"],
+        tags=["Inventory - Brands"],
         operation_id="update_brand",
         description="Update a specific brand by ID",
         parameters=[
@@ -114,7 +113,22 @@ class BrandRetrieveView(BaseBrandView, RetrieveAPIView):
                 name="id",
                 description="ID of the brand to update",
                 required=True,
-                example="0re1e234-5678-90ab-cdef-1234567890ab",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH
+            )
+        ],
+        request=BrandSerializer,
+        responses={HTTP_200_OK: BrandSerializer}
+    ),
+    patch=extend_schema(
+        tags=["Inventory - Brands"],
+        operation_id="partial_update_brand",
+        description="Partial update a specific brand by ID",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="ID of the brand to update",
+                required=True,
                 type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH
             )
@@ -137,7 +151,7 @@ class BrandUpdateView(BaseBrandView, UpdateAPIView):
     
 @extend_schema_view(
     delete=extend_schema(
-        tags=["Inventory - Brand"],
+        tags=["Inventory - Brands"],
         operation_id="delete_brand",
         description="Delete a specific brand by ID",
         parameters=[
@@ -145,7 +159,6 @@ class BrandUpdateView(BaseBrandView, UpdateAPIView):
                 name="id",
                 description="ID of the brand to delete",
                 required=True,
-                example="0re1e234-5678-90ab-cdef-1234567890ab",
                 type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH
             )
