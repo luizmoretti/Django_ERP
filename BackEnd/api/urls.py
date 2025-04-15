@@ -40,6 +40,7 @@ urlpatterns = [
     
     # Inventory Management endpoints
     path('suppliers/', include('apps.inventory.supplier.urls')),
+    path('brands/', include('apps.inventory.brand.urls')),
     path('products/', include('apps.inventory.product.urls')),
     path('transfers/', include('apps.inventory.transfer.urls')),
     path('inflows/', include('apps.inventory.inflows.urls')),
