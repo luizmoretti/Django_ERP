@@ -100,6 +100,9 @@ INSTALLED_APPS = [
     'apps.inventory.load_order',
     'apps.inventory.purchase_order',
     
+    #Scheduller
+    'apps.scheduller',
+    
 ]
 
 ################################
@@ -836,6 +839,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Products', 'description': 'Product management endpoints'},
         {'name': 'Inventory - Suppliers', 'description': 'Supplier management endpoints'},
         {'name': 'Inventory - Movements', 'description': 'Movement management endpoints'},
+        {'name': 'Inventory - Brands', 'description': 'Brand management endpoints'},
         
         # Customers
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
