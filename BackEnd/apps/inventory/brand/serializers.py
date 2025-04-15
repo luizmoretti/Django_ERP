@@ -1,7 +1,5 @@
-from django_rest_framework import serializers
+from rest_framework import serializers
 from .models import Brand
-from apps.companies.models import Companie
-from apps.companies.employeers.models import Employeer
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -32,12 +30,12 @@ class BrandSerializer(serializers.ModelSerializer):
         model = Brand
         fields = [
             'id',
-            'companie',
             'name',
             'created_at',
             'updated_at',
             'created_by',
-            'updated_by'
+            'updated_by',
+            'companie',
         ]
         read_only_fields = ['id', 'companie', 'created_at', 'updated_at', 'created_by', 'updated_by']
         
