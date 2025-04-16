@@ -60,6 +60,7 @@ jobs:
     - name: Check imports with isort
       working-directory: ./BackEnd
       run: |
+        isort .
         isort --check-only --profile black .
     
     - name: Run Migrations
