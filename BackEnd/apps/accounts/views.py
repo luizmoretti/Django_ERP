@@ -94,7 +94,7 @@ class BaseUserView:
                     'user_type': {
                         'type': 'string',
                         'description': 'The type of user',
-                        'enum': ['Owner', 'Employee', 'Customer', 'Supplier', 'Installer', 'Driver', 'Admin', 'Manager']
+                        'enum': ['Owner', 'Employee', 'Supplier', 'Installer', 'Driver', 'Admin', 'Manager']
                     },
                 },
                 'required': ['email', 'password', 'first_name', 'last_name', 'user_type']
