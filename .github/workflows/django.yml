@@ -1,0 +1,146 @@
+name: Django ERP CI/CD
+
+on:
+  push:
+    branches: [ "main", "Dev" ]
+  pull_request:
+    branches: [ "main", "Dev" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: erp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:latest
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          CELERY_BROKER_URL: redis://localhost:6379/1
+          CELERY_RESULT_BACKEND: redis://localhost:6379/2
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.12]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install Dependencies
+      working-directory: ./BackEnd
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black isort coverage
+    
+    - name: Lint with flake8
+      working-directory: ./BackEnd
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - name: Lint with isort and black
+      working-directory: ./BackEnd
+      run: |
+        isort .
+        black .
+    
+    - name: Check code formatting with Black
+      working-directory: ./BackEnd
+      run: |
+        black --check .
+    
+    - name: Check imports formatting with isort
+      working-directory: ./BackEnd
+      continue-on-error: true
+      run: |
+        isort --check-only --diff --profile black .
+    
+    - name: Create pyproject.toml for isort configuration
+      working-directory: ./BackEnd
+      run: |
+        echo "[tool.isort]" > pyproject.toml
+        echo "profile = \"black\"" >> pyproject.toml
+        echo "skip_glob = [\"*/migrations/*\", \"*/settings.py\"]" >> pyproject.toml
+        echo "lines_after_imports = 2" >> pyproject.toml
+        echo "known_django = \"django\"" >> pyproject.toml
+        echo "known_rest_framework = \"rest_framework\"" >> pyproject.toml
+        echo "sections = \"FUTURE,STDLIB,DJANGO,REST_FRAMEWORK,THIRDPARTY,FIRSTPARTY,LOCALFOLDER\"" >> pyproject.toml
+    
+    - name: Run Migrations
+      working-directory: ./BackEnd
+      run: |
+        python manage.py migrate
+      env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
+        DJANGO_SECRET_KEY: "github-actions-test-key"
+        DJANGO_DEBUG: "1"
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+        DATABASE_NAME: "erp_test"
+        DATABASE_USER: "postgres"
+        DATABASE_PASSWORD: "postgres"
+        DATABASE_HOST: "localhost"
+        DATABASE_PORT: "5432"
+    
+    - name: Run Tests
+      working-directory: ./BackEnd
+      run: |
+        python manage.py test -v 2
+      env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
+        DJANGO_SECRET_KEY: "github-actions-test-key"
+        DJANGO_DEBUG: "1"
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+        DATABASE_NAME: "erp_test"
+        DATABASE_USER: "postgres"
+        DATABASE_PASSWORD: "postgres"
+        DATABASE_HOST: "localhost"
+        DATABASE_PORT: "5432"
+    
+    - name: Run Coverage Report
+      working-directory: ./BackEnd
+      run: |
+        coverage run --source='.' manage.py test
+        coverage report
+      env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
+        DJANGO_SECRET_KEY: "github-actions-test-key"
+        DJANGO_DEBUG: "1"
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+        DATABASE_NAME: "erp_test"
+        DATABASE_USER: "postgres"
+        DATABASE_PASSWORD: "postgres"
+        DATABASE_HOST: "localhost"
+        DATABASE_PORT: "5432"

@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 from .models import Transfer
 from .serializers import TransferSerializer
-from .notifications.handlers import TransferNotificationHandler
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 import logging
 
