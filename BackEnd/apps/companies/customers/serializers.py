@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from apps.companies.customers.models import Customer, CustomerBillingAddress, CustomerProjectAddress
+from rest_framework.exceptions import ValidationError
 
 class CustomerBillingAddressSerializer(serializers.ModelSerializer):
     """

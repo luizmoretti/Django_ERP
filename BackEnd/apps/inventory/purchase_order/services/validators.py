@@ -2,10 +2,9 @@
 Validators for purchase order operations.
 This module contains validation logic for purchase order operations.
 """
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
 from ..models import PurchaseOrder, PurchaseOrderItem
 from apps.inventory.supplier.models import Supplier
 from apps.inventory.product.models import Product
