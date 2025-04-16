@@ -1606,3 +1606,4 @@ tmp/nanoc/
 tests.py
 tests/
 **/tests/
+BackEnd/static/
