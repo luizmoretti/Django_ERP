@@ -848,7 +848,7 @@ class DeliveryCheckpointsListView(APIView):
             return Response(serializer.data)
             
         except Exception as e:
-            logger.error(f"[DELIVERY VIEWS] - Error listing checkpoints for delivery {delivery_pk}: {str(e)}")
+            logger.error(f"[DELIVERY VIEWS] - Error listing checkpoints for delivery {delivery.id}: {str(e)}")
             return Response(
                 {"detail": _("Error processing request")},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
