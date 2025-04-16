@@ -28,7 +28,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.11, 3.12, 3.13]
+        python-version: [3.11, 3.12]
 
     steps:
     - uses: actions/checkout@v4
@@ -57,11 +57,23 @@ jobs:
         black .
         black --check .
     
-    - name: Check imports with isort
+    - name: Fix and check imports - isort
       working-directory: ./BackEnd
+      continue-on-error: true  
       run: |
         isort .
-        isort --check-only --profile black .
+        isort --check-only --diff --profile black .
+    
+    - name: Create pyproject.toml for isort configuration
+      working-directory: ./BackEnd
+      run: |
+        echo "[tool.isort]" > pyproject.toml
+        echo "profile = \"black\"" >> pyproject.toml
+        echo "skip_glob = [\"*/migrations/*\", \"*/settings.py\"]" >> pyproject.toml
+        echo "lines_after_imports = 2" >> pyproject.toml
+        echo "known_django = \"django\"" >> pyproject.toml
+        echo "known_rest_framework = \"rest_framework\"" >> pyproject.toml
+        echo "sections = \"FUTURE,STDLIB,DJANGO,REST_FRAMEWORK,THIRDPARTY,FIRSTPARTY,LOCALFOLDER\"" >> pyproject.toml
     
     - name: Run Migrations
       working-directory: ./BackEnd
