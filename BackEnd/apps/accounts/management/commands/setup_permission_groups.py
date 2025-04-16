@@ -124,7 +124,7 @@ class Command(BaseCommand):
             "Stocker": lambda app_label: ["view"] if app_label in [
                 "products", "suppliers", "barcodes", "warehouse", 
                 "categories", "brands"
-            ] else ['add', 'change', 'delete'] if app_label in [
+            ] else ['view', 'add', 'change', 'delete'] if app_label in [
                 'inflows', 'outflows', 'transfers'
             ] else [],
             
