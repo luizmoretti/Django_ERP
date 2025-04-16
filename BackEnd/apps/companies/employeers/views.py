@@ -354,15 +354,16 @@ class EmployeerUpdateView(BaseEmployeerView, UpdateAPIView):
             ValidationError: If the employee is inactive and trying to update other fields
         """
         obj = super().get_object()
+        # check_object_permissions already throws PermissionDenied if necessary
+        self.check_object_permissions(self.request, obj)
+    
         request_data = self.request.data
-        
-        # Se o funcionário está inativo e não é uma atualização apenas do is_active
-        if not obj.is_active and (
-            len(request_data) != 1 or 'is_active' not in request_data
-        ):
+    
+        # Allows only the is_active field to be changed if the employee is inactive
+        if not obj.is_active and (set(request_data.keys()) != {'is_active'}):
             raise ValidationError({
                 'error': 'Inactive employee',
-                'detail': 'The employee was removed from the records or is inactive.'
+                'detail': 'The employee was removed from the records or is inactive. Only is_active field can be updated.'
             })
         return obj
 
