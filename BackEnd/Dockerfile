@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-rc-alpine3.20
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
