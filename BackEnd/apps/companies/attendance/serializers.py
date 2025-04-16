@@ -103,15 +103,15 @@ class AttendanceSerializer(serializers.ModelSerializer):
         
         try:
             with transaction.atomic():
-                # Criar o registro de atendimento com o employee
+                # Create the attendance record with the employee
                 attendance_register = AttendanceRegister.objects.create(
-                    employee=employee  # Passamos o employee diretamente
+                    employee=employee  # Pass the employee directly
                 )
                 
-                # Verificar o tipo de pagamento do funcionário
+                # Check the employee's payment type
                 payment_type = employee.payment_type
                 
-                # Processar cada entrada de trabalho
+                # Process each work entry
                 for entry in work_data:
                     if payment_type == 'Hour':
                         TimeTracking.objects.create(
@@ -141,18 +141,18 @@ class AttendanceSerializer(serializers.ModelSerializer):
         
         try:
             with transaction.atomic():
-                # Atualizar o registro de atendimento
+                # Update the attendance record
                 for attr, value in validated_data.items():
                     setattr(instance, attr, value)
                 instance.save()
                 
-                # Verificar o tipo de pagamento do funcionário
+                # Check the employee's payment type
                 payment_type = employee.payment_type
                 
-                # Processar cada entrada de trabalho
+                # Process each work entry
                 for entry in work_data:
                     if payment_type == 'Hour':
-                        # Atualizar ou criar novo registro de horas
+                        # Update or create new hour record
                         time_tracking, created = TimeTracking.objects.update_or_create(
                             register=instance,
                             employee=employee,
@@ -162,7 +162,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
                             }
                         )
                     elif payment_type == 'Day':
-                        # Atualizar ou criar novo registro diário
+                        # Update or create new day record
                         days_tracking, created = DaysTracking.objects.update_or_create(
                             register=instance,
                             employee=employee,
@@ -178,3 +178,99 @@ class AttendanceSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"[ATTENDANCE SERIALIZER] - Error updating attendance register: {str(e)}")
             raise serializers.ValidationError({"detail": "Error updating attendance register"})
+
+class AttendanceClockInRequestSerializer(serializers.Serializer):
+    """Serializer para validar requisições de registro de ponto (entrada/saída)"""
+    access_code = serializers.IntegerField(
+        required=True,
+        min_value=100000,  # Código de 6 dígitos (mínimo 100000)
+        max_value=999999,  # Código de 6 dígitos (máximo 999999)
+        error_messages={
+            'required': 'O código de acesso é obrigatório',
+            'min_value': 'O código de acesso deve ter 6 dígitos',
+            'max_value': 'O código de acesso deve ter 6 dígitos',
+            'invalid': 'O código de acesso deve ser um número inteiro'
+        }
+    )
+    
+    def validate_access_code(self, value):
+        """Validação adicional para o código de acesso"""
+        # Converte para string para verificar o comprimento
+        if len(str(value)) != 6:
+            raise serializers.ValidationError("O código de acesso deve ter exatamente 6 dígitos")
+        return value
+
+
+class AttendanceClockInOutResponseSerializer(serializers.Serializer):
+    """Serializer para padronizar a resposta da operação de registro de ponto"""
+    operation = serializers.CharField(
+        help_text="Operação realizada: clock_in ou clock_out"
+    )
+    employee_id = serializers.UUIDField(
+        help_text="UUID do funcionário"
+    )
+    employee_name = serializers.CharField(
+        help_text="Nome do funcionário"
+    )
+    success = serializers.BooleanField(
+        help_text="Indica se a operação foi bem-sucedida"
+    )
+    # Campos adicionais que podem ser incluídos na resposta
+    timestamp = serializers.DateTimeField(
+        help_text="Data e hora do registro",
+        required=False
+    )
+    message = serializers.CharField(
+        help_text="Mensagem adicional para o usuário",
+        required=False
+    )
+
+class PayrollPaymentInputSerializer(serializers.Serializer):
+    """Serializer para validar dados de entrada para processamento de pagamento de folha"""
+    payment_method = serializers.ChoiceField(
+        choices=['bank_transfer', 'check', 'cash', 'online'],
+        required=True,
+        error_messages={
+            'required': 'The payment method is mandatory',
+            'invalid_choice': 'Invalid payment method. Choose between: bank_transfer, check, cash, online'
+        },
+        help_text="Payment method used"
+    )
+    payment_reference = serializers.CharField(
+        required=False,
+        allow_blank=False,
+        help_text="Payment reference (check number, transaction ID, etc.)"
+    )
+    payment_date = serializers.DateField(
+        required=False,
+        help_text="Payment date (format YYYY-MM-DD)"
+    )
+    
+    def validate_payment_date(self, value):
+        """Validate payment date"""
+        if value and value > datetime.date.today():
+            raise serializers.ValidationError("Payment date cannot be in the future")
+        return value
+    
+    def validate(self, data):
+        """Custom validation for specific method and reference combinations"""
+        payment_method = data.get('payment_method')
+        payment_reference = data.get('payment_reference')
+        
+        # Verify if reference is required for certain payment methods
+        if payment_method in ['bank_transfer', 'check'] and not payment_reference:
+            raise serializers.ValidationError({
+                'payment_reference': f'Payment reference is required for {payment_method}'
+            })
+            
+        return data
+
+class PayrollPaymentResponseSerializer(serializers.Serializer):
+    """Serializer to standardize the response of the payroll payment operation"""
+    success = serializers.BooleanField(
+        help_text="Indicates if the operation was successful"
+    )
+    payment_details = serializers.DictField(
+        help_text="Details of the processed payment",
+        child=serializers.JSONField()
+    )

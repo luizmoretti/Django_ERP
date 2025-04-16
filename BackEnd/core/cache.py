@@ -26,7 +26,7 @@ def make_key(prefix: str, *args: Any, **kwargs: Any) -> str:
     # Add positional arguments
     for arg in args:
         if isinstance(arg, (dict, list, tuple)):
-            key_parts.append(hashlib.md5(json.dumps(arg, sort_keys=True).encode()).hexdigest())
+            key_parts.append(hashlib.sha256(json.dumps(arg, sort_keys=True).encode()).hexdigest())
         else:
             key_parts.append(str(arg))
     
@@ -35,7 +35,7 @@ def make_key(prefix: str, *args: Any, **kwargs: Any) -> str:
         sorted_items = sorted(kwargs.items())
         for key, value in sorted_items:
             if isinstance(value, (dict, list, tuple)):
-                key_parts.append(f"{key}:{hashlib.md5(json.dumps(value, sort_keys=True).encode()).hexdigest()}")
+                key_parts.append(f"{key}:{hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()}")
             else:
                 key_parts.append(f"{key}:{value}")
     
@@ -75,7 +75,7 @@ def cache_response(
                 
                 # Add query params if any
                 if request.query_params:
-                    key_parts.append(hashlib.md5(
+                    key_parts.append(hashlib.sha256(
                         json.dumps(dict(request.query_params), sort_keys=True).encode()
                     ).hexdigest())
                 
@@ -186,7 +186,7 @@ def cache_get_or_set(
 CACHE_KEYS = {
     'product': 'product:{id}',
     'warehouse': 'warehouse:{id}',
-    'inventory': 'inventory:{warehouse_id}:{product_id}',
+    'movements': 'movements:{id}',
     'customer': 'customer:{id}',
     'supplier': 'supplier:{id}',
     'user': 'user:{id}',
@@ -198,13 +198,38 @@ def get_cache_key(key_type: str, **kwargs) -> str:
     Get a formatted cache key for a specific type of data.
     
     Args:
-        key_type: Type of cache key from CACHE_KEYS
-        **kwargs: Values to format the key with
+        key_type: Type of data (e.g., 'product', 'warehouse', 'movements')
+        **kwargs: Key-value pairs to format the cache key
     
     Returns:
-        Formatted cache key
+        Formatted cache key string
+    
+    Example:
+        >>> get_cache_key('movements', companie_id='123', method='GET', url='/api/v1/movements/', query_params='*')
+        'movements:123:GET:/api/v1/movements/:*'
     """
     if key_type not in CACHE_KEYS:
-        raise ValueError(f"Invalid cache key type: {key_type}")
+        raise ValueError(f"Invalid key_type: {key_type}. Must be one of {list(CACHE_KEYS.keys())}")
     
-    return CACHE_KEYS[key_type].format(**kwargs)
+    try:
+        # Get the key template
+        key_template = CACHE_KEYS[key_type]
+        
+        # For movements, handle query params specially
+        if key_type == 'movements' and 'query_params' in kwargs:
+            if isinstance(kwargs['query_params'], (dict, list)):
+                kwargs['query_params'] = hashlib.sha256(
+                    json.dumps(kwargs['query_params'], sort_keys=True).encode()
+                ).hexdigest()
+        
+        # Format the key template with provided kwargs
+        return key_template.format(**kwargs)
+        
+    except KeyError as e:
+        missing_key = str(e).strip("'")
+        raise ValueError(
+            f"Missing required parameter '{missing_key}' for key_type '{key_type}'. "
+            f"Required parameters: {key_template.count('{')}"
+        )
+    except Exception as e:
+        raise ValueError(f"Error generating cache key: {str(e)}")

@@ -62,7 +62,7 @@ def send_notification(
                 "type": "notification_message",
                 "title": title,
                 "message": message,
-                # "notification_id": notification_id,
+                "notification_id": notification_id,
                 "data": {
                     "app_name": app_name,
                     "type": notification_type,

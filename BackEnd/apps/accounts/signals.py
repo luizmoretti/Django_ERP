@@ -2,10 +2,12 @@
 Django Signals for Account Management
 
 This module provides signal handlers for user-related operations:
-1. Creating employee records automatically when new users are registered
-2. Assigning users to their appropriate permission groups based on user type
+1. Creating company records for new users when appropriate
+2. Creating employee records automatically when new users are registered
+3. Assigning users to their appropriate permission groups based on user type
 
 Key Features:
+- Automatic company record creation
 - Automatic employee record creation
 - Permission group assignment
 - Error handling and logging
@@ -16,14 +18,87 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from django.db import transaction
-from .models import NormalUser
+from .models import User
+from core.constants.choices import USER_TYPE_CHOICES
+from django.contrib.auth.models import AnonymousUser
 from apps.companies.employeers.models import Employeer
+from apps.companies.models import Companie
 import logging
 from django.contrib.auth import user_logged_in
 
 logger = logging.getLogger(__name__)
 
-@receiver(post_save, sender=NormalUser)
+
+def get_user_type_from_group_name(group_name):
+    """
+    Get the user type from the group name.
+    
+    Args:
+        group_name (str): The name of the group to look up
+    
+    Returns:
+        str: The user type associated with the group name
+    """
+    for user_type, group in USER_TYPE_CHOICES:
+        if group == group_name:
+            return user_type
+    return None
+
+def get_group_name_from_user_type(user_type):
+    """
+    Get the group name from the user type.
+    
+    Args:
+        user_type (str): The user type to look up
+    
+    Returns:
+        str: The group name associated with the user type
+    """
+    for type_choice, group in USER_TYPE_CHOICES:
+        if type_choice == user_type:
+            return group
+    return None
+
+
+@receiver(post_save, sender=User)
+def create_company_for_user(sender, instance, created, **kwargs):
+    """
+    Signal handler to create a company record for new users when appropriate.
+    This signal runs before create_employee_and_assign_group.
+    
+    Creates a new company for users with specific user types (CEO, Owner, Admin)
+    or superusers. The company will be associated with the employee record in 
+    the subsequent signal.
+    
+    Args:
+        sender: The model class (NormalUser)
+        instance: The actual user instance
+        created: Boolean indicating if this is a new record
+        **kwargs: Additional keyword arguments
+    """
+    if created:  # Only execute on user creation
+        from crum import get_current_user
+        creator = get_current_user()
+        if not creator or isinstance(creator, AnonymousUser):
+            if instance.user_type in ['CEO', 'Owner', 'Admin'] or instance.is_superuser:
+                try:
+                    with transaction.atomic():
+                        logger.info(f"Creating company for user {instance.email}")
+                        company = Companie.objects.create(
+                            name=f"{instance.first_name}'s Company",
+                            type='Headquarters',
+                            email=instance.email,
+                            is_active=True
+                        )
+                        # Store the company ID in the user instance for use in the next signal
+                        instance._company_id = company.id
+                        logger.info(f"Company created successfully for {instance.email} with the name: {company.name}")
+                        
+                except Exception as e:
+                    logger.error(f"Error creating company for user {instance.email}: {str(e)}")
+                    raise
+
+@receiver(post_save, sender=User)
 def create_employee_and_assign_group(sender, instance, created, **kwargs):
     """
     Signal handler to create employee record and assign permission group for new users.
@@ -38,16 +113,23 @@ def create_employee_and_assign_group(sender, instance, created, **kwargs):
         created: Boolean indicating if this is a new record
         **kwargs: Additional keyword arguments
     """
-    if created:
+    if created:  # Only execute on user creation
         try:
             with transaction.atomic():
                 # Create employee record if user_type is appropriate
                 if instance.user_type not in ['Customer', 'Supplier']:
                     logger.info(f"Creating employee record for user {instance.email}")
-                    Employeer.objects.create(
+                    
+                    # Get the company if it was created in the previous signal
+                    company = None
+                    if hasattr(instance, '_company_id'):
+                        company = Companie.objects.get(id=instance._company_id)
+                    
+                    employee = Employeer.objects.create(
                         user=instance,
                         name=f"{instance.first_name} {instance.last_name}",
-                        email=instance.email
+                        email=instance.email,
+                        companie=company  # This will be None for regular employees
                     )
                     logger.info(f"Employee record created successfully for {instance.email}")
                 
@@ -64,6 +146,48 @@ def create_employee_and_assign_group(sender, instance, created, **kwargs):
             logger.error(f"Error in post_save signal for user {instance.email}: {str(e)}")
             # Re-raise the exception to ensure proper error handling
             raise
+        
+@receiver(post_save, sender=Group)
+def resync_user_permissions(sender, instance, created, **kwargs):
+    """
+    Signal to re-sync user permissions when a group is created or updated.
+    
+    This signal handler ensures that when group permissions are modified,
+    all users in that group have their permissions properly updated to
+    reflect the changes.
+    
+    Args:
+        sender: The model class (Group)
+        instance: The actual group instance
+        created: Boolean indicating if this is a new record
+        **kwargs: Additional keyword arguments
+    """
+    try:
+        # Get all users in the group
+        users = instance.user_set.all()
+        
+        for user in users:
+            # Clear user's permissions
+            user.user_permissions.clear()
+            
+            # Add all permissions from all user's groups
+            for group in user.groups.all():
+                permissions = group.permissions.all()
+                user.user_permissions.add(*permissions)
+            
+            # Refresh user's permission cache
+            if hasattr(user, '_perm_cache'):
+                delattr(user, '_perm_cache')
+            if hasattr(user, '_user_perm_cache'):
+                delattr(user, '_user_perm_cache')
+            if hasattr(user, '_group_perm_cache'):
+                delattr(user, '_group_perm_cache')
+        
+        logger.info(f"User permissions successfully re-synced for group {instance.name}")
+    except Exception as e:
+        logger.error(f"Error re-syncing user permissions for group {instance.name}: {str(e)}")
+        # Re-raise the exception to ensure proper error handling
+        raise
 
 
 @receiver(user_logged_in)
@@ -74,7 +198,7 @@ def update_user_ip(sender, user, request, **kwargs):
     if hasattr(user, 'get_ip_on_login'):
         user.get_ip_on_login(request)
 
-@receiver(post_save, sender=NormalUser)
+@receiver(post_save, sender=User)
 def ensure_ip_on_create(sender, instance, created, **kwargs):
     """
     Signal para garantir que o IP seja salvo na criação do usuário

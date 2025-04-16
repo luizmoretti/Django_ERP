@@ -64,6 +64,41 @@ class Warehouse(BaseModel):
         self.quantity = total
         self.save()
     
+    def get_formatted_address(self):
+        """
+        Returns a formatted address string from the company associated with this warehouse.
+        This is used for delivery routing services like Google Maps.
+        
+        Returns:
+            str: Formatted address string in the format "address, city, state zip_code, country"
+                or empty string if no company is associated or company has no address.
+        """
+        if not self.companie:
+            return ""
+            
+        address_parts = []
+        
+        if self.companie.address:
+            address_parts.append(self.companie.address)
+        
+        city_state = []
+        if self.companie.city:
+            city_state.append(self.companie.city)
+        
+        if self.companie.state:
+            city_state.append(self.companie.state)
+            
+        if city_state:
+            address_parts.append(", ".join(city_state))
+        
+        if self.companie.zip_code:
+            address_parts.append(self.companie.zip_code)
+            
+        if self.companie.country:
+            address_parts.append(self.companie.country)
+            
+        return ", ".join(filter(None, address_parts))
+    
     def clean(self):
         """Validate warehouse limit against current quantity"""
         super().clean()

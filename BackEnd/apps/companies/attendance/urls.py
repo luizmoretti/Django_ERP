@@ -7,4 +7,6 @@ urlpatterns = [
     path('retrieve/<uuid:pk>/', views.AttendanceRegisterRetrieveView.as_view(), name='retrieve_attendance_register'),
     path('update/<uuid:pk>/', views.AttendanceRegisterUpdateView.as_view(), name='update_attendance_register'),
     path('delete/<uuid:pk>/', views.AttendanceRegisterDestroyView.as_view(), name='delete_attendance_register'),
+    path('clock-in-out/', views.AttendanceClockInOutView.as_view(), name='attendance_clock_inout'),
+    path('payroll/<uuid:payroll_id>/', views.PayrollPaymentView.as_view(), name='payroll_payment'),
 ]

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from rest_framework.exceptions import ValidationError
 import logging
 
@@ -22,8 +22,6 @@ class EmployeerSerializer(serializers.ModelSerializer):
         id (UUIDField): Unique identifier for the employee (read-only)
         name (CharField): Full name of the employee
         id_number (CharField): Employee identification number
-        date_of_birth (DateField): Date of birth
-        age (IntegerField): Calculated age (read-only)
         
         # Contact Information
         phone (CharField): Phone number
@@ -53,8 +51,6 @@ class EmployeerSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     name = serializers.CharField(required=False)
     id_number = serializers.CharField(required=False)
-    date_of_birth = serializers.DateField(required=False)
-    age = serializers.IntegerField(read_only=True)
     
     hire_date = serializers.DateField(required=False)
     termination_date = serializers.DateField(required=False)
@@ -74,7 +70,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
     country = serializers.CharField(required=False)
     
     # User Information
-    user = serializers.PrimaryKeyRelatedField(queryset=NormalUser.objects.all(), required=False, write_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, write_only=True)
     _user = serializers.SerializerMethodField(read_only=True)
     
     # Audit fields
@@ -86,8 +82,8 @@ class EmployeerSerializer(serializers.ModelSerializer):
         model = Employeer
         fields = [
             # Basic Fields
-            'id', 'name', 'id_number', 'date_of_birth', 'age',
-            'hire_date', 'termination_date', 'payroll_schedule', 
+            'id', 'name', 'id_number', 'hire_date', 
+            'termination_date', 'payroll_schedule', 
             'payment_type', 'rate',
             
             # Contact Information
@@ -117,7 +113,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
         """Retorna informações do usuário associado"""
         if obj.user:
             return {
-                'username': obj.user.username,
+                'email': obj.user.email,
                 'user_type': obj.user.user_type,
                 'is_active': obj.user.is_active
             }
@@ -157,7 +153,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
     def validate_user(self, value):
         """Validates that the user exists and is not associated with another employee"""
         try:
-            user = NormalUser.objects.get(id=value, is_active=True)
+            user = User.objects.get(id=value, is_active=True)
             
             existing = Employeer.objects.filter(user_id=value)
             if self.instance:
@@ -167,7 +163,7 @@ class EmployeerSerializer(serializers.ModelSerializer):
                 raise ValidationError("This user is already associated with another employee")
                 
             return value
-        except NormalUser.DoesNotExist:
+        except User.DoesNotExist:
             raise ValidationError("Invalid user")
 
     

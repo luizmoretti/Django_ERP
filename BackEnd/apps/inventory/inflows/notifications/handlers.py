@@ -39,7 +39,7 @@ class InflowNotificationHandler(BaseNotificationHandler):
             'origin': str(inflow.origin),
             'destiny': str(inflow.destiny),
             'items_count': inflow.items.count(),
-            'total_value': sum(item.quantity * item.product.price for item in inflow.items.all())
+            'total_value': float(sum(item.quantity * item.product.price for item in inflow.items.all()))
         }
     
     @staticmethod
@@ -50,74 +50,80 @@ class InflowNotificationHandler(BaseNotificationHandler):
         """
         if not instance:
             return
+        
+        def send_notification():
+            try:
+                # Recarrega a instância para garantir dados atualizados
+                instance.refresh_from_db()
             
-        try:
-            # Determine notification type
-            if created:
-                notification_type = NOTIFICATION_TYPE['INFLOW_CREATED']
-            elif instance.status == 'approved':
-                notification_type = NOTIFICATION_TYPE['INFLOW_APPROVED']
-            elif instance.status == 'rejected':
-                notification_type = NOTIFICATION_TYPE['INFLOW_REJECTED']
-            else:
-                notification_type = NOTIFICATION_TYPE['INFLOW_UPDATED']
+                # Determine notification type
+                if created:
+                    notification_type = NOTIFICATION_TYPE['INFLOW_CREATED']
+                elif instance.status in ['approved', 'completed']:
+                    notification_type = NOTIFICATION_TYPE['INFLOW_APPROVED']
+                elif instance.status == 'rejected':
+                    notification_type = NOTIFICATION_TYPE['INFLOW_REJECTED']
+                else:
+                    notification_type = NOTIFICATION_TYPE['INFLOW_UPDATED']
+
+                # Get recipients based on notification type
+                handler = InflowNotificationHandler()
+                recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES[notification_type])
+                recipient_ids = [str(user.id) for user in recipients]
+
+                # Get common context
+                context = InflowNotificationHandler._get_inflow_context(instance)
+
+                # Add status-specific context
+                if notification_type == NOTIFICATION_TYPE['INFLOW_APPROVED']:
+                    context['approved_by'] = str(instance.updated_by)
+                elif notification_type == NOTIFICATION_TYPE['INFLOW_REJECTED']:
+                    context['rejected_by'] = str(instance.updated_by)
+                    context['reason'] = instance.rejection_reason
+
+                # Format message
+                message = NOTIFICATION_MESSAGES[notification_type] % context
+
+                # Determine severity
+                severity = (SEVERITY_TYPES['ERROR'] if notification_type == NOTIFICATION_TYPE['INFLOW_REJECTED']
+                          else SEVERITY_TYPES['INFO'])
+
+                # Send notification
+                handler.send_to_recipients(
+                    recipient_ids=recipient_ids,
+                    title=NOTIFICATION_TITLES[notification_type],
+                    message=message,
+                    app_name=APP_NAME,
+                    notification_type=notification_type,
+                    data={
+                        'inflow_id': str(instance.id),
+                        'status': instance.status,
+                        'severity': severity,
+                        'priority': NOTIFICATION_PRIORITIES[notification_type],
+                        **context
+                    }
+                )
+
+                logger.info(
+                    f"[INFLOW NOTIFICATIONS] Notification sent successfully. Type: {notification_type}",
+                    extra={
+                        'inflow_id': str(instance.id),
+                        'notification_type': notification_type,
+                        'recipients_count': len(recipient_ids)
+                    }
+                )
+            except Exception as e:
+                logger.error(
+                    f"[INFLOW NOTIFICATIONS] Failed to send notification",
+                    extra={
+                        'inflow_id': str(instance.id),
+                        'error': str(e)
+                    },
+                    exc_info=True
+                )
             
-            # Get recipients based on notification type
-            handler = InflowNotificationHandler()
-            recipients = handler.get_recipients_by_type(*RECIPIENT_TYPES[notification_type])
-            recipient_ids = [str(user.id) for user in recipients]
-            
-            # Get common context
-            context = InflowNotificationHandler._get_inflow_context(instance)
-            
-            # Add status-specific context
-            if notification_type == NOTIFICATION_TYPE['INFLOW_APPROVED']:
-                context['approved_by'] = str(instance.updated_by)
-            elif notification_type == NOTIFICATION_TYPE['INFLOW_REJECTED']:
-                context['rejected_by'] = str(instance.updated_by)
-                context['reason'] = instance.rejection_reason
-            
-            # Format message
-            message = NOTIFICATION_MESSAGES[notification_type] % context
-            
-            # Determine severity
-            severity = (SEVERITY_TYPES['ERROR'] if notification_type == NOTIFICATION_TYPE['INFLOW_REJECTED']
-                      else SEVERITY_TYPES['INFO'])
-            
-            # Send notification after transaction commits
-            transaction.on_commit(lambda: handler.send_to_recipients(
-                recipient_ids=recipient_ids,
-                title=NOTIFICATION_TITLES[notification_type],
-                message=message,
-                app_name=APP_NAME,
-                notification_type=notification_type,
-                data={
-                    'inflow_id': str(instance.id),
-                    'status': instance.status,
-                    'severity': severity,
-                    'priority': NOTIFICATION_PRIORITIES[notification_type],
-                    **context
-                }
-            ))
-            
-            logger.info(
-                f"[INFLOW NOTIFICATIONS] Notification sent successfully. Type: {notification_type}",
-                extra={
-                    'inflow_id': str(instance.id),
-                    'notification_type': notification_type,
-                    'recipients_count': len(recipient_ids)
-                }
-            )
-            
-        except Exception as e:
-            logger.error(
-                f"[INFLOW NOTIFICATIONS] Failed to send notification",
-                extra={
-                    'inflow_id': str(instance.id),
-                    'error': str(e)
-                },
-                exc_info=True
-            )
+        # Registra a função para ser executada após o commit da transação
+        transaction.on_commit(lambda: send_notification())
     
     @staticmethod
     @receiver(post_delete, sender=Inflow)

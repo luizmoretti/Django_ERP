@@ -44,10 +44,13 @@ class BaseCustomerView:
         user = self.request.user
         try:
             # Filters only customers from the same company as the logged-in user
-            employeer = user.employeer_user
-            return Customer.objects.select_related(
-                'companie', 'created_by', 'updated_by'
-            ).filter(companie=employeer.companie, is_active=True)
+            if not hasattr(user, 'employeer'):
+                queryset = Customer.objects.none()
+            else:
+                queryset = Customer.objects.select_related(
+                    'companie', 'created_by', 'updated_by'
+                ).filter(companie=user.employeer.companie, is_active=True)
+            return queryset
         except:
             return Customer.objects.none()
 
@@ -202,7 +205,7 @@ class CustomerRetrieveByIdView(BaseCustomerView, RetrieveAPIView):
                 raise Http404('Customer not found')
                 
             # Check if user has permission to access this customer
-            if customer.companie != self.request.user.employeer_user.companie:
+            if customer.companie != self.request.user.employeer.companie:
                 raise PermissionDenied("You don't have permission to access this customer")
                 
             return customer
@@ -349,7 +352,7 @@ class CustomerRetrieveByNameView(BaseCustomerView, RetrieveAPIView):
             raise Http404("Customer not found")
             
         # Check if user has permission to access this customer
-        if customer.companie != self.request.user.employeer_user.companie:
+        if customer.companie != self.request.user.employeer.companie:
             raise PermissionDenied("You don't have permission to access this customer")
             
         return customer

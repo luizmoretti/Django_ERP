@@ -6,7 +6,7 @@ from ..warehouse.models import Warehouse, WarehouseProduct
 from ..product.models import Product
 from .models import Transfer, TransferItems
 from apps.companies.models import Companie
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.companies.employeers.models import Employeer
 
 class TransferCapacityTests(TestCase):
@@ -19,8 +19,7 @@ class TransferCapacityTests(TestCase):
         cls.company = Companie.objects.create(name="Test Company")
         
         # Create test user with unique name for transfer tests
-        cls.user = NormalUser.objects.create(
-            username="transfer_testuser",
+        cls.user = User.objects.create(
             email="transfer_test@example.com",
             first_name="Test",
             last_name="User",

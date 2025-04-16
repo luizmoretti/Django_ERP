@@ -72,7 +72,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     
     # Nested address serializers
     billing_address_data = CustomerBillingAddressSerializer(
-        source='customer_billing_address.first',
+        source='billing_address.first',
         read_only=True  # Read-only serialization
     )
     _billing_address_data = serializers.JSONField(
@@ -80,7 +80,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         required=False
     )
     shipping_address_data = CustomerProjectAddressSerializer(
-        source='customer_project_address.first',
+        source='project_address.first',
         read_only=True  # Read-only serialization
     )
     _shipping_address_data = serializers.JSONField(
@@ -265,14 +265,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         instance.save()
         
         if instance.another_billing_address:
-            billing_addr = instance.customer_billing_address.first()
+            billing_addr = instance.billing_address.first()
             if billing_addr and billing_data:
                 for attr, value in billing_data.items():
                     setattr(billing_addr, attr, value)
                 billing_addr.save()
                 
         if instance.another_shipping_address:
-            shipping_addr = instance.customer_project_address.first()
+            shipping_addr = instance.project_address.first()
             if shipping_addr and shipping_data:
                 for attr, value in shipping_data.items():
                     setattr(shipping_addr, attr, value)

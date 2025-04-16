@@ -1,14 +1,23 @@
 from django.shortcuts import render
-from .serializers import AttendanceSerializer
+from .serializers import (
+    AttendanceSerializer, 
+    AttendanceClockInRequestSerializer, 
+    AttendanceClockInOutResponseSerializer,
+    PayrollPaymentInputSerializer,
+    PayrollPaymentResponseSerializer
+)
 from django.db import transaction
 from rest_framework.generics import (
     ListAPIView, CreateAPIView, 
     RetrieveAPIView, UpdateAPIView, 
-    DestroyAPIView
+    DestroyAPIView, GenericAPIView
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from .services.handlers import AttendanceService, PayrollService
+from .services.validators import AttendanceBusinessValidator
+from rest_framework.exceptions import ValidationError
 import logging
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
@@ -25,8 +34,8 @@ class AttendanceBase:
     def get_queryset(self):
         user = self.request.user
         try:
-            if hasattr(user, 'employeer_user'):
-                employeer = user.employeer_user
+            if hasattr(user, 'employeer'):
+                employeer = user.employeer
                 base_queryset = super().get_queryset()
                 return base_queryset.select_related(
                     'employee', 'employee__companie'
@@ -421,5 +430,138 @@ class AttendanceRegisterDestroyView(DestroyAPIView, AttendanceBase):
             logger.error(f"[ATTENDANCE VIEWS] - Error deleting attendance register: {str(e)}")
             return Response(
                 {"detail": "Error deleting attendance register"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Companies - Attendance"],
+        operation_id="attendance_clock_inout",
+        summary="Record clock in/out using access code",
+        description="""
+        Register clock in or clock out for an employee using their access code.
+        The system will automatically determine whether to register clock in or clock out
+        based on the employee's current status.
+        """,
+        request=AttendanceClockInRequestSerializer,
+        responses={
+            200: AttendanceClockInOutResponseSerializer,
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {
+                        'type': 'string',
+                        'example': 'Invalid access code'
+                    }
+                }
+            }
+        }
+    )
+)
+class AttendanceClockInOutView(GenericAPIView, AttendanceBase):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AttendanceClockInRequestSerializer
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            access_code = serializer.validated_data['access_code']
+            
+            attendance_service = AttendanceService()
+            result = attendance_service.clock_inout_with_code(access_code)
+            
+            # Validar a resposta com o serializer de resposta
+            response_serializer = AttendanceClockInOutResponseSerializer(data=result)
+            if response_serializer.is_valid():
+                logger.info(f"[ATTENDANCE VIEWS] - Clock in/out processed successfully via API")
+                return Response(response_serializer.data)
+            else:
+                logger.error(f"[ATTENDANCE VIEWS] - Invalid response format: {response_serializer.errors}")
+                return Response(
+                    {"detail": "Error formatting response data"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        except ValidationError as e:
+            logger.error(f"[ATTENDANCE VIEWS] - Validation error in clock in/out: {str(e)}")
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"[ATTENDANCE VIEWS] - Error processing clock in/out: {str(e)}")
+            return Response(
+                {"detail": "Error processing clock in/out request"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Companies - Attendance"],
+        summary="Process payroll payment",
+        description="Process payment for a pending payroll",
+        request=PayrollPaymentInputSerializer,
+        responses={
+            200: PayrollPaymentResponseSerializer,
+            400: {
+                "description": "Bad Request",
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "Erro ao processar o pagamento"
+                    }
+                }
+            }
+        }
+    )
+)
+class PayrollPaymentView(GenericAPIView, AttendanceBase):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PayrollPaymentInputSerializer
+    
+    def post(self, request, payroll_id):
+        try:
+            # Validar dados de entrada
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            validated_data = serializer.validated_data
+            
+            # Processar pagamento
+            payroll_service = PayrollService()
+            result = payroll_service.process_payment(
+                payroll_id, 
+                validated_data,
+                request.user
+            )
+            
+            # Formatar resposta
+            response_data = {
+                'success': True,
+                'payment_details': result['payment_details']
+            }
+            
+            logger.info(f"[ATTENDANCE VIEWS] - Payroll payment processed successfully", 
+                       extra={'payroll_id': payroll_id})
+            
+            return Response(
+                response_data,
+                status=status.HTTP_200_OK
+            )
+        except ValidationError as e:
+            logger.warning(f"[ATTENDANCE VIEWS] - Validation error processing payment: {str(e)}", 
+                          extra={'payroll_id': payroll_id})
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"[ATTENDANCE VIEWS] - Error processing payment: {str(e)}", 
+                        exc_info=True, extra={'payroll_id': payroll_id})
+            return Response(
+                {'detail': 'Internal server error'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

@@ -3,26 +3,96 @@ from django.utils.translation import gettext
 # User Types - Hierarchical Organization
 USER_TYPE_CHOICES = (
     # Executive Level - High-level management and ownership
-    ('CEO', gettext('CEO')),
-    ('Owner', gettext('Owner')),
-    ('Admin', gettext('Admin')),
+    ('CEO', gettext('Company CEO')),
+    ('Owner', gettext('Company Owner')),
+    ('Admin', gettext('System Administrator')),
 
     # Management Level - Mid-level management and specialized roles
     ('Manager', gettext('Manager')),
-    ('HR', gettext('HR')),
-    ('Accountant', gettext('Accountant')),
 
     # Operational Level - Day-to-day operations staff
     ('Employee', gettext('Employee')),
-    ('Stock_Controller', gettext('Stock Controller')),
+    ('Installer', gettext('Installer')),
     ('Stocker', gettext('Stocker')),
     ('Salesman', gettext('Sales man')),
     ('Driver', gettext('Driver')),
-    ('Deliveryman', gettext('Delivery man')),
 
-    # External Users - Non-employee stakeholders
+    # External Users - (Limited Access)
     ('Customer', gettext('Customer')),
     ('Supplier', gettext('Supplier')),
+)
+
+PROFILE_POSITION_CHOICES = (
+    # Liderança
+    ('Owner', gettext('Owner')),
+    ('General_Manager', gettext('General Manager')),
+    
+    # Administrativo
+    ('Financial_Analyst', gettext('Financial Analyst')),
+    ('HR_Specialist', gettext('HR Specialist')),
+    ('IT_Specialist', gettext('IT Specialist')),
+    ('Administrative_Assistant', gettext('Administrative Assistant')),
+    
+    # Vendas
+    ('Sales_Manager', gettext('Sales Manager')),
+    ('Sales_Consultant', gettext('Sales Consultant')),
+    ('Project_Estimator', gettext('Project Estimator')),
+    
+    # Operacional
+    ('Operations_Manager', gettext('Operations Manager')),
+    ('Project_Manager', gettext('Project Manager')),
+    ('Site_Supervisor', gettext('Site Supervisor')),
+    
+    # Técnico
+    ('Master_Installer', gettext('Master Installer')),
+    ('Senior_Installer', gettext('Senior Installer')),
+    ('Junior_Installer', gettext('Junior Installer')),
+    ('Installer_Assistant', gettext('Installer Assistant')),
+    
+    # Estoque e Logística
+    ('Warehouse_Manager', gettext('Warehouse Manager')),
+    ('Inventory_Controller', gettext('Inventory Controller')),
+    ('Logistics_Coordinator', gettext('Logistics Coordinator')),
+    ('Delivery_Driver', gettext('Delivery Driver')),
+    ('Warehouse_Assistant', gettext('Warehouse Assistant')),
+    
+    # Qualidade e Segurança
+    ('Quality_Inspector', gettext('Quality Inspector')),
+    ('Safety_Coordinator', gettext('Safety Coordinator')),
+)
+
+PROFILE_DEPARTMENT_CHOICES = (
+    # Alta Administração
+    ('Executive_Board', gettext('Executive Board')),
+    
+    # Departamentos Administrativos
+    ('Finance_Treasury', gettext('Finance and Treasury')),
+    ('Accounting_Tax', gettext('Accounting and Tax')),
+    ('HR_Development', gettext('HR and Development')),
+    ('IT_Innovation', gettext('IT and Innovation')),
+    ('Legal_Compliance', gettext('Legal and Compliance')),
+    
+    # Departamentos Comerciais
+    ('Sales_Marketing', gettext('Sales and Marketing')),
+    ('Customer_Success', gettext('Customer Success')),
+    ('Estimating_Proposals', gettext('Estimating and Proposals')),
+    
+    # Departamentos Operacionais
+    ('Project_Management', gettext('Project Management')),
+    ('Installation_Services', gettext('Installation Services')),
+    ('Technical_Support', gettext('Technical Support')),
+    ('Quality_Control', gettext('Quality Control')),
+    
+    # Logística e Suprimentos
+    ('Warehouse_Operations', gettext('Warehouse Operations')),
+    ('Inventory_Management', gettext('Inventory Management')),
+    ('Logistics_Distribution', gettext('Logistics and Distribution')),
+    ('Procurement_Supply', gettext('Procurement and Supply')),
+    
+    # Departamentos de Suporte
+    ('Health_Safety', gettext('Health and Safety')),
+    ('Facilities_Maintenance', gettext('Facilities and Maintenance')),
+    ('Training_Development', gettext('Training and Development')),
 )
 
 # HR Payment Intervals
@@ -196,11 +266,12 @@ VEHICLE_COLOR_CHOICES = [
 ]
 
 DELIVERY_STATUS_CHOICES = [
-    ('Pending', gettext('Pending')),
-    ('In Progress', gettext('In Progress')),
-    ('Delivered', gettext('Delivered')),
-    ('Returned', gettext('Returned')),
-    ('Cancelled', gettext('Cancelled')),
+    ('pending', gettext('Pending')),
+    ('pickup_in_progress', gettext('Pickup In Progress')),
+    ('in_transit', gettext('In Transit')),
+    ('delivered', gettext('Delivered')),
+    ('returned', gettext('Returned')),
+    ('failed', gettext('Failed')),
 ]
 
 

@@ -17,7 +17,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     SEVERITY_CLASSES = {
         'info': 'notification-info',
         'warning': 'notification-warning',
-        'critical': 'notification-critical'
+        'error': 'notification-error',
+        'critical': 'notification-critical',
+        'success': 'notification-success'
     }
     
     async def connect(self):
@@ -95,6 +97,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         Handle incoming notification messages.
         """
         try:
+            logger.debug(f"Received notification event: {event}")
+            
             notification_type = event.get("data", {}).get("type", "info")
             css_class = self.SEVERITY_CLASSES.get(notification_type, "notification-info")
             
@@ -102,6 +106,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 "type": "notification",
                 "title": event.get("title", ""),
                 "message": event["message"],
+                "notification_id": event.get("notification_id"),
                 "data": event.get("data", {}),
                 "css_class": css_class
             }

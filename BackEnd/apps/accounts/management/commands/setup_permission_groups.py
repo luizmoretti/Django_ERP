@@ -14,6 +14,7 @@ Key Features:
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from core.constants.choices import USER_TYPE_CHOICES
@@ -30,6 +31,30 @@ class Command(BaseCommand):
     """
     
     help = "Setup user groups and assign permissions"
+    
+    def __sync_user_permissions(self):
+        """
+        Synchronizes user permissions based on their groups.
+        This ensures that users have all the permissions of the groups they belong to.
+        """
+        User = get_user_model()
+        logger.info("Synchronizing user permissions")
+        
+        for user in User.objects.all():
+            try:
+                # Clear existing user permissions
+                user.user_permissions.clear()
+                
+                # Add all permissions to the user's groups
+                for group in user.groups.all():
+                    permissions = group.permissions.all()
+                    user.user_permissions.add(*permissions)
+                    
+                logger.info(f"Synchronized user permissions: {user.email}")
+                
+            except Exception as e:
+                logger.error(f"Error synchronizing user permissions {user.email}: {str(e)}")
+    
 
     def __get_custom_permissions(self, app_label):
         """
@@ -96,53 +121,25 @@ class Command(BaseCommand):
                 ] else []
             ),
             
-            "Stock_Controller": lambda app_label: (
-                (["view", "add", "change"] + 
-                 ["can_add_item", "can_update_item", "can_remove_item"])
-                if app_label == "purchase_order" else
-                ["view", "add", "change"] if app_label in [
-                    "inflows", "outflows", "transfers", "products",
-                    "suppliers", "barcodes"
-                ] else ["view"] if app_label in [
-                    "stores", "categories", "brands"
-                ] else []
-            ),
-            
             "Stocker": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "stores", "categories", "brands"
+                "products", "suppliers", "barcodes", "warehouse", 
+                "categories", "brands"
+            ] else ['add', 'change', 'delete'] if app_label in [
+                'inflows', 'outflows', 'transfers'
             ] else [],
             
-            "Employee": lambda app_label: ["view"] if app_label in [
-                "employeers", "hr", "warehouse", "inventory"
-            ] else [],
-            
-            "HR": lambda app_label: ["view", "add", "change", "delete"] if app_label in [
-                "employeers", "hr"
-            ] else ["view"] if app_label in [
-                "warehouse", "inventory"
-            ] else [],
-            
-            "Accountant": lambda app_label: ["view"] if app_label in [
-                "inflows", "outflows", "transfers", "products",
-                "suppliers", "barcodes", "stores", "categories", "brands",
-                "employeers", "hr", "warehouse", "inventory"
-            ] else [],
+            "Employee": lambda app_label: ["view_own_profile", "change_own_profile"] if app_label == "profiles" else [],
             
             "Salesman": lambda app_label: ["view"] if app_label in [
                 "products", "categories", "brands", "customers"
             ] else [],
             
-            "Driver": lambda app_label: ["view"] if app_label in [
-                "vehicles", "deliveries"
+            "Driver": lambda app_label: ["view_own_delivery", "change_own_delivery_status"] if app_label in [
+                "delivery"
             ] else [],
             
-            "Deliveryman": lambda app_label: ["view"] if app_label in [
-                "deliveries"
-            ] else [],
-            
-            "Customer": lambda app_label: ["view"] if app_label in [
-                "products", "categories", "brands"
+            "Customer": lambda app_label: ["view_own_delivery"] if app_label in [
+                "delivery"
             ] else [],
             
             "Supplier": lambda app_label: ["view"] if app_label in [
@@ -229,5 +226,8 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(f"Error configuring group {group_name}: {str(e)}")
                 )
+        
+        # After processing all groups, sync user permissions
+        self.__sync_user_permissions()
         
         logger.info("Permission groups setup completed successfully")

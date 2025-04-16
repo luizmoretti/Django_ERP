@@ -8,13 +8,13 @@ from rest_framework.test import APITestCase, APIClient
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
 from apps.inventory.product.models import Product
 from apps.inventory.supplier.models import Supplier
 from .models import PurchaseOrder, PurchaseOrderItem
-from .services import PurchaseOrderService, PurchaseOrderItemService
+from .services.handlers import PurchaseOrderService, PurchaseOrderItemService
 from .serializers import PurchaseOrderSerializer, PurchaseOrderItemSerializer
 import logging
 
@@ -29,8 +29,7 @@ class PurchaseOrderModelTests(TestCase):
         call_command('setup_permission_groups')
         
         # Create users with different types
-        self.admin_user = NormalUser.objects.create_user(
-            username='admin',
+        self.admin_user = User.objects.create_user(
             password='admin123',
             email='admin@test.com',
             first_name='Admin',
@@ -38,8 +37,7 @@ class PurchaseOrderModelTests(TestCase):
             user_type='Admin'
         )
         
-        self.stock_controller = NormalUser.objects.create_user(
-            username='stock',
+        self.stock_controller = User.objects.create_user(
             password='stock123',
             email='stock@test.com',
             first_name='Stock',
@@ -47,8 +45,7 @@ class PurchaseOrderModelTests(TestCase):
             user_type='Stock_Controller'
         )
         
-        self.employee = NormalUser.objects.create_user(
-            username='employee',
+        self.employee = User.objects.create_user(
             password='emp123',
             email='emp@test.com',
             first_name='Regular',
@@ -149,8 +146,7 @@ class PurchaseOrderServiceTests(TestCase):
         call_command('setup_permission_groups')
         
         # Create users with different types
-        self.admin_user = NormalUser.objects.create_user(
-            username='admin',
+        self.admin_user = User.objects.create_user(
             password='admin123',
             email='admin@test.com',
             first_name='Admin',
@@ -158,8 +154,7 @@ class PurchaseOrderServiceTests(TestCase):
             user_type='Admin'
         )
         
-        self.stock_controller = NormalUser.objects.create_user(
-            username='stock',
+        self.stock_controller = User.objects.create_user(
             password='stock123',
             email='stock@test.com',
             first_name='Stock',
@@ -167,8 +162,7 @@ class PurchaseOrderServiceTests(TestCase):
             user_type='Stock_Controller'
         )
         
-        self.employee = NormalUser.objects.create_user(
-            username='employee',
+        self.employee = User.objects.create_user(
             password='emp123',
             email='emp@test.com',
             first_name='Regular',
@@ -315,8 +309,7 @@ class PurchaseOrderAPITests(APITestCase):
         self.client = APIClient()
         
         # Create users with different types
-        self.admin_user = NormalUser.objects.create_user(
-            username='admin',
+        self.admin_user = User.objects.create_user(
             password='admin123',
             email='admin@test.com',
             first_name='Admin',
@@ -324,8 +317,7 @@ class PurchaseOrderAPITests(APITestCase):
             user_type='Admin'
         )
         
-        self.stock_controller = NormalUser.objects.create_user(
-            username='stock',
+        self.stock_controller = User.objects.create_user(
             password='stock123',
             email='stock@test.com',
             first_name='Stock',
@@ -333,8 +325,7 @@ class PurchaseOrderAPITests(APITestCase):
             user_type='Stock_Controller'
         )
         
-        self.employee = NormalUser.objects.create_user(
-            username='employee',
+        self.employee = User.objects.create_user(
             password='emp123',
             email='emp@test.com',
             first_name='Regular',
@@ -412,14 +403,17 @@ class PurchaseOrderAPITests(APITestCase):
     
     def test_list_orders(self):
         """Test listing orders via API"""
+        # Clear any existing orders to ensure test isolation
+        PurchaseOrder.objects.all().delete()
+        
         # Create some orders
-        PurchaseOrder.objects.create(
+        order1 = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='draft',
             companie=self.company  # Associate order with company
         )
-        PurchaseOrder.objects.create(
+        order2 = PurchaseOrder.objects.create(
             supplier=self.supplier,
             expected_delivery=timezone.now().date(),
             status='pending',
@@ -430,7 +424,14 @@ class PurchaseOrderAPITests(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        
+        # Check that the response is paginated
+        self.assertIn('results', response.data)
+        self.assertIn('count', response.data)
+        
+        # Check that we have exactly 2 orders in the results
+        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(len(response.data['results']), 2)
     
     def test_approve_order_api(self):
         """Test approving an order via API"""
@@ -456,8 +457,8 @@ class PurchaseOrderAPITests(APITestCase):
         logger.info(f"User type: {self.admin_user.user_type}")
         logger.info(f"Order status: {order.status}")
         logger.info(f"Order company: {order.companie}")
-        logger.info(f"User company: {self.admin_user.employeer_user.companie}")
-        logger.info(f"User employeer: {self.admin_user.employeer_user}")
+        logger.info(f"User company: {self.admin_user.employeer.companie}")
+        logger.info(f"User employeer: {self.admin_user.employeer}")
         
         response = self.client.post(url)
         
@@ -477,8 +478,7 @@ class NotificationTests(TestCase):
         call_command('setup_permission_groups')
         
         # Create users with different types
-        self.admin_user = NormalUser.objects.create_user(
-            username='admin',
+        self.admin_user = User.objects.create_user(
             password='admin123',
             email='admin@test.com',
             first_name='Admin',
@@ -486,8 +486,7 @@ class NotificationTests(TestCase):
             user_type='Admin'
         )
         
-        self.stock_controller = NormalUser.objects.create_user(
-            username='stock',
+        self.stock_controller = User.objects.create_user(
             password='stock123',
             email='stock@test.com',
             first_name='Stock',
@@ -495,8 +494,7 @@ class NotificationTests(TestCase):
             user_type='Stock_Controller'
         )
         
-        self.employee = NormalUser.objects.create_user(
-            username='employee',
+        self.employee = User.objects.create_user(
             password='emp123',
             email='emp@test.com',
             first_name='Regular',

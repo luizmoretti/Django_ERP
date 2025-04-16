@@ -6,7 +6,7 @@ from ..product.models import Product
 from ..warehouse.models import Warehouse, WarehouseProduct
 from .models import Inflow, InflowItems
 from apps.companies.models import Companie
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.companies.employeers.models import Employeer
 from apps.inventory.supplier.models import Supplier
 
@@ -20,8 +20,7 @@ class InflowCapacityTests(TestCase):
         
         # Create test user with unique username/email
         test_number = id(self)  # Use test instance id to generate unique values
-        self.user = NormalUser.objects.create(
-            username=f"testuser{test_number}",
+        self.user = User.objects.create(
             email=f"test{test_number}@example.com",
             first_name="Test",
             last_name="User",

@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 from ..models import Inflow, InflowItems
 from ..notifications.handlers import InflowNotificationHandler
 from .validators import InflowBusinessValidator
+from ...warehouse.models import WarehouseProduct
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,40 +19,49 @@ class InflowService:
     
     def create_inflow(self, data, user):
         """
-        Create a new inflow with its items
+        Create a new inflow with validation
         
         Args:
-            data (dict): Inflow data including items
+            data (dict): Data for creating inflow
             user: User creating the inflow
             
         Returns:
             Inflow: Created inflow instance
-        """
-        with transaction.atomic():
-            # Validate business rules
-            self.validator.validate_company_access(data, user)
             
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate company access
+        self.validator.validate_company_access(data, user)
+        
+        # Create inflow with transaction
+        with transaction.atomic():
             # Create inflow
             inflow = Inflow.objects.create(
                 origin=data['origin'],
-                destiny=data['destiny']
+                destiny=data['destiny'],
+                status='pending',
+                companie=user.employeer.companie,
+                created_by=user.employeer,
+                updated_by=user.employeer
             )
             
             # Create inflow items
-            items_data = data.pop('items_data', [])
-            for item in items_data:
+            for item_data in data['items_data']:
                 InflowItems.objects.create(
                     inflow=inflow,
-                    product=item['product'],
-                    quantity=item['quantity']
+                    product=item_data['product'],
+                    quantity=item_data['quantity'],
+                    companie=user.employeer.companie,
+                    created_by=user.employeer,
+                    updated_by=user.employeer
                 )
             
             logger.info(
-                f"[INFLOW - CREATE] Inflow created successfully. ID: {inflow.id}",
+                f"Inflow created successfully",
                 extra={
                     'inflow_id': inflow.id,
-                    'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'user_id': user.id
                 }
             )
             
@@ -59,53 +69,57 @@ class InflowService:
     
     def update_inflow(self, inflow, data, user):
         """
-        Update an existing inflow and its items
+        Update an existing inflow with validation
         
         Args:
-            inflow (Inflow): Inflow instance to update
-            data (dict): Updated inflow data
-            user: User updating the inflow
+            inflow (Inflow): Inflow to update
+            data (dict): Updated data
+            user: User performing the update
             
         Returns:
             Inflow: Updated inflow instance
-        """
-        with transaction.atomic():
-            # Validate business rules
-            self.validator.validate_company_access(data, user)
-            self.validator.validate_inflow_status(inflow)
             
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate company access
+        self.validator.validate_company_access(data, user)
+        
+        # Validate inflow status
+        self.validator.validate_inflow_status(inflow)
+        
+        # Update inflow with transaction
+        with transaction.atomic():
             # Update inflow fields
-            inflow.origin = data.get('origin', inflow.origin)
-            inflow.destiny = data.get('destiny', inflow.destiny)
+            inflow.origin = data['origin']
+            inflow.destiny = data['destiny']
+            inflow.updated_by = user.employeer
             inflow.save()
             
-            # Update items if provided
-            if 'items_data' in data:
-                # Remove existing items
-                inflow.items.all().delete()
-                
-                # Create new items
-                for item in data['items_data']:
-                    InflowItems.objects.create(
-                        inflow=inflow,
-                        product=item['product'],
-                        quantity=item['quantity']
-                    )
+            # Delete existing items
+            inflow.items.all().delete()
+            
+            # Create new items
+            for item_data in data['items_data']:
+                InflowItems.objects.create(
+                    inflow=inflow,
+                    product=item_data['product'],
+                    quantity=item_data['quantity']
+                )
             
             logger.info(
-                f"[INFLOW SERVICES HANDLERS - UPDATE] Inflow updated successfully. ID: {inflow.id}",
+                f"[INFLOW SERVICE] Inflow updated successfully",
                 extra={
                     'inflow_id': inflow.id,
-                    'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'user_id': user.id
                 }
             )
             
             return inflow
     
-    def approve_inflow(self, inflow, user):
+    def approve_inflow(self, inflow):
         """
-        Approve an inflow
+        Approve an inflow with validation
         
         Args:
             inflow (Inflow): Inflow to approve
@@ -113,39 +127,38 @@ class InflowService:
             
         Returns:
             Inflow: Approved inflow instance
-        """
-        with transaction.atomic():
-            # Validate business rules
-            self.validator.validate_company_access({'origin': inflow.origin, 'destiny': inflow.destiny}, user)
-            self.validator.validate_inflow_status(inflow)
-            self.validator.validate_inflow_items(inflow)
             
-            # Update inflow status
+        Validations:
+            - Validate inflow status
+            - Validate inflow items
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate inflow status
+        self.validator.validate_inflow_status(inflow)
+        
+        # Validate inflow items
+        self.validator.validate_inflow_items(inflow)
+        
+        # Approve inflow with transaction
+        with transaction.atomic():
+            # Update status
             inflow.status = 'approved'
             inflow.save()
             
-            # Update warehouse stock
-            for item in inflow.items.all():
-                item.product.update_stock(
-                    warehouse=inflow.destiny,
-                    quantity=item.quantity,
-                    operation='add'
-                )
-            
             logger.info(
-                f"[INFLOW SERVICES HANDLERS - APPROVE] Inflow approved successfully. ID: {inflow.id}",
+                f"[INFLOW SERVICE] Inflow approved successfully",
                 extra={
-                    'inflow_id': inflow.id,
-                    'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id
+                    'inflow_id': inflow.id
                 }
             )
             
             return inflow
     
-    def reject_inflow(self, inflow, user, rejection_reason):
+    def reject_inflow(self, inflow, rejection_reason):
         """
-        Reject an inflow
+        Reject an inflow with validation
         
         Args:
             inflow (Inflow): Inflow to reject
@@ -154,26 +167,27 @@ class InflowService:
             
         Returns:
             Inflow: Rejected inflow instance
+            
+        Raises:
+            ValidationError: If validation fails
         """
-        with transaction.atomic():
-            # Validate business rules
-            self.validator.validate_company_access({'origin': inflow.origin, 'destiny': inflow.destiny}, user)
-            self.validator.validate_inflow_status(inflow)
-            self.validator.validate_rejection(rejection_reason)
-            
-            # Update inflow status
-            inflow.status = 'rejected'
-            inflow.rejection_reason = rejection_reason
-            inflow.save()
-            
-            logger.info(
-                f"[INFLOW SERVICES HANDLERS - REJECT] Inflow rejected successfully. ID: {inflow.id}",
-                extra={
-                    'inflow_id': inflow.id,
-                    'user_id': user.id,
-                    'company_id': user.employeer_user.companie.id,
-                    'rejection_reason': rejection_reason
-                }
-            )
-            
-            return inflow
+        # Validate inflow status
+        self.validator.validate_inflow_status(inflow)
+        
+        # Validate rejection reason
+        self.validator.validate_rejection(rejection_reason)
+        
+        # Reject inflow
+        inflow.status = 'rejected'
+        inflow.rejection_reason = rejection_reason
+        inflow.save()
+        
+        logger.info(
+            f"[INFLOW SERVICE] Inflow rejected successfully",
+            extra={
+                'inflow_id': inflow.id,
+                'reason': rejection_reason
+            }
+        )
+        
+        return inflow

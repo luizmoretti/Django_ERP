@@ -1,6 +1,6 @@
 from django.db import models
 from basemodels.models import BaseAddressWithBaseModel, BaseModel
-from ..product.models import Product
+from apps.inventory.product.models import Product
 
 class Supplier(BaseAddressWithBaseModel):
     """Supplier
@@ -30,6 +30,7 @@ class Supplier(BaseAddressWithBaseModel):
     """
     name = models.CharField(max_length=155, blank=True, null=True)
     tax_number = models.CharField(max_length=50, blank=True, null=True, help_text='The tax number of the supplier')
+    store_number = models.CharField(max_length=50, blank=True, null=True, help_text='The store number of the supplier')
     
     def __str__(self):
         return self.name

@@ -1,9 +1,7 @@
 from django.db import models
-from apps.accounts.models import NormalUser
-from apps.companies.models import Companie
+from django.conf import settings
 from basemodels.models import BaseAddressWithBaseModel
 from core.constants.choices import PAYROLL_CHOICES, PAYMENT_CHOICES
-from uuid import uuid4
 
 class Employeer(BaseAddressWithBaseModel):
     """
@@ -44,16 +42,14 @@ class Employeer(BaseAddressWithBaseModel):
         }
     """
     user = models.OneToOneField(
-        NormalUser,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        null=True,
         blank=True,
-        related_name='employeer_user'
+        null=True,
+        related_name='employeer'
     )
     name = models.CharField(max_length=100, blank=True)
     id_number = models.CharField(max_length=20, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
-    age = models.PositiveIntegerField(blank=True, null=True)
     hire_date = models.DateField(blank=True, null=True, auto_now_add=True)
     termination_date = models.DateField(blank=True, null=True)
     payroll_schedule = models.CharField(max_length=50, choices=PAYROLL_CHOICES, blank=True, null=True)
@@ -90,21 +86,6 @@ class Employeer(BaseAddressWithBaseModel):
         """
         return f'{self.name}'
     
-    def calculate_age(self) -> int:
-        """
-        Calculates age based on date of birth.
-        
-        Returns:
-            int: Calculated age, or None if date_of_birth not set
-        """
-        if self.date_of_birth:
-            import datetime
-            today = datetime.date.today()
-            return today.year - self.date_of_birth.year - (
-                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
-            )
-        return None
-    
     def save(self, *args, **kwargs) -> None:
         """
         Overridden save method with automatic field population.
@@ -120,12 +101,10 @@ class Employeer(BaseAddressWithBaseModel):
             **kwargs: Arbitrary keyword arguments
         """
         # Always recalculate age if date_of_birth is set
-        if self.date_of_birth:
-            self.age = self.calculate_age()
             
         if not self.name:
             self.name = self.user.first_name + ' ' + self.user.last_name
             
         if not self.email and self.user:
-            self.email = self.user.username
+            self.email = self.user.email
         super().save(*args, **kwargs)

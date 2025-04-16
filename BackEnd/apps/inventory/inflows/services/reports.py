@@ -48,6 +48,10 @@ class InflowReportService:
             
             avg_value = total_value / inflows.count() if inflows.count() > 0 else 0
             
+            
+            if start_date is None or end_date is None:
+                raise ValueError("start_date and end_date must not be None")
+            
             # Generate report data
             report_data = {
                 'period': {

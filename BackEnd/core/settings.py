@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+import sys
 
 # Loads the environment variables from the .env file
 load_dotenv()
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
     'corsheaders',
     'drf_spectacular',
     'drf_spectacular_sidecar',
@@ -70,6 +72,7 @@ INSTALLED_APPS = [
     # Apps
     'apps',
     'apps.accounts',
+    'apps.accounts.profiles',
     'apps.notifications',
     
     #Companie Manegement Apps
@@ -79,8 +82,8 @@ INSTALLED_APPS = [
     'apps.companies.attendance',
     
     #Delivery Manegement App
-    'apps.deliveries',
-    'apps.deliveries.vehicles',
+    'apps.delivery',
+    'apps.vehicle',
     
     
     #Inventory Manegement Apps
@@ -90,11 +93,15 @@ INSTALLED_APPS = [
     'apps.inventory.categories',
     'apps.inventory.warehouse',
     'apps.inventory.inflows',
+    'apps.inventory.movements',
     'apps.inventory.outflows',
     'apps.inventory.transfer',
     'apps.inventory.brand',
     'apps.inventory.load_order',
     'apps.inventory.purchase_order',
+    
+    #Scheduller
+    'apps.scheduller',
     
 ]
 
@@ -105,6 +112,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -116,6 +124,7 @@ MIDDLEWARE = [
     
     # Custom Middleware
     'custom_settings.custom_middlewares.middleware.JSONResponse404Middleware',
+    'custom_settings.custom_middlewares.middleware.AnonymousUserMiddleware',
 ]
 
 # Add SecurityMiddleware in production only
@@ -125,7 +134,7 @@ if not DEBUG:
 ################################
 ########## SECURITY ############
 ################################
-AUTH_USER_MODEL = 'accounts.NormalUser'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Django Axes Configuration (Proteção contra força bruta)
 AUTHENTICATION_BACKENDS = [
@@ -133,9 +142,9 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 AXES_ENABLED = True
-AXES_FAILURE_LIMIT = 5
+AXES_FAILURE_LIMIT = 10
 AXES_LOCK_OUT_AT_FAILURE = True
-AXES_COOLOFF_TIME = 1  # hours
+AXES_COOLOFF_TIME = 0.30  # 30 seconds
 AXES_LOCKOUT_TEMPLATE = None  # Returns JSON response instead of template
 AXES_LOCKOUT_URL = None
 AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]] # Adds 'ip_address' and 'user_agent' to the list of parameters checked
@@ -149,10 +158,16 @@ if DEBUG:  # In development
     SECURE_SSL_REDIRECT = False
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOW_CREDENTIALS = True
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
 else:  # In production
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -190,7 +205,9 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -208,14 +225,81 @@ TEMPLATES = [
 ]
 
 ################################
+########### EMAIL ##############
+################################
+if DEBUG:
+    # Choose one of the backends below to test:
+
+    # 1. Console Backend (default) - Shows emails in the console
+    # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    
+    # 2. File Backend - Saves emails in files
+    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'emails')
+    # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    
+    # 3. Local SMTP - Requires aiosmtpd running (python -m aiosmtpd -n -l localhost:8025)
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = 'localhost'
+    # EMAIL_PORT = 8025
+    
+    # 4. Mailtrap - Requires mailtrap.io running (https://mailtrap.io/)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+else:
+    # Production configurations
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@drywall.com')
+
+# Ensure email directory exists if using file backend
+if 'filebased' in EMAIL_BACKEND:
+    email_dir = os.path.join(BASE_DIR, 'tmp', 'emails')
+    if not os.path.exists(email_dir):
+        os.makedirs(email_dir)
+
+################################
 ########## DATABASE ###########
 ################################
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DB_NAME = os.getenv("DATABASE_NAME")
+DB_USER = os.getenv("DATABASE_USER")
+DB_PASS = os.getenv("DATABASE_PASSWORD")
+DB_HOST = os.getenv("DATABASE_HOST")
+DB_PORT = os.getenv("DATABASE_PORT")
+
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # Using in-memory database for faster tests
+        }
     }
-}
+elif DB_NAME and DB_USER:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql", 
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASS,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
+        },
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "db.sqlite3",
+        }
+    }
 
 ################################
 ####### AUTHENTICATION ########
@@ -455,6 +539,22 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
+    'UNAUTHENTICATED_TOKEN': 'rest_framework_simplejwt.authentication.JWTAuthentication',
+    
+    # Enhanced throttling configuration with more granular control
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',  
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+        'login': '5/min',         
+        'password_reset': '3/hour' 
+    },
+    
     'NON_FIELD_ERRORS_KEY': 'detail',
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -467,21 +567,52 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ),
+    
+    # Optimized pagination settings
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_VERSIONING_CLASS': None,
     'DEFAULT_VERSION': None,
     'ALLOWED_VERSIONS': None,
     'VERSION_PARAM': 'version',
     
+    # JWT specific settings for better token management
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+        'ROTATE_REFRESH_TOKENS': False,
+        'BLACKLIST_AFTER_ROTATION': True,
+        'UPDATE_LAST_LOGIN': True,
+    },
+    
+    # Standardized datetime formats
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
     'DATETIME_INPUT_FORMATS': ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S'],
-    'DATE_INPUT_FORMATS': ['%Y-%m-%d']
+    'DATE_INPUT_FORMATS': ['%Y-%m-%d'],
+    
+    # Optional performance enhancement for production
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 ################################
 #### INTERNATIONALIZATION ######
 ################################
+LANGUAGES = [
+    ('pt-br', 'Português (Brasil)'),
+    ('en', 'English'),
+    ('es', 'Español'),
+]
+
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
+
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/New_York'
 USE_I18N = True
@@ -497,25 +628,31 @@ DATE_INPUT_FORMATS = ['%Y-%m-%d']
 ######### STATIC FILES #########
 ################################
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# Configuração do WhiteNoise
 STORAGES = {
-    'staticfiles': {
-        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
-    'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    }
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
 
-# Ensure static directories exist
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure static and media directories exist
 if not os.path.exists(STATIC_ROOT):
     os.makedirs(STATIC_ROOT)
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)
 
-if not os.path.exists(os.path.join(BASE_DIR, 'static')):
-    os.makedirs(os.path.join(BASE_DIR, 'static'))
+################################
+########## MEDIA FILES #########
+################################
 
 ################################
 ########## URL CONFIG ##########
@@ -524,30 +661,48 @@ ROOT_URLCONF = 'core.urls'
 WSGI_APPLICATION = 'core.wsgi.application'
 
 ################################
-########## MEDIA FILES #########
-################################
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-################################
 ########## CACHE CONFIG ########
 ################################
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/4'),
         'OPTIONS': {
-            'db': 0,
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'RETRY_ON_TIMEOUT': True,
+            'MAX_CONNECTIONS': 1000,
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
         },
-        'KEY_PREFIX': 'drywall',
-        'VERSION': 1,
-        'TIMEOUT': 300,  # 5 minutes default timeout
+        'KEY_PREFIX': 'drywallwarehouse',
+        'TIMEOUT': 300,  # 5 minutes default
+    },
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/5'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'TIMEOUT': 3600,  # 1 hour for sessions
     }
 }
 
-# Session configuration
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+# Use Redis for session storage
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+
+# Cache timeouts for different types of data (in seconds)
+CACHE_TIMEOUTS = {
+    'product': 3600,        # 1 hour
+    'warehouse': 1800,      # 30 minutes
+    'movements': 300,       # 5 minutes
+    'inventory': 300,       # 5 minutes
+    'customer': 3600,       # 1 hour
+    'supplier': 3600,       # 1 hour
+    'user': 3600,          # 1 hour
+    'company': 3600,       # 1 hour
+}
 
 # Use the default cache for axes
 AXES_CACHE = 'default'
@@ -627,7 +782,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
     'DESCRIPTION': 'API Documentation for DryWall WareHouse System',
     'VERSION': '0.0.1',
-    'SERVE_INCLUDE_SCHEMA': True,
+    # 'SERVE_INCLUDE_SCHEMA': True,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
     
     # UI Settings
@@ -641,6 +796,14 @@ SPECTACULAR_SETTINGS = {
         'persistAuthorization': True,
     },
     
+    # 'DISABLE_ERRORS_AND_WARNINGS': True,
+    
+    # Settings to fix schema generation issues
+    # 'ENUM_NAME_OVERRIDES': {},
+    # 'COMPONENT_SPLIT_REQUEST': True,
+    # 'COMPONENT_NO_READ_ONLY_REQUIRED': False,
+    # 'SORT_OPERATIONS': False,
+    
     # Authentication
     'SECURITY': [
         {
@@ -653,14 +816,18 @@ SPECTACULAR_SETTINGS = {
         }
     ],
     
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    
     # Tag Sorting and Naming
     'TAGS': [
         # Authentication
         {'name': 'JWT - Auth', 'description': 'JWT authentication endpoints'},
         
+        # Vehicle
+        {'name': 'Vehicle', 'description': 'Vehicle management endpoints'},
         
-        # Vehicles
-        {'name': 'Delivery - Vehicles', 'description': 'Vehicle management endpoints'},
+        # Delivery
+        {'name': 'Delivery', 'description': 'Delivery management endpoints'},
         
         # Inventory Management
         {'name': 'Inventory - Transfers', 'description': 'Transfer management endpoints'},
@@ -671,32 +838,23 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Inventory - Purchase Orders', 'description': 'Purchase order management endpoints'},
         {'name': 'Inventory - Products', 'description': 'Product management endpoints'},
         {'name': 'Inventory - Suppliers', 'description': 'Supplier management endpoints'},
-        
-        # Reports
-        
-        
-        # Billing
-        
+        {'name': 'Inventory - Movements', 'description': 'Movement management endpoints'},
+        {'name': 'Inventory - Brands', 'description': 'Brand management endpoints'},
         
         # Customers
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
         
-        
-        # Users Management
-        {'name': 'Users - Authentication', 'description': 'User authentication endpoints'},
-        {'name': 'Users - Management', 'description': 'User management endpoints'},
-        
-        
-        # Organizations
-        
-        
-        # Teams
-        
+        # Accounts Management
+        {'name': 'Accounts - Authentication', 'description': 'Authentication endpoints'},
+        {'name': 'Accounts - Management', 'description': 'User management endpoints'},
+        {'name': 'Accounts - Profiles', 'description': 'User profile management endpoints'},
+        {'name': 'Accounts - Password Reset', 'description': 'Password reset endpoint'},
         
         # Companies
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
-        # {'name': 'Companies - Employees Soft Delete', 'description': 'Employee soft delete endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
+        
+        {'name': 'Scheduler', 'description': 'Scheduler management endpoints'},
     ]
 }
 
@@ -717,3 +875,8 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+
+SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY', '')
+SERPAPI_BASE_URL = os.getenv('SERPAPI_BASE_URL', '')
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')

@@ -85,6 +85,10 @@ class Outflow(BaseModel):
             return f'{self.destiny.address}, {self.destiny.city}, {self.destiny.state}, {self.destiny.zip_code}, {self.destiny.country}'
         except AttributeError:
             return "Destiny not setted. Please set the destiny customer first."
+        
+    @property
+    def type(self):
+        return "Exit"
             
     
 class OutflowItems(BaseModel):

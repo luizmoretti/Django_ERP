@@ -16,7 +16,11 @@ class TransferBaseView:
     def get_queryset(self):
         user = self.request.user
         try:
-            employeer = user.employeer_user
+            # Verify if it is a swagger fake view
+            if getattr(self, 'swagger_fake_view', False):
+                return TransferSerializer
+            
+            employeer = user.employeer
             return Transfer.objects.select_related(
                 'companie'
             ).filter(companie=employeer.companie)
@@ -68,6 +72,10 @@ class TransferListView(TransferBaseView, generics.ListAPIView):
                         'type': 'string',
                         'format': 'uuid'
                     },
+                    'type': {
+                        'type': 'string',
+                        'example': 'Transfer'
+                    },
                     'items_data': {
                         'type': 'array',
                         'items': {
@@ -85,50 +93,17 @@ class TransferListView(TransferBaseView, generics.ListAPIView):
                         }
                     }
                 },
-                'required': ['origin', 'destiny', 'items']
+                'required': ['origin', 'destiny', 'items_data', 'type']
             }
         },
         responses={
-            201: {
+            201: TransferSerializer,
+            400: {
                 'type': 'object',
                 'properties': {
-                    'id': {
+                    'detail': {
                         'type': 'string',
-                        'format': 'uuid'
-                    },
-                    'origin_name': {
-                        'type': 'string'
-                    },
-                    'destiny_name': {
-                        'type': 'string'
-                    },
-                    'items': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {   
-                                'product': {
-                                    'type': 'string'
-                                },
-                                'quantity': {
-                                    'type': 'integer'
-                                }
-                            }
-                        }
-                    },
-                    'created_at': {
-                        'type': 'string',
-                        'format': 'date-time'
-                    },
-                    'updated_at': {
-                        'type': 'string',
-                        'format': 'date-time'
-                    },
-                    'created_by': {
-                        'type': 'string'
-                    },
-                    'updated_by': {
-                        'type': 'string'
+                        'example': 'Invalid data provided'
                     }
                 }
             }
@@ -154,7 +129,7 @@ class TransferCreateView(TransferBaseView, generics.CreateAPIView):
         except Exception as e:
             logger.error(f"[TRANSFER VIEWS] - Error creating transfer: {str(e)}")
             return Response(
-                {"detail": "Error creating transfer"},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
     

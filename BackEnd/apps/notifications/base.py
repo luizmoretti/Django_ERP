@@ -1,12 +1,12 @@
 # Adicionar em apps/notifications/base.py
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.notifications.utils import send_notification
 
 
 class BaseNotificationHandler:
     @staticmethod
     def get_recipients_by_type(*user_types):
-        return NormalUser.objects.filter(
+        return User.objects.filter(
             user_type__in=user_types,
             is_active=True
         )

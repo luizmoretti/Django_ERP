@@ -1,10 +1,42 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from uuid import uuid4
 from core.constants.choices import USER_TYPE_CHOICES
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext
+from django.core.exceptions import ValidationError
 
-class NormalUser(AbstractUser):
+
+class UserManager(BaseUserManager):
+    """
+    Custom user manager where email is the unique identifier
+    for authentication instead of username.
+    """
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Email is mandatory')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('The superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('The superuser must have is_superuser=True.')
+        
+        return self.create_user(email, password, **extra_fields)
+
+
+
+
+
+class User(AbstractUser):
     """
     Custom user model that extends Django's AbstractUser.
     
@@ -14,76 +46,48 @@ class NormalUser(AbstractUser):
     
     Attributes:
         id (UUIDField): Primary key using UUID4
-        password (CharField): Encrypted password string
-        email (EmailField): Unique email for user identification
-        type (CharField): User classification based on TYPE_CHOICES
-        first_name (CharField): User's first name
-        last_name (CharField): User's last name
-        is_staff (BooleanField): Django admin access flag
-        last_login (DateTimeField): Last login timestamp
-        date_joined (DateTimeField): Account creation timestamp
-        is_active (BooleanField): Account status flag
-        img (ImageField): Profile picture
+        user_type (CharField): User classification based on TYPE_CHOICES
         ip (GenericIPAddressField): Last known IP address
         
-    Relationships:
-        - groups (ManyToManyField): Custom related name to avoid clashes
-        - user_permissions (ManyToManyField): Custom related name to avoid clashes
+    Note:
+        All other fields are inherited from AbstractUser:
+        - username
+        - email
+        - first_name
+        - last_name
+        - password
+        - is_staff
+        - is_active
+        - is_superuser
+        - last_login
+        - date_joined
+        - groups
+        - user_permissions
     """
+    username = None  # Remove username field
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
-    password = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    user_type = models.CharField(max_length=100, choices=USER_TYPE_CHOICES, blank=True, null=True, default='Employee')
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    is_staff = models.BooleanField(default=False)
-    last_login = models.DateTimeField(null=True, blank=True)
-    date_joined = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-    img = models.ImageField(upload_to='users/', blank=True, null=True)
+    user_type = models.CharField(max_length=100, choices=USER_TYPE_CHOICES, blank=True, null=True)
     ip = models.GenericIPAddressField(blank=True, null=True)
-
-    # Add related_name to resolve the clash
-    groups = models.ManyToManyField(
-        'auth.Group',
-        verbose_name=_('groups'),
-        blank=True,
-        help_text=_(
-            'The groups this user belongs to. A user will get all permissions '
-            'granted to each of their groups.'
-        ),
-        related_name='normaluser_set',
-        related_query_name='normaluser'
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        verbose_name=_('user permissions'),
-        blank=True,
-        help_text=_('Specific permissions for this user.'),
-        related_name='normaluser_set',
-        related_query_name='normaluser'
-    )
+    email = models.EmailField(unique=True)
     
+    objects = UserManager()
     
-    
-    
-    def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
     
     class Meta:
-       ordering = ['-is_active']
+        verbose_name = gettext('User')
+        verbose_name_plural = gettext('Users')
+        swappable = 'AUTH_USER_MODEL'
         
-    @property
-    def full_name(self) -> str:
-        """
-        Returns the user's full name by combining first and last name.
-        
-        Returns:
-            str: Concatenated first_name and last_name with space between
-        """
-        return f"{self.first_name} {self.last_name}"
+    def __str__(self):
+        return self.email
     
-    def get_ip_on_login(self, request) -> 'NormalUser':
+    def clean(self):
+        super().clean()
+        self.email = self.email.lower()
+    
+    def get_ip_on_login(self, request) -> 'User':
         """
         Updates the user's IP address based on the login request.
         
@@ -104,16 +108,7 @@ class NormalUser(AbstractUser):
                 self.ip = request.META.get('REMOTE_ADDR')
             self.save(update_fields=['ip'])
         return self
-        
-    
     
     def save(self, *args, **kwargs):
-        """
-        Overrides the default save method to ensure username matches email.
-        
-        Args:
-            *args: Variable length argument list
-            **kwargs: Arbitrary keyword arguments
-        """
-        self.username = self.email
-        super().save(*args, **kwargs)
+        self.clean()
+        return super().save(*args, **kwargs)

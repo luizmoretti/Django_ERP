@@ -98,6 +98,8 @@ class TransferSerializer(serializers.ModelSerializer):
             'destiny',
             '_destiny',
             
+            'type',
+            
             'items',
             'items_data',
             

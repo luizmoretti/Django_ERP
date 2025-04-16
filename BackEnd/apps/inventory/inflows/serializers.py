@@ -98,6 +98,7 @@ class InflowSerializer(serializers.ModelSerializer):
             '_origin',
             'destiny',
             '_destiny',
+            'type',
             'items',
             'items_data',
             'status',

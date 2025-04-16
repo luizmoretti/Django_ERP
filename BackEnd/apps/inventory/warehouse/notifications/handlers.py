@@ -1,6 +1,6 @@
 import logging
 from apps.notifications.models import Notification
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from apps.notifications.utils import send_notification
 from django.utils.translation import gettext_lazy as _
 from apps.notifications.base import BaseNotificationHandler

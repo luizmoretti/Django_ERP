@@ -1,11 +1,15 @@
 from django.db import models
 from basemodels.models import BaseModel
-from apps.accounts.models import NormalUser
-from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+from django.utils.translation import gettext
 
 
 class Notification(BaseModel):
-    recipient = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
     title = models.CharField(max_length=255)
     message = models.TextField()
     app_name = models.CharField(max_length=100)
@@ -15,8 +19,8 @@ class Notification(BaseModel):
     
     class Meta:
         ordering = ['-created_at']
-        verbose_name = _('Notification')
-        verbose_name_plural = _('Notifications')
+        verbose_name = gettext('Notification')
+        verbose_name_plural = gettext('Notifications')
         
     def __str__(self):
-        return f"{self.title} - {self.recipient.email}"
+        return f"{self.recipient.email} - {self.title}"

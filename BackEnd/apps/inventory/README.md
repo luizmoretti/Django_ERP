@@ -1,267 +1,118 @@
 # Inventory Management System
 
-This document provides a comprehensive overview of the inventory management system's structure, functionality, and data models.
+This document provides a comprehensive overview of the inventory management system's structure, functionality, and data models, with special focus on movement operations.
 
-## System Overview
+## Core Movement Modules
 
-The inventory system is built around several key concepts:
-- Warehouses that store products
-- Products with categories and brands
-- Movement operations (inflows, outflows, transfers)
-- Stock tracking and validation
-- Notification system for inventory events
-- Load order management
-- Supplier management
+The inventory system manages stock through three primary movement types:
 
-## Core Data Models
+### 1. Inflows Module
+- **Purpose**: Track product entries from suppliers to warehouses
+- **Origin**: Supplier entities
+- **Destination**: Company warehouses
+- **Status Flow**: `pending → approved → completed` (or `rejected`/`cancelled`)
+- **Key Validations**: Warehouse capacity checks, supplier relationship verification
+- **Property Type**: "Entry"
+- **Special Features**: Low stock alerts, automatic quantity updates
 
-### Base Models
-```python
-class BaseModel:
-    id: UUID
-    companie: FK(Companie)
-    created_at: datetime
-    updated_at: datetime
-    created_by: FK(Employeer)
-    updated_by: FK(Employeer)
+### 2. Outflows Module
+- **Purpose**: Track product exits from warehouses to customers
+- **Origin**: Company warehouses
+- **Destination**: Customer entities
+- **Status Flow**: `pending → approved → completed` (or `rejected`/`cancelled`)
+- **Key Validations**: Stock availability checks, customer relationship verification
+- **Special Properties**: Origin/destination address display methods
+- **Property Type**: "Exit"
+- **Special Features**: Delivery tracking, customer notifications
 
-class BaseAddressWithBaseModel(BaseModel):
-    phone: str
-    email: str
-    address: str
-    city: str
-    state: str
-    zip_code: str
-    country: str
+### 3. Transfers Module
+- **Purpose**: Track product movements between company warehouses
+- **Origin**: Company warehouse
+- **Destination**: Another company warehouse (must be different)
+- **Status Flow**: `pending → approved → completed` (or `rejected`/`cancelled`)
+- **Key Validations**: Origin-destination difference, dual capacity/availability checks
+- **Property Type**: "Transfer"
+- **Special Features**: Bidirectional warehouse updates
+
+## Common Architecture
+
+### Models Structure
+- **Primary Models** (Inflow/Outflow/Transfer):
+  - Track movement metadata and status
+  - Link origin and destination entities
+  - Store approval/rejection information
+  
+- **Item Models** (InflowItems/OutflowItems/TransferItems):
+  - Link to product entities
+  - Store quantity information
+  - Support batch operations
+
+### Validation System
+- Pre-save validation via signals
+- Business rule validation via service classes
+- Multi-level integrity checking
+- Capacity and availability constraints
+
+### Service Layer
+- Transaction-wrapped operations
+- Encapsulated business logic
+- Permission and access control integration
+- Consistent status management
+
+## Real-Time Notification System
+
+Each movement module implements a dedicated notification subsystem:
+
+### Architecture
+```
+module/notifications/
+  ├── constants.py   # Types, titles, and message templates
+  ├── handlers.py    # Processing and delivery logic
+  └── serializers.py # API data formatting
 ```
 
-### Warehouse Models
-```python
-class Warehouse(BaseModel):
-    name: str
-    limit: int          # Maximum warehouse capacity
-    quantity: int       # Current total quantity
-    
-class WarehouseProduct(BaseModel):
-    warehouse: FK(Warehouse)
-    product: FK(Product)
-    current_quantity: int
-```
-- Tracks warehouse capacity and current stock levels
-- Maintains product-specific quantities
-- Validates capacity limits
-- Prevents negative quantities
+### Notification Types
+- Creation notifications
+- Status change notifications (approved/rejected)
+- Completion notifications
+- Special alerts (low stock, capacity warnings)
 
-### Product Classification Models
-
-```python
-class Brand(BaseModel):
-    name: str
-
-class Category(BaseModel):
-    name: str
-
-class Product(BaseModel):
-    name: str
-    description: str
-    quantity: int       # Total quantity across all warehouses
-    brand: FK(Brand)
-    category: FK(Category)
-    price: decimal
-    min_quantity: int   # Low stock threshold
-    max_quantity: int   # Maximum stock threshold
-
-class ProductSku(BaseModel):
-    product: FK(Product)
-    sku: str
-```
-- Manages product information and SKUs
-- Organizes products by brand and category
-- Tracks total quantity across warehouses
-- Supports stock level thresholds
-
-### Supplier Model
-```python
-class Supplier(BaseAddressWithBaseModel):
-    name: str
-    tax_number: str
-    
-    @property
-    def full_address_display: str
-```
-- Manages supplier information
-- Includes complete address details
-- Tracks tax information
-- Provides formatted address display
-
-### Movement Models
-
-#### Inflows (Supplier to Warehouse)
-```python
-class Inflow(BaseModel):
-    origin: FK(Supplier)
-    destiny: FK(Warehouse)
-    status: str        # pending/approved/rejected
-    rejection_reason: str
-
-class InflowItems(BaseModel):
-    inflow: FK(Inflow)
-    product: FK(Product)
-    quantity: int
-```
-- Handles incoming stock from suppliers
-- Validates warehouse capacity
-- Updates product quantities
-- Maintains movement status
-
-#### Outflows (Warehouse to Customer)
-```python
-class Outflow(BaseModel):
-    origin: FK(Warehouse)
-    destiny: FK(Customer)
-    status: str
-    rejection_reason: str
-
-class OutflowItems(BaseModel):
-    outflow: FK(Outflow)
-    product: FK(Product)
-    quantity: int
-```
-- Manages customer deliveries
-- Validates stock availability
-- Updates warehouse quantities
-- Tracks delivery addresses
-
-#### Transfers (Inter-warehouse)
-```python
-class Transfer(BaseModel):
-    origin: FK(Warehouse)
-    destiny: FK(Warehouse)
-    status: str
-    rejection_reason: str
-
-class TransferItems(BaseModel):
-    transfer: FK(Transfer)
-    product: FK(Product)
-    quantity: int
-```
-- Handles stock movement between warehouses
-- Validates origin and destiny capacities
-- Maintains movement status
-- Updates quantities in both warehouses
-
-### Load Order Management
-```python
-class LoadOrder(BaseModel):
-    order_number: str      # Auto-generated unique number
-    customer: FK(Customer)
-    load_to: FK(Vehicle)
-    load_date: date
-
-class LoadOrderItem(BaseModel):
-    load_order: FK(LoadOrder)
-    product: FK(Product)
-    quantity: decimal
-```
-- Manages loading orders for deliveries
-- Auto-generates unique order numbers
-- Links customers and vehicles
-- Tracks product quantities for loading
-- Supports atomic order number generation
-
-## Movement Status Flow
-All movement types (Inflow, Outflow, Transfer) follow this status flow:
-```
-pending -> approved/rejected
-```
-- **Pending**: Initial state for new movements
-- **Approved**: Movement completed successfully
-- **Rejected**: Movement cancelled with reason
-
-## Signal-Based Validation System
-
-### Pre-save Signals
-- Validate warehouse capacity
-- Check stock availability
-- Prevent negative quantities
-- Store previous values for comparison
-
-### Post-save Signals
-- Update warehouse quantities
-- Update product totals
-- Trigger notifications
-- Log movement history
-
-### Post-delete Signals
-- Restore quantities
-- Update warehouse totals
-- Clean up related records
-
-## Notification System
-
-Each app includes a notifications package:
-```
-notifications/
-├── constants.py   # Notification types
-├── handlers.py    # Event processing
-└── serializers.py # Data formatting
-```
-
-### Notification Events
-- Low stock alerts
-- Capacity warnings
-- Movement status changes
-- Validation failures
-- Successful operations
-
-## API Structure
-
-Each app provides REST endpoints for:
-- CRUD operations
-- Movement processing
-- Status updates
-- Quantity queries
-- Validation checks
-
-## Data Integrity
-
-The system maintains data integrity through:
-- Transaction management
-- Signal-based validation
-- Status tracking
-- Audit logging
-- Error handling
-- Atomic operations for order numbers
-
-## Testing Coverage
-
-Each app includes comprehensive tests for:
-- Model validation
-- Movement operations
-- Capacity checks
-- Quantity updates
-- Error scenarios
-- Order number generation
+### Recipient Targeting
+- Role-based delivery (managers, stock controllers, warehouse staff)
+- Company-scoped notifications
+- Real-time WebSocket delivery
+- Persistent storage
 
 ## Integration Points
 
-The system integrates with:
-- Company management
-- Customer records
-- Supplier management
-- Vehicle management
-- Employee system
-- Notification service
+- **Warehouse Module**: Tracks total and per-product quantities
+- **Product Module**: Maintains overall stock levels
+- **Supplier/Customer Modules**: Provide origin/destination entities
+- **User Module**: Targets notifications based on roles
+- **Notification System**: Delivers real-time updates
+
+## Database Transaction Management
+
+- Atomic operations ensure consistency
+- Transaction hooks (`on_commit`) for side effects
+- Rollback on validation failures
+- Signal-based quantity adjustments
 
 ## Best Practices
 
-1. Always use transactions for movements
-2. Validate quantities before updates
-3. Handle edge cases in signals
-4. Maintain audit trails
-5. Use status tracking
-6. Implement proper error handling
-7. Follow notification patterns
-8. Use atomic operations for unique identifiers
-9. Validate address information
-10. Implement proper cascading deletes
+1. Always use the service layer for operations
+2. Validate movements before approval
+3. Ensure origin-destination consistency
+4. Check capacity and availability constraints
+5. Process notifications after transaction commit
+6. Target notifications to relevant personnel
+7. Maintain audit trails via created_by/updated_by
+8. Use proper error handling and logging
+
+## Technical Implementation
+
+- Django signals for reactive processing
+- Service classes for business operations
+- WebSockets (Django Channels) for real-time communication
+- Transaction management for data integrity
+- Role-based permission system

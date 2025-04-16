@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import LoadOrder, LoadOrderItem
 from apps.companies.customers.models import Customer
-from apps.deliveries.vehicles.models import Vehicle
+from apps.vehicle.models import Vehicle
 from apps.inventory.product.models import Product
 from rest_framework.exceptions import ValidationError
 from django.db import transaction

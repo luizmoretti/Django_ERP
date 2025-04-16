@@ -85,6 +85,38 @@ class Customer(BaseAddressWithBaseModel):
         """
         return self.full_name()
     
+    def get_formatted_address(self):
+        """
+        Returns a formatted address string for this customer.
+        This is used for delivery routing services like Google Maps.
+        
+        Returns:
+            str: Formatted address string in the format "address, city, state zip_code, country"
+                or empty string if customer has no address information.
+        """
+        address_parts = []
+        
+        if self.address:
+            address_parts.append(self.address)
+        
+        city_state = []
+        if self.city:
+            city_state.append(self.city)
+        
+        if self.state:
+            city_state.append(self.state)
+            
+        if city_state:
+            address_parts.append(", ".join(city_state))
+        
+        if self.zip_code:
+            address_parts.append(self.zip_code)
+            
+        if self.country:
+            address_parts.append(self.country)
+            
+        return ", ".join(filter(None, address_parts))
+    
 class CustomerProjectAddress(BaseAddressWithBaseModel):
     """
     Customer project address model representing project addresses associated with
@@ -116,7 +148,7 @@ class CustomerProjectAddress(BaseAddressWithBaseModel):
             updated_by: ForeignKey to Employeer : Inherited from BaseModel
         }
     """
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_project_address')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='project_address')
     
     class Meta:
         verbose_name = 'Customer Project Address'
@@ -197,7 +229,7 @@ class CustomerBillingAddress(BaseAddressWithBaseModel):
             updated_by: ForeignKey to Employeer : Inherited from BaseModel
         }
     """
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='customer_billing_address')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='billing_address')
     
     
     class Meta:

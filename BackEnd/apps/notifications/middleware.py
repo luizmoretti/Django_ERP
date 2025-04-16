@@ -3,8 +3,9 @@ from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
 from crum import get_current_user
 from django.contrib.auth.models import AnonymousUser
-from apps.accounts.models import NormalUser
+from apps.accounts.models import User
 from rest_framework_simplejwt.tokens import AccessToken
+from core.unified_middleware import UnifiedAuthMiddlewareStack
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from jwt.exceptions import InvalidTokenError
 
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 @database_sync_to_async
 def get_user(user_id):
     try:
-        return NormalUser.objects.get(id=user_id)
-    except NormalUser.DoesNotExist:
+        return User.objects.get(id=user_id)
+    except User.DoesNotExist:
         return AnonymousUser()
 
 class TokenAuthMiddleware(BaseMiddleware):
@@ -63,6 +64,10 @@ class TokenAuthMiddleware(BaseMiddleware):
 
         return await super().__call__(scope, receive, send)
 
+# Manter para compatibilidade com código existente
 def TokenAuthMiddlewareStack(inner):
-    """Helper function to wrap TokenAuthMiddleware around the ASGI application."""
-    return TokenAuthMiddleware(inner)
+    """
+    Deprecated: Use UnifiedAuthMiddlewareStack instead.
+    Kept for backward compatibility.
+    """
+    return UnifiedAuthMiddlewareStack(inner)
