@@ -28,7 +28,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.11, 3.12]
+        python-version: [3.12]
 
     steps:
     - uses: actions/checkout@v4
@@ -93,52 +93,10 @@ jobs:
         DATABASE_HOST: "localhost"
         DATABASE_PORT: "5432"
     
-    - name: Run Base Tests
+    - name: Run Tests
       working-directory: ./BackEnd
       run: |
-        python manage.py test core accounts companies --keepdb
-      env:
-        DJANGO_SECRET_KEY: "github-actions-test-key"
-        DJANGO_DEBUG: "1"
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-        DATABASE_NAME: "erp_test"
-        DATABASE_USER: "postgres"
-        DATABASE_PASSWORD: "postgres"
-        DATABASE_HOST: "localhost"
-        DATABASE_PORT: "5432"
-    
-    - name: Run Inventory Module Tests
-      working-directory: ./BackEnd
-      run: |
-        python manage.py test inventory --keepdb
-      env:
-        DJANGO_SECRET_KEY: "github-actions-test-key"
-        DJANGO_DEBUG: "1"
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-        DATABASE_NAME: "erp_test"
-        DATABASE_USER: "postgres"
-        DATABASE_PASSWORD: "postgres"
-        DATABASE_HOST: "localhost"
-        DATABASE_PORT: "5432"
-    
-    - name: Run HR Module Tests
-      working-directory: ./BackEnd
-      run: |
-        python manage.py test employeers attendance --keepdb
-      env:
-        DJANGO_SECRET_KEY: "github-actions-test-key"
-        DJANGO_DEBUG: "1"
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-        DATABASE_NAME: "erp_test"
-        DATABASE_USER: "postgres"
-        DATABASE_PASSWORD: "postgres"
-        DATABASE_HOST: "localhost"
-        DATABASE_PORT: "5432"
-    
-    - name: Run Logistics Module Tests
-      working-directory: ./BackEnd
-      run: |
-        python manage.py test logistics customers suppliers vehicle --keepdb
+        python manage.py test -v 2
       env:
         DJANGO_SECRET_KEY: "github-actions-test-key"
         DJANGO_DEBUG: "1"
