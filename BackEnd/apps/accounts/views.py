@@ -105,6 +105,7 @@ class BaseUserView:
                 name="Create Owner User",
                 value={
                     "email": "owner@example.com",
+                    # deepcode ignore NoHardcodedPasswords: not real data
                     "password": "owner123@",
                     "first_name": "Owner",
                     "last_name": "User",
@@ -115,6 +116,7 @@ class BaseUserView:
                 name="Create Employee User",
                 value={
                     "email": "employee@example.com",
+                    # deepcode ignore NoHardcodedPasswords: not real data
                     "password": "employee123@",
                     "first_name": "Employee",
                     "last_name": "User",
@@ -125,6 +127,7 @@ class BaseUserView:
                 name="Create Customer User",
                 value={
                     "email": "customer@example.com",
+                    # deepcode ignore NoHardcodedPasswords: not real data
                     "password": "customer123@",
                     "first_name": "Customer",
                     "last_name": "User",
