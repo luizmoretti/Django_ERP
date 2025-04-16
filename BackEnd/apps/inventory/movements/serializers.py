@@ -28,29 +28,17 @@ class MovementSerializer(serializers.Serializer):
         read_only_fields = fields
         
     def get_type(self, obj) -> str | None:
-        if isinstance(obj, Inflow):
-            return f'{obj.type}'
-        elif isinstance(obj, Outflow):
-            return f'{obj.type}'
-        elif isinstance(obj, Transfer):
-            return f'{obj.type}'
+        if isinstance(obj, (Inflow, Outflow, Transfer)):
+            return str(obj.type)
         return None
         
     def get_status(self, obj) -> str | None:
-        if isinstance(obj, Inflow):
-            return f'{obj.status}'
-        elif isinstance(obj, Outflow):
-            return f'{obj.status}'
-        elif isinstance(obj, Transfer):
+        if isinstance(obj, (Inflow, Outflow, Transfer)):
             return f'{obj.status}'
         return None
         
     def get_origin(self, obj) -> str | None:
-        if isinstance(obj, Inflow):
-            return f'{obj.origin.name}'
-        elif isinstance(obj, Outflow):
-            return f'{obj.origin.name}'
-        elif isinstance(obj, Transfer):
+        if isinstance(obj, (Inflow, Outflow, Transfer)):
             return f'{obj.origin.name}'
         return None
     
