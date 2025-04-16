@@ -34,7 +34,7 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd redis-cli ping
+          --health-cmd "redis-cli ping || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -76,9 +76,9 @@ jobs:
       run: |
         black --check .
     
-    - name: Fix and check imports - isort
+    - name: Check imports formatting with isort
       working-directory: ./BackEnd
-      continue-on-error: true  
+      continue-on-error: true
       run: |
         isort --check-only --diff --profile black .
     
