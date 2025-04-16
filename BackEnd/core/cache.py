@@ -26,7 +26,7 @@ def make_key(prefix: str, *args: Any, **kwargs: Any) -> str:
     # Add positional arguments
     for arg in args:
         if isinstance(arg, (dict, list, tuple)):
-            key_parts.append(hashlib.md5(json.dumps(arg, sort_keys=True).encode()).hexdigest())
+            key_parts.append(hashlib.sha256(json.dumps(arg, sort_keys=True).encode()).hexdigest())
         else:
             key_parts.append(str(arg))
     
@@ -35,7 +35,7 @@ def make_key(prefix: str, *args: Any, **kwargs: Any) -> str:
         sorted_items = sorted(kwargs.items())
         for key, value in sorted_items:
             if isinstance(value, (dict, list, tuple)):
-                key_parts.append(f"{key}:{hashlib.md5(json.dumps(value, sort_keys=True).encode()).hexdigest()}")
+                key_parts.append(f"{key}:{hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()}")
             else:
                 key_parts.append(f"{key}:{value}")
     
@@ -75,7 +75,7 @@ def cache_response(
                 
                 # Add query params if any
                 if request.query_params:
-                    key_parts.append(hashlib.md5(
+                    key_parts.append(hashlib.sha256(
                         json.dumps(dict(request.query_params), sort_keys=True).encode()
                     ).hexdigest())
                 
@@ -218,7 +218,7 @@ def get_cache_key(key_type: str, **kwargs) -> str:
         # For movements, handle query params specially
         if key_type == 'movements' and 'query_params' in kwargs:
             if isinstance(kwargs['query_params'], (dict, list)):
-                kwargs['query_params'] = hashlib.md5(
+                kwargs['query_params'] = hashlib.sha256(
                     json.dumps(kwargs['query_params'], sort_keys=True).encode()
                 ).hexdigest()
         
