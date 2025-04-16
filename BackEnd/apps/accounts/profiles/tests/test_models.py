@@ -34,7 +34,7 @@ class ProfileModelTest(TestCase):
             password='stock123',
             first_name='Stock',
             last_name='Controller',
-            user_type='Stock_Controller'
+            user_type='Stocker'
         )
         
         cls.employee = User.objects.create_user(
@@ -66,7 +66,7 @@ class ProfileModelTest(TestCase):
         
         # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
-        stock_group = Group.objects.get(name='Stock_Controller')
+        stock_group = Group.objects.get(name='Stocker')
         employee_group = Group.objects.get(name='Employee')
         
         cls.admin_user.groups.add(admin_group)
