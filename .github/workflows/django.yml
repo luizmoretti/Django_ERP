@@ -24,6 +24,20 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      
+      redis:
+        image: redis:latest
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          CELERY_BROKER_URL: redis://localhost:6379/1
+          CELERY_RESULT_BACKEND: redis://localhost:6379/2
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd redis-cli ping
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     strategy:
       max-parallel: 4
@@ -84,6 +98,9 @@ jobs:
       run: |
         python manage.py migrate
       env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
         DJANGO_SECRET_KEY: "github-actions-test-key"
         DJANGO_DEBUG: "1"
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
@@ -98,6 +115,9 @@ jobs:
       run: |
         python manage.py test -v 2
       env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
         DJANGO_SECRET_KEY: "github-actions-test-key"
         DJANGO_DEBUG: "1"
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
@@ -113,6 +133,9 @@ jobs:
         coverage run --source='.' manage.py test
         coverage report
       env:
+        REDIS_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: redis://localhost:6379/1
+        CELERY_RESULT_BACKEND: redis://localhost:6379/2
         DJANGO_SECRET_KEY: "github-actions-test-key"
         DJANGO_DEBUG: "1"
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
