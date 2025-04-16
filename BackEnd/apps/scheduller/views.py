@@ -26,6 +26,11 @@ class JobsTypeSchedullerRegisterBaseView:
         except JobsTypeSchedullerRegister.DoesNotExist:
             return JobsTypeSchedullerRegister.objects.none()
 
+
+@extend_schema(
+    tags="Scheduler",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"]
+)
 class JobsTypeSchedullerRegisterViewSet(JobsTypeSchedullerRegisterBaseView, viewsets.ModelViewSet):
     serializer_class = JobsTypeSchedullerRegisterSerializer
     queryset = JobsTypeSchedullerRegister.objects.all()
