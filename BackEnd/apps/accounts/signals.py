@@ -54,13 +54,13 @@ def get_group_name_from_user_type(user_type):
     Returns:
         str: The group name associated with the user type
     """
-    for user_type, group in USER_TYPE_CHOICES:
-        if user_type == user_type:
+    for type_choice, group in USER_TYPE_CHOICES:
+        if type_choice == user_type:
             return group
     return None
-    
-@receiver(post_save, sender=User)
 
+
+@receiver(post_save, sender=User)
 def create_company_for_user(sender, instance, created, **kwargs):
     """
     Signal handler to create a company record for new users when appropriate.
