@@ -51,17 +51,21 @@ jobs:
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     
+    - name: Lint with isort and black
+      working-directory: ./BackEnd
+      run: |
+        isort .
+        black .
+    
     - name: Check code formatting with Black
       working-directory: ./BackEnd
       run: |
-        black .
         black --check .
     
     - name: Fix and check imports - isort
       working-directory: ./BackEnd
       continue-on-error: true  
       run: |
-        isort .
         isort --check-only --diff --profile black .
     
     - name: Create pyproject.toml for isort configuration
