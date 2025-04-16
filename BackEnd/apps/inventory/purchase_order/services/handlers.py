@@ -172,7 +172,7 @@ class PurchaseOrderItemService:
             PurchaseOrderValidator.validate_can_update_item(item)
                 
             # Validate user permission
-            if not user.has_perm('purchase_order.can_update_item'):
+            if user is not None and not user.has_perm('purchase_order.can_update_item'):
                 raise ValidationError("User does not have permission to update items")
             
             # Validate item data
