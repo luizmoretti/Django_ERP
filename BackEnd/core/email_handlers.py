@@ -37,14 +37,7 @@ class BaseEmailHandler:
     def get_connection(self):
         """Get email connection with proper settings"""
         if not self.connection:
-            self.connection = get_connection(
-                backend=settings.EMAIL_BACKEND,
-                host=settings.EMAIL_HOST,
-                port=settings.EMAIL_PORT,
-                username=settings.EMAIL_HOST_USER,
-                password=settings.EMAIL_HOST_PASSWORD,
-                use_tls=settings.EMAIL_USE_TLS,
-            )
+            self.connection = get_connection(backend=settings.EMAIL_BACKEND)
         return self.connection
     
     def send_email(
