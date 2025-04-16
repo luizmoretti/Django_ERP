@@ -50,10 +50,7 @@ class PickUpCompanieAddress(models.Model):
         return f'{self.companie.address}, {self.companie.city}, {self.companie.state} {self.companie.zip_code}'
     
     def save(self, *args, **kwargs):
-        if not self.full_address:
-            self.full_address = self.get_full_address()
-        elif self.full_address != self.get_full_address():
-            self.full_address = self.get_full_address()
+        self.full_address = self.get_full_address()
         super().save(*args, **kwargs)
     
     
