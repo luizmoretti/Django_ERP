@@ -515,7 +515,7 @@ class DeliveryViewsTest(APITestCase):
     def test_list_checkpoints(self):
         """Testa listagem de checkpoints de uma entrega"""
         self.client.force_authenticate(user=self.manager_user)
-        url = reverse('delivery:list_checkpoints', kwargs={'delivery_pk': self.delivery.id})
+        url = reverse('delivery:list_checkpoints', kwargs={'pk': self.delivery.id})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
