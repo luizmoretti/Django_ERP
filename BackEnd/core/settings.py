@@ -781,7 +781,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
     'DESCRIPTION': 'API Documentation for DryWall WareHouse System',
-    'VERSION': '0.0.1',
+    'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': True,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
     
