@@ -6,14 +6,18 @@
 Enterprise management system specialized for Drywall sector companies, offering inventory management, human resources, and business administration functionalities.
 
 #### 1.2 Technical Stack
-- **Backend Framework**: Django 5.1.4 + Django REST Framework 3.15.2
-- **Database**: PostgreSQL
-- **Cache**: Redis
-- **Task Queue**: Celery 5.4.0
-- **Authentication**: JWT (djangorestframework-simplejwt)
-- **Documentation**: DRF Spectacular
-- **Payment Processing**: Stripe
-- **File Handling**: Pillow
+- **Backend Framework**: Django 5.2 + Django REST Framework 3.16.0
+- **Database**: PostgreSQL 3.2.6
+- **Cache**: Redis 5.2.1
+- **Task Queue**: Celery 5.5.1
+- **Channels**: Django Channels 4.2.2 + Daphne 4.1.2
+- **Authentication**: JWT (djangorestframework-simplejwt 5.5.0)
+- **API Documentation**: DRF Spectacular 0.28.0
+- **Payment Processing**: Stripe 12.0.0
+- **File Handling**: Pillow 11.2.1
+- **Security**: Django-Axes 7.0.2 (proteção contra força bruta)
+- **Maps Integration**: Google Maps API 4.10.0
+- **Testing**: Factory Boy 3.3.3, Faker 37.1.0
 
 ### 2. System Architecture
 
@@ -85,7 +89,31 @@ module_name/
 
 ### 3. Design Patterns & Standards
 
-#### 3.1 API Design
+#### 3.1 Service Pattern
+- **Separação de Responsabilidades**:
+  - **Views**: Gerenciamento de requisições e respostas HTTP
+  - **Services**: Encapsulamento da lógica de negócio
+  - **Validators**: Validação de regras de negócio
+  - **Serializers**: Transformação e validação de dados
+
+- **Estrutura de Services**:
+  ```python
+  class XxxService:
+      def __init__(self):
+          self.validator = XxxBusinessValidator()
+          
+      def create_xxx(self, data, user):
+          # Validação de regras de negócio
+          self.validator.validate_company_access(data, user)
+          
+          # Operações em transação atômica
+          with transaction.atomic():
+              # Implementação...
+              
+          return instance
+  ```
+
+#### 3.2 API Design
 - **URL Structure**: `/api/v1/{app_name}/{resource}/`
 - **HTTP Methods**:
   - GET: List/Retrieve
@@ -100,6 +128,18 @@ module_name/
     "message": "string",
     "errors": []
   }
+  ```
+
+- **Documentação com drf-spectacular**:
+  ```python
+  @extend_schema_view(
+      get=extend_schema(
+          tags=['Módulo - Submódulo'],
+          operation_id='operation_name',
+          summary='Descrição da operação',
+          responses={200: XxxSerializer}
+      )
+  )
   ```
 
 #### 3.2 Authentication & Authorization
@@ -278,7 +318,7 @@ module_name/
   - Owner & CEO: Full access
   - Admin: Full access to assigned company
   - Manager: Department-level access
-  - Stock Controller: Limited inventory access
+  - Stocker: Limited inventory access
   - Employee: View-only access
 - Custom model permissions
 - Company-specific access
@@ -393,7 +433,7 @@ module_name/
 
 ## Versioning
 - Version: 1.0
-- Last Updated: 2025-02-12
+- Last Updated: 2025-04-18
 - Status: Active
 
 ## Contact
