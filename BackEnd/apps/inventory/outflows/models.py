@@ -87,7 +87,7 @@ class Outflow(BaseModel):
             return "Destiny not setted. Please set the destiny customer first."
         
     @property
-    def type(self):
+    def type(self) -> str:
         return "Exit"
             
     
