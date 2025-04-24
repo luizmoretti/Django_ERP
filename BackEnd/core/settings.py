@@ -854,7 +854,8 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
         
-        {'name': 'Scheduler', 'description': 'Scheduler management endpoints'},
+        # Scheduller
+        {'name': 'Scheduller', 'description': 'Scheduller management endpoints'},
     ]
 }
 
