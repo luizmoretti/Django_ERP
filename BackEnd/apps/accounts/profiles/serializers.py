@@ -35,7 +35,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     Provides complete profile information including user details,
     contact information, and preferences.
     """
-    user = UserSerializer(read_only=True)
+    # user = UserSerializer(read_only=True)
     name = serializers.CharField(source='get_full_name', read_only=True)
     age = serializers.IntegerField(read_only=True)
     social_links = serializers.JSONField(required=False)
@@ -45,7 +45,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             'id',
-            'user',
+            # 'user',
             'name',
             'bio',
             'birth_date',
@@ -66,7 +66,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
