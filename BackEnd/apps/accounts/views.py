@@ -351,7 +351,7 @@ class UserUpdateView(BaseUserView, UpdateAPIView):
     with special handling for password changes.
     """
     serializer_class = UserSerializer
-    lookup_field = 'id'
+    lookup_field = 'pk'
 
     def perform_update(self, serializer):
         try:
@@ -381,17 +381,20 @@ class UserUpdateView(BaseUserView, UpdateAPIView):
             raise
     
     def partial_update(self, request, *args, **kwargs):
+        instance = None  # Initialize the variable outside the try block
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            return super().partial_update(request, *args, **kwargs)
+            return Response(serializer.data)  # Returns the answer directly with the serialized data
         except Exception as e:
+            # Improve error handling to avoid UnboundLocalError
+            user_id = getattr(instance, 'id', 'unknown') if instance else 'unknown'
             logger.error(
                 f"Error updating user profile: {str(e)}",
                 extra={
-                    'user_id': instance.id,
+                    'user_id': user_id,
                     'error': str(e)
                 },
                 exc_info=True
