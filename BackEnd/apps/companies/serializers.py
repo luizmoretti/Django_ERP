@@ -95,11 +95,9 @@ class CompanieSerializer(serializers.ModelSerializer):
     """
     id = serializers.UUIDField(read_only=True)
 
-    create_by = serializers.PrimaryKeyRelatedField(queryset=Employeer.objects.all(), required=True, write_only=True)
-    create_by_name = serializers.SerializerMethodField(read_only=True)
+    created_by = serializers.SerializerMethodField(read_only=True)
 
-    update_by = serializers.PrimaryKeyRelatedField(queryset=Employeer.objects.all(), required=True, write_only=True)
-    update_by_name = serializers.SerializerMethodField(read_only=True)
+    update_by = serializers.SerializerMethodField(read_only=True)
 
     pickup_address = PickUpCompanieAddressSerializer(many=True, required=False, read_only=True)
     
@@ -122,13 +120,13 @@ class CompanieSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'pickup_address', 'created_at', 'updated_at']
 
-    def get_create_by_name(self, obj):
+    def get_created_by(self, obj):
         """Returns the human-readable create_by name."""
-        return obj.create_by.display_name() if obj.create_by else None
+        return obj.created_by.user.get_full_name() if obj.created_by else None
     
-    def get_update_by_name(self, obj):
+    def get_updated_by(self, obj):
         """Returns the human-readable update_by name."""
-        return obj.update_by.display_name() if obj.update_by else None
+        return obj.updated_by.user.get_full_name() if obj.updated_by else None
     
     @transaction.atomic
     def create(self, validated_data):
