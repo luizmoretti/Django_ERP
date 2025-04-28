@@ -39,7 +39,7 @@ class CompaniesBaseView:
         try:
             # Check for swagger fake view
             if getattr(self, 'swagger_fake_view', False):
-                return Companie.objects.none()                   
+                return Companie.objects.none()                 
             
         except Exception as e:
             logger.error(f"[DELIVERY VIEWS] - Error getting queryset: {str(e)}")
@@ -48,8 +48,8 @@ class CompaniesBaseView:
     
 @extend_schema_view(
     get=extend_schema(
-        tags=['Company'],
-        operation_id='list_company',
+        tags=['Companie'],
+        operation_id='list_companie',
         summary='List all companies',
         description='Returns a list of all companies for the authenticated user.',
         responses={
@@ -88,7 +88,7 @@ class CompanieListView(CompaniesBaseView, ListAPIView):
                     'name': {
                         'type': 'string',
                         'description': 'Name of the company'
-                    }
+                    },
                     'type': {
                         'type': 'string',
                         'description': 'Type of the company',
@@ -128,14 +128,14 @@ class CompanieListView(CompaniesBaseView, ListAPIView):
             }
         },
         responses={
-            201: DeliverySerializer,
+            201: CompanieSerializer,
             400: {
                 'description': 'Invalid data',
                 'type': 'object',
                 'properties': {
                     'detail': {
                         'type': 'string',
-                        'example': 'Error creating delivery'
+                        'example': 'Error creating companie'
                     }
                 }
             }
