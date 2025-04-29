@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
     OpenApiParameter, OpenApiTypes
 )
-
+from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -40,9 +40,9 @@ class CompaniesBaseView:
             # Check for swagger fake view
             if getattr(self, 'swagger_fake_view', False):
                 return Companie.objects.none()                 
-            
+        
         except Exception as e:
-            logger.error(f"[DELIVERY VIEWS] - Error getting queryset: {str(e)}")
+            logger.error(f"[COMPANIE VIEWS] - Error getting queryset: {str(e)}")
             return Companie.objects.none()
         
     
