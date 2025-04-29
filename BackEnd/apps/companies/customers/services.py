@@ -1,7 +1,10 @@
 import logging
 from typing import Optional, List, Union
+from django.utils.translation import gettext as _
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from .models import Customer, CustomerProjectAddress, CustomerBillingAddress
+from .models import Customer, CustomerProjectAddress, CustomerBillingAddress, CustomerLeads
+from .utils.google_scraper_serpapi import GoogleLocalSearchService
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +98,309 @@ class CustomerService:
         except Exception as e:
             logger.error(f'Error creating customer: {str(e)}')
             return None
+        
+        
+class CustomerLeadBusinessValidator:
+    """Validator for CustomerLead business rules"""
+    
+    def validate_company_access(self, data_or_instance, user):
+        """Validate that user has access to company resources"""
+        if hasattr(data_or_instance, 'companie'):
+            # Instance case
+            if data_or_instance.companie != user.employeer.companie:
+                logger.error(
+                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
+                    extra={'user_id': user.id, 'company_id': data_or_instance.companie.id}
+                )
+                raise ValidationError(_("You don't have access to this company's resources"))
+        elif isinstance(data_or_instance, dict) and 'companie' in data_or_instance:
+            # Data dict case with company specified
+            if data_or_instance['companie'] != user.employeer.companie:
+                logger.error(
+                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
+                    extra={'user_id': user.id, 'company_id': data_or_instance['companie'].id}
+                )
+                raise ValidationError(_("You don't have access to this company's resources"))
+
+    def validate_lead_data(self, data):
+        """Validate lead data for creation or update"""
+        # Validate required fields
+        if not data.get('name'):
+            logger.error("[CUSTOMER LEAD VALIDATOR] - Missing required name field")
+            raise ValidationError(_("Business name is required"))
+        
+        # Additional validations can be added here (phone format, website format, etc.)
+
+    def validate_search_query(self, query, location):
+        """Validate search query parameters"""
+        if not query:
+            logger.error("[CUSTOMER LEAD VALIDATOR] - Missing required query parameter")
+            raise ValidationError(_("Search query is required"))
+        
+        # Optional validation for location format, if needed
+        return True
+
+    def validate_leads_status_change(self, lead, new_status):
+        """Validate that the status change is allowed"""
+        current_status = lead.status
+        
+        # Define allowed status transitions
+        # For example: New -> Contacted -> Qualified -> Converted/Rejected
+        allowed_transitions = {
+            "New": ["Contacted", "Rejected"],
+            "Contacted": ["Qualified", "Rejected"],
+            "Qualified": ["Converted", "Rejected"],
+            "Converted": [],  # Terminal state
+            "Rejected": ["New"]  # Can reopen a rejected lead
+        }
+        
+        if new_status not in allowed_transitions.get(current_status, []):
+            logger.error(
+                f"[CUSTOMER LEAD VALIDATOR] - Invalid status transition: {current_status} -> {new_status}",
+                extra={'lead_id': str(lead.id)}
+            )
+            raise ValidationError(_(f"Cannot change status from '{current_status}' to '{new_status}'"))
+        
+        return True
+    
+class CustomerLeadService:
+    """Service for managing customer leads"""
+    
+    def __init__(self):
+        self.validator = CustomerLeadBusinessValidator()
+        self.scraper = GoogleLocalSearchService()
+    
+    @transaction.atomic
+    def create_lead(self, data, user):
+        """Create a new customer lead
+        
+        Args:
+            data (dict): Data for creating lead
+            user: User creating the lead
+            
+        Returns:
+            CustomerLeads: Created lead instance
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate business rules
+        self.validator.validate_lead_data(data)
+        
+        # Create lead - BaseModel will automatically set companie, created_by, and updated_by
+        lead = CustomerLeads.objects.create(**data)
+        
+        # Pass user to save method to ensure proper audit field values
+        lead.save(user=user)
+        
+        logger.info(
+            f"[CUSTOMER LEAD SERVICE] - Lead created successfully",
+            extra={'lead_id': str(lead.id), 'created_by': user.id}
+        )
+        return lead
+    
+    @transaction.atomic
+    def update_lead(self, instance, data, user):
+        """Update an existing customer lead
+        
+        Args:
+            instance: CustomerLeads instance to update
+            data (dict): Data for updating lead
+            user: User updating the lead
+            
+        Returns:
+            CustomerLeads: Updated lead instance
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate business rules
+        self.validator.validate_company_access(instance, user)
+        
+        # Update status if provided
+        if 'status' in data and data['status'] != instance.status:
+            self.validator.validate_leads_status_change(instance, data['status'])
+        
+        # Update fields
+        for field, value in data.items():
+            if field not in ['companie', 'created_at', 'updated_at', 'created_by', 'updated_by']:  # Skip audit fields
+                setattr(instance, field, value)
+        
+        instance.save(user=user)
+        
+        logger.info(
+            f"[CUSTOMER LEAD SERVICE] - Lead updated successfully",
+            extra={'lead_id': str(instance.id), 'updated_by': user.id}
+        )
+        return instance
+    
+    @transaction.atomic
+    def delete_lead(self, instance, user):
+        """Delete a customer lead
+        
+        Args:
+            instance: CustomerLeads instance to delete
+            user: User deleting the lead
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate business rules
+        self.validator.validate_company_access(instance, user)
+        
+        lead_id = str(instance.id)
+        instance.delete()
+        
+        logger.info(
+            f"[CUSTOMER LEAD SERVICE] - Lead deleted successfully",
+            extra={'lead_id': lead_id, 'deleted_by': user.id}
+        )
+    
+    @transaction.atomic
+    def update_lead_status(self, lead_id, new_status, user, notes=None):
+        """Update the status of a lead
+        
+        Args:
+            lead_id: ID of the lead to update
+            new_status: New status value
+            user: User updating the status
+            notes: Optional notes about the status change
+            
+        Returns:
+            CustomerLeads: Updated lead instance
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        try:
+            lead = CustomerLeads.objects.get(id=lead_id, companie=user.employeer.companie)
+        except CustomerLeads.DoesNotExist:
+            logger.error(
+                f"[CUSTOMER LEAD SERVICE] - Lead not found",
+                extra={'lead_id': lead_id, 'user_id': user.id}
+            )
+            raise ValidationError(_("Lead not found"))
+        
+        # Validate status change
+        self.validator.validate_leads_status_change(lead, new_status)
+        
+        # Update status
+        lead.status = new_status
+        
+        # Add notes if provided
+        if notes:
+            if lead.notes:
+                lead.notes += f"\n[{new_status}] {notes}"
+            else:
+                lead.notes = f"[{new_status}] {notes}"
+        
+        lead.save(user=user)
+        
+        logger.info(
+            f"[CUSTOMER LEAD SERVICE] - Lead status updated to {new_status}",
+            extra={'lead_id': str(lead.id), 'updated_by': user.id}
+        )
+        return lead
+    
+    def generate_leads_from_search(self, query, location, user, limit=None, include_all_pages=False):
+        """Generate leads from Google Local search results
+        
+        Args:
+            query (str): Search term provided by user
+            location (str, optional): Location to search from
+            user: User generating the leads
+            limit (int, optional): Maximum number of results to return
+            include_all_pages (bool): Whether to retrieve results from all pages
+            
+        Returns:
+            dict: Summary of results including created and existing leads
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate search query
+        self.validator.validate_search_query(query, location)
+        
+        # Get business data from Google Local Search
+        business_data = self.scraper.search_local_businesses(
+            query=query,
+            location=location,
+            limit=limit,
+            include_all_pages=include_all_pages
+        )
+        
+        if not business_data:
+            return {
+                "total_results": 0,
+                "new_leads": 0,
+                "existing_leads": 0,
+                "leads": []
+            }
+        
+        # Process the business data to create leads
+        created_leads = []
+        existing_leads = []
+        
+        with transaction.atomic():
+            for business in business_data:
+                # Check if lead already exists by place_id or name+address
+                existing_lead = None
+                if business.get('place_id'):
+                    existing_lead = CustomerLeads.objects.filter(
+                        place_id=business['place_id'],
+                        companie=user.employeer.companie
+                    ).first()
+                
+                if not existing_lead and business.get('name') and business.get('address'):
+                    existing_lead = CustomerLeads.objects.filter(
+                        name=business['name'],
+                        address=business['address'],
+                        companie=user.employeer.companie
+                    ).first()
+                
+                if existing_lead:
+                    # Update existing lead with any new information
+                    for field, value in business.items():
+                        if value != "INFO NOT INCLUDED" and value != "NO RATING FOUND" and value != "NO REVIEWS FOUND" and value != "NO PHONE FOUND" and value != "NO WEBSITE FOUND":
+                            if getattr(existing_lead, field, None) in ["", None, "INFO NOT INCLUDED", "NO RATING FOUND", "NO REVIEWS FOUND", "NO PHONE FOUND", "NO WEBSITE FOUND"]:
+                                setattr(existing_lead, field, value)
+                    
+                    existing_lead.save(user=user)
+                    existing_leads.append(existing_lead)
+                else:
+                    # Create new lead - don't set audit fields as they're handled by BaseModel
+                    lead_data = {
+                        'name': business['name'],
+                        'address': business['address'] if business['address'] != "INFO NOT INCLUDED" else "",
+                        'phone': business['phone'] if business['phone'] != "NO PHONE FOUND" else "",
+                        'website': business['website'] if business['website'] != "NO WEBSITE FOUND" else "",
+                        'hours': business['hours'] if business['hours'] != "INFO NOT INCLUDED" else "",
+                        'rating': business['rating'] if business['rating'] != "NO RATING FOUND" else "",
+                        'reviews': business['reviews'] if business['reviews'] != "NO REVIEWS FOUND" else "",
+                        'category': business['category'] if business['category'] != "INFO NOT INCLUDED" else "",
+                        'place_id': business['place_id'] if business['place_id'] != "INFO NOT INCLUDED" else "",
+                        'status': "New"
+                        # No need to set companie, created_by, or updated_by; BaseModel handles these
+                    }
+                    
+                    lead = CustomerLeads.objects.create(**lead_data)
+                    # Pass the user to save() to ensure proper audit field values
+                    lead.save(user=user)
+                    created_leads.append(lead)
+        
+        logger.info(
+            f"[CUSTOMER LEAD SERVICE] - Leads generated successfully: {len(created_leads)} new, {len(existing_leads)} existing",
+            extra={
+                'query': query, 
+                'location': location, 
+                'total_results': len(business_data),
+                'user_id': user.id
+            }
+        )
+        
+        return {
+            "total_results": len(business_data),
+            "new_leads": len(created_leads),
+            "existing_leads": len(existing_leads),
+            "leads": created_leads + existing_leads
+        }

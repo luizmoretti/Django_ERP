@@ -844,6 +844,9 @@ SPECTACULAR_SETTINGS = {
         # Customers
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
         
+        # Leads
+        {'name': 'Customers - Leads', 'description': 'Lead management endpoints'},
+        
         # Accounts Management
         {'name': 'Accounts - Authentication', 'description': 'Authentication endpoints'},
         {'name': 'Accounts - Management', 'description': 'User management endpoints'},
