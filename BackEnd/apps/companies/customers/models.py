@@ -2,8 +2,8 @@ from django.db import models
 from apps.companies.employeers.models import Employeer
 from apps.companies.models import Companie
 from uuid import uuid4
-from core.constants.choices import COUNTRY_CHOICES
-from basemodels.models import BaseAddressWithBaseModel
+from core.constants.choices import LEAD_STATUS_CHOICES
+from basemodels.models import BaseAddressWithBaseModel, BaseModel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -280,3 +280,54 @@ class CustomerBillingAddress(BaseAddressWithBaseModel):
         """
         self.populate_customer_billing_address(self.customer)
         super().save(*args, **kwargs)
+        
+
+class CustomerLeads(BaseModel):
+    """
+    Model to store business lead information collected from Google Local Search.
+    
+    This model stores potential customer leads gathered from external sources
+    like the Google Local Search API. It can be used to track businesses
+    that might be contacted for sales or marketing purposes.
+    
+    Attributes:
+        name (CharField): Business name
+        address (CharField): Business address
+        phone (CharField): Business phone number
+        website (CharField): Business website URL
+        hours (CharField): Business operating hours
+        rating (CharField): Business rating (stored as string to handle "NO RATING FOUND")
+        reviews (CharField): Number of reviews (stored as string to handle "NO REVIEWS FOUND")
+        category (CharField): Business category or type
+        place_id (CharField): Google Maps place ID for future reference
+        notes (CharField): Additional notes or observations
+        status (CharField): Lead status (e.g., "New", "Contacted", "Converted", "Rejected")
+        
+    Inherits:
+        BaseModel:
+            id: UUIDField
+            created_at: DateTimeField
+            updated_at: DateTimeField
+            created_by: ForeignKey to Employeer
+            updated_by: ForeignKey to Employeer
+            companie: ForeignKey to Companie
+    """
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    website = models.CharField(max_length=255, blank=True)
+    hours = models.CharField(max_length=255, blank=True)
+    rating = models.CharField(max_length=50, blank=True)
+    reviews = models.CharField(max_length=50, blank=True)
+    category = models.CharField(max_length=100, blank=True)
+    place_id = models.CharField(max_length=255, blank=True)
+    notes = models.CharField(max_length=500, blank=True)
+    status = models.CharField(max_length=50, choices=LEAD_STATUS_CHOICES, default="New")
+    
+    class Meta:
+        verbose_name = "Customer Lead"
+        verbose_name_plural = "Customer Leads"
+        ordering = ['-created_at', 'status']
+    
+    def __str__(self):
+        return f"[{self.status}] {self.name}"

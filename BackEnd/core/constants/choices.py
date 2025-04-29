@@ -246,3 +246,10 @@ PURCHASE_ORDER_STATUS_CHOICES = [
     ('cancelled', gettext('Cancelled')),
     ('completed', gettext('Completed'))
 ]
+
+LEAD_STATUS_CHOICES = [
+    ('New', gettext('New')),
+    ('Contacted', gettext('Contacted')),
+    ('Converted', gettext('Converted')),
+    ('Rejected', gettext('Rejected'))
+]
