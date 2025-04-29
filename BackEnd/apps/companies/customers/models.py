@@ -312,16 +312,16 @@ class CustomerLeads(BaseModel):
             updated_by: ForeignKey to Employeer
             companie: ForeignKey to Companie
     """
-    name = models.CharField(max_length=255)
-    address = models.CharField(max_length=255, blank=True)
-    phone = models.CharField(max_length=30, blank=True)
-    website = models.CharField(max_length=255, blank=True)
-    hours = models.CharField(max_length=255, blank=True)
-    rating = models.CharField(max_length=50, blank=True)
-    reviews = models.CharField(max_length=50, blank=True)
-    category = models.CharField(max_length=100, blank=True)
-    place_id = models.CharField(max_length=255, blank=True)
-    notes = models.CharField(max_length=500, blank=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    website = models.CharField(max_length=255, blank=True, null=True)
+    hours = models.CharField(max_length=255, blank=True, null=True)
+    rating = models.CharField(max_length=50, blank=True, null=True)
+    reviews = models.CharField(max_length=50, blank=True, null=True)
+    category = models.CharField(max_length=100, blank=True, null=True)
+    place_id = models.CharField(max_length=255, blank=True, null=True)
+    notes = models.CharField(max_length=500, blank=True, null=True)
     status = models.CharField(max_length=50, choices=LEAD_STATUS_CHOICES, default="New")
     
     class Meta:
