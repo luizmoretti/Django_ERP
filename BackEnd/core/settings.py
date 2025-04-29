@@ -851,6 +851,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Accounts - Password Reset', 'description': 'Password reset endpoint'},
         
         # Companies
+        {'name': 'Companie', 'description': 'Company management endpoints'},
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
         
