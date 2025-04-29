@@ -1,9 +1,8 @@
-from django.shortcuts import render
 from django.core.exceptions import ValidationError
 
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
-    OpenApiParameter, OpenApiTypes
+    OpenApiParameter, OpenApiTypes, OpenApiExample
 )
 from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import IsAuthenticated
@@ -147,6 +146,36 @@ class CompanieListView(CompaniesBaseView, ListAPIView):
                 'required': ['name', 'type', 'address', 'state', 'city', 'zip_code', 'country', 'phone', 'email'],
             }
         },
+        examples=[
+            OpenApiExample(
+                name="Create Headquarters Company",
+                value={
+                    "name": "Headquarters Company",
+                    "type": "Headquarters",
+                    "address": "123 Main St, City, Country",
+                    "state": "State",
+                    "city": "City",
+                    "zip_code": "12345",
+                    "country": "Country",
+                    "phone": "1234567890",
+                    "email": "headquarters@example.com"
+                }
+            ),
+            OpenApiExample(
+                name="Create Subsidiary Company",
+                value={
+                    "name": "Subsidiary Company",
+                    "type": "Subsidiary",
+                    "address": "456 Main St, City, Country",
+                    "state": "State",
+                    "city": "City",
+                    "zip_code": "12345",
+                    "country": "Country",
+                    "phone": "1234567890",
+                    "email": "subsidiary@example.com"
+                }
+            )
+        ],
         responses={
             201: CompanieSerializer,
             400: {
