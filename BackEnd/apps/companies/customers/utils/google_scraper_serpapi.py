@@ -3,59 +3,12 @@ import os
 import requests
 import json
 from typing import Dict, List, Optional, Any, Union
-import sys
-from pathlib import Path
-from dotenv import load_dotenv
+import django
 
-# Load environment variables from .env file when running as standalone script
-if __name__ == "__main__":
-    # Find the project root directory
-    current_path = Path(__file__).resolve()
-    project_root = None
-    
-    # Try to find the BackEnd directory by traversing up
-    for parent in [current_path, *current_path.parents]:
-        if parent.name == 'BackEnd':
-            project_root = parent
-            break
-    
-    # If found, load the .env file and configure Django settings
-    if project_root:
-        env_path = project_root / '.env'
-        if env_path.exists():
-            load_dotenv(env_path)
-            print(f"Loaded environment from {env_path}")
-        else:
-            print(f"Warning: .env file not found at {env_path}")
-            
-        # Add the project directory to sys.path to enable imports
-        if str(project_root) not in sys.path:
-            sys.path.insert(0, str(project_root))
-            
-        # Set Django settings module environment variable
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-        print("Configured Django settings module to 'core.settings'")
-        
-        # Initialize Django (optional, only if you need ORM access)
-        try:
-            import django
-            django.setup()
-            print("Django initialized successfully")
-        except Exception as e:
-            print(f"Warning: Could not initialize Django: {str(e)}")
-    else:
-        print("Warning: Could not locate BackEnd directory to load .env file")
-
-# Set up logging
 logger = logging.getLogger(__name__)
-
-# Configure basic logging when running as standalone script
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-
+        
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+django.setup()
 class GoogleLocalSearchService:
     """
     Service for interacting with Google Local data via SerpAPI.
