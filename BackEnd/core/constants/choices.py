@@ -250,6 +250,7 @@ PURCHASE_ORDER_STATUS_CHOICES = [
 LEAD_STATUS_CHOICES = [
     ('New', gettext('New')),
     ('Contacted', gettext('Contacted')),
+    ('Interested', gettext('Interested')),
     ('Converted', gettext('Converted')),
     ('Rejected', gettext('Rejected'))
 ]
