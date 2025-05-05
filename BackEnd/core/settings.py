@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Security
-    'axes',  # Proteção contra força bruta
+    'axes',  # Brute force protection
     
     # WebSockets
     'channels',
@@ -295,10 +295,7 @@ elif DB_NAME and DB_USER:
     }
 else:
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "db.sqlite3",
-        }
+        "default": dict(ENGINE="django.db.backends.sqlite3", NAME="db.sqlite3")
     }
 
 ################################
