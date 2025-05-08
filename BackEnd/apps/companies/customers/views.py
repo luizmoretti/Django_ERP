@@ -749,41 +749,37 @@ class BaseLeadsView:
         responses={
             200: {
                 'description': 'Leads generated successfully',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'total_results': {
-                                'type': 'integer',
-                                'description': 'Total number of business results found'
-                            },
-                            'new_leads': {
-                                'type': 'integer',
-                                'description': 'Number of new leads created'
-                            },
-                            'existing_leads': {
-                                'type': 'integer',
-                                'description': 'Number of existing leads updated'
-                            },
-                            'message': {
-                                'type': 'string',
-                                'description': 'Summary message about the operation'
-                            }
-                        }
+                'type': 'object',
+                'properties': {
+                    'total_results': {
+                        'type': 'integer',
+                        'description': 'Total number of business results found'
+                    },
+                    'new_leads': {
+                        'type': 'integer',
+                        'description': 'Number of new leads created'
+                    },
+                    'existing_leads': {
+                        'type': 'integer',
+                        'description': 'Number of existing leads updated'
+                    },
+                    'message': {
+                        'type': 'string',
+                        'description': 'Summary message about the operation',
+                        'examples': [
+                            'Successfully generated 5 new leads.',
+                            'No new leads were generated.'
+                        ]
                     }
                 }
             },
             400: {
                 'description': 'Bad request',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'error': {
-                                'type': 'string',
-                                'description': 'Error message explaining the validation failure'
-                            }
-                        }
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'description': 'Error message explaining the validation failure'
                     }
                 }
             },
@@ -795,15 +791,11 @@ class BaseLeadsView:
             },
             500: {
                 'description': 'Server error',
-                'content': {
-                    'application/json': {
-                        'type': 'object',
-                        'properties': {
-                            'error': {
-                                'type': 'string',
-                                'description': 'Error message'
-                            }
-                        }
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'description': 'Error message'
                     }
                 }
             }
@@ -890,7 +882,7 @@ class GenerateLeadsView(BaseLeadsView, CreateAPIView):
                 "total_results": result['total_results'],
                 "new_leads": result['new_leads'],
                 "existing_leads": result['existing_leads'],
-                "message": f"Successfully generated {result['new_leads']} new leads."
+                "message": result['message']
             })
             
         except ValidationError as e:

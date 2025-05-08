@@ -47,7 +47,7 @@ class CustomerService:
                 
             # Case 3: Search by company ID
             elif 'company_id' in kwargs:
-                customers = Customer.objects.filter(companie_id=kwargs['company_id'])
+                customers = Customer.objects.filter(company_id=kwargs['company_id'])
                 logger.info(f'[SERVICES] Found {customers.count()} customers for company {kwargs["company_id"]}')
                 return list(customers)
                 
@@ -106,20 +106,20 @@ class CustomerLeadBusinessValidator:
     
     def validate_company_access(self, data_or_instance, user):
         """Validate that user has access to company resources"""
-        if hasattr(data_or_instance, 'companie'):
+        if hasattr(data_or_instance, 'company'):
             # Instance case
-            if data_or_instance.companie != user.employeer.companie:
+            if data_or_instance.company != user.employeer.company:
                 logger.error(
                     f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
-                    extra={'user_id': user.id, 'company_id': data_or_instance.companie.id}
+                    extra={'user_id': user.id, 'company_id': data_or_instance.company.id}
                 )
                 raise ValidationError(_("You don't have access to this company's resources"))
-        elif isinstance(data_or_instance, dict) and 'companie' in data_or_instance:
+        elif isinstance(data_or_instance, dict) and 'company' in data_or_instance:
             # Data dict case with company specified
-            if data_or_instance['companie'] != user.employeer.companie:
+            if data_or_instance['company'] != user.employeer.company:
                 logger.error(
                     f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
-                    extra={'user_id': user.id, 'company_id': data_or_instance['companie'].id}
+                    extra={'user_id': user.id, 'company_id': data_or_instance['company'].id}
                 )
                 raise ValidationError(_("You don't have access to this company's resources"))
 
@@ -188,7 +188,7 @@ class CustomerLeadService:
         # Validate business rules
         self.validator.validate_lead_data(data)
         
-        # Create lead - BaseModel will automatically set companie, created_by, and updated_by
+        # Create lead - BaseModel will automatically set company, created_by, and updated_by
         lead = CustomerLeads.objects.create(**data)
         
         # Pass user to save method to ensure proper audit field values
@@ -224,7 +224,7 @@ class CustomerLeadService:
         
         # Update fields
         for field, value in data.items():
-            if field not in ['companie', 'created_at', 'updated_at', 'created_by', 'updated_by']:  # Skip audit fields
+            if field not in ['company', 'created_at', 'updated_at', 'created_by', 'updated_by']:  # Skip audit fields
                 setattr(instance, field, value)
         
         instance.save(user=user)
@@ -274,7 +274,7 @@ class CustomerLeadService:
             ValidationError: If validation fails
         """
         try:
-            lead = CustomerLeads.objects.get(id=lead_id, companie=user.employeer.companie)
+            lead = CustomerLeads.objects.get(id=lead_id, company=user.employeer.company)
         except CustomerLeads.DoesNotExist:
             logger.error(
                 f"[CUSTOMER LEAD SERVICE] - Lead not found",
@@ -335,7 +335,8 @@ class CustomerLeadService:
                 "total_results": 0,
                 "new_leads": 0,
                 "existing_leads": 0,
-                "leads": []
+                "leads": [],
+                "message": "No new leads were generated."
             }
         
         # Process the business data to create leads
@@ -344,12 +345,12 @@ class CustomerLeadService:
         
         with transaction.atomic():
             
-            # Preparação para verificação em massa
+            #Preparation for mass verification
             place_ids = [b.get('place_id') for b in business_data if b.get('place_id')]
             name_addresses = [(b.get('name'), b.get('address')) for b in business_data 
                               if b.get('name') and b.get('address')]
         
-            # Busca eficiente de leads existentes
+            #Efficient lead search
             existing_by_place_id = {
                 lead.place_id: lead for lead in 
                 CustomerLeads.objects.filter(
@@ -358,7 +359,7 @@ class CustomerLeadService:
                 )
             }
         
-            # Busca por nome+endereço para os que não têm place_id
+            # Search by name+address for those without place_id
             name_address_filter = Q()
             for name, address in name_addresses:
                 name_address_filter |= Q(name=name, address=address)
@@ -371,32 +372,19 @@ class CustomerLeadService:
                 ):
                     existing_by_name_address[(lead.name, lead.address)] = lead
         
-            # Constantes para comparações
-            info_placeholders = ["", None, "INFO NOT INCLUDED", "NO RATING FOUND", 
-                            "NO REVIEWS FOUND", "NO PHONE FOUND", "NO WEBSITE FOUND"]
-        
-            # Preparar listas para bulk create e update
+            #Constants for comparisons - convert to set for more efficient comparisons
+            info_placeholders = set(["", None, "INFO NOT INCLUDED", "NO RATING FOUND", 
+                            "NO REVIEWS FOUND", "NO PHONE FOUND", "NO WEBSITE FOUND"])
+            
+            #Preparing bulk create and update lists
             leads_to_create = []
             leads_to_update = []
-            
-            
-            
-            
-            
-            
             
             for business in business_data:
                 # Check if lead already exists by place_id or name+address
                 existing_lead = None
                 if business.get('place_id') and business['place_id'] in existing_by_place_id:
-                    existing_lead = existing_by_place_id[business['place_id']]
-                    
-                    
-                    # existing_lead = CustomerLeads.objects.filter(
-                        # place_id=business['place_id'],
-                        # companie=user.employeer.companie
-                    # ).first()
-                    
+                    existing_lead = existing_by_place_id[business['place_id']]                    
                 elif business.get('name') and business.get('address'):
                     key = (business['name'], business['address'])
                     existing_lead = existing_by_name_address.get(key)
@@ -409,34 +397,65 @@ class CustomerLeadService:
                     ).first()
                 
                 if existing_lead:
-                    # Update existing lead with any new information
+                    #Update existing lead with any new information
+                    updated = False
                     for field, value in business.items():
-                        if value != "INFO NOT INCLUDED" and value != "NO RATING FOUND" and value != "NO REVIEWS FOUND" and value != "NO PHONE FOUND" and value != "NO WEBSITE FOUND":
-                            if getattr(existing_lead, field, None) in ["", None, "INFO NOT INCLUDED", "NO RATING FOUND", "NO REVIEWS FOUND", "NO PHONE FOUND", "NO WEBSITE FOUND"]:
+                        if not isinstance(value, dict) and value not in info_placeholders:
+                            if not isinstance(getattr(existing_lead, field, None), dict) and getattr(existing_lead, field, None) in info_placeholders:
                                 setattr(existing_lead, field, value)
+                                updated = True
                     
-                    existing_lead.save(user=user)
+                    if updated:
+                        leads_to_update.append(existing_lead)
                     existing_leads.append(existing_lead)
                 else:
                     # Create new lead - don't set audit fields as they're handled by BaseModel
                     lead_data = {
                         'name': business['name'],
-                        'address': business['address'] if business['address'] != "INFO NOT INCLUDED" else "",
-                        'phone': business['phone'] if business['phone'] != "NO PHONE FOUND" else "",
-                        'website': business['website'] if business['website'] != "NO WEBSITE FOUND" else "",
-                        'hours': business['hours'] if business['hours'] != "INFO NOT INCLUDED" else "",
-                        'rating': business['rating'] if business['rating'] != "NO RATING FOUND" else "",
-                        'reviews': business['reviews'] if business['reviews'] != "NO REVIEWS FOUND" else "",
-                        'category': business['category'] if business['category'] != "INFO NOT INCLUDED" else "",
-                        'place_id': business['place_id'] if business['place_id'] != "INFO NOT INCLUDED" else "",
-                        'status': "New"
-                        # No need to set companie, created_by, or updated_by; BaseModel handles these
+                        'address': business['address'] if business['address'] not in info_placeholders else "",
+                        'phone': business['phone'] if business['phone'] not in info_placeholders else "",
+                        'website': business['website'] if business['website'] not in info_placeholders else "",
+                        'hours': business['hours'] if business['hours'] not in info_placeholders else "",
+                        'rating': business['rating'] if business['rating'] not in info_placeholders else "",
+                        'reviews': business['reviews'] if business['reviews'] not in info_placeholders else "",
+                        'category': business['category'] if business['category'] not in info_placeholders else "",
+                        'place_id': business['place_id'] if business['place_id'] not in info_placeholders else "",
+                        'status': "New",
                     }
                     
-                    lead = CustomerLeads.objects.create(**lead_data)
-                    # Pass the user to save() to ensure proper audit field values
-                    lead.save(user=user)
-                    created_leads.append(lead)
+                    # Add to bulk_create list instead of creating individually
+                    new_lead = CustomerLeads(**lead_data)
+                    leads_to_create.append(new_lead)
+            
+            # Bulk create for new leads
+            if leads_to_create:
+                # It is not possible to use bulk_create directly due to the custom save() method of BaseModel
+                # that needs to process audit fields. We create smaller batches for efficiency
+                batch_size = 100
+                for i in range(0, len(leads_to_create), batch_size):
+                    batch = leads_to_create[i:i + batch_size]
+                    for lead in batch:
+                        lead.save(user=user)  # Save with user for audit fields
+                    created_leads.extend(batch)
+                
+                logger.info(
+                    f"[CUSTOMER LEAD SERVICE] - Created {len(created_leads)} leads in bulk operation",
+                    extra={'batch_count': len(created_leads) // batch_size + (1 if len(created_leads) % batch_size > 0 else 0)}
+                )
+            
+            # Bulk update for existing leads
+            if leads_to_update:
+                # Same limit for bulk_update due to the custom save() method
+                batch_size = 100
+                for i in range(0, len(leads_to_update), batch_size):
+                    batch = leads_to_update[i:i + batch_size]
+                    for lead in batch:
+                        lead.save(user=user)  # Save with user for audit fields
+                
+                logger.info(
+                    f"[CUSTOMER LEAD SERVICE] - Updated {len(leads_to_update)} leads in bulk operation",
+                    extra={'batch_count': len(leads_to_update) // batch_size + (1 if len(leads_to_update) % batch_size > 0 else 0)}
+                )
         
         logger.info(
             f"[CUSTOMER LEAD SERVICE] - Leads generated successfully: {len(created_leads)} new, {len(existing_leads)} existing",
@@ -448,9 +467,16 @@ class CustomerLeadService:
             }
         )
         
+        # Determine appropriate message based on number of new leads
+        if len(created_leads) > 0:
+            message = f"Successfully generated {len(created_leads)} new leads."
+        else:
+            message = "No new leads were generated."
+        
         return {
             "total_results": len(business_data),
             "new_leads": len(created_leads),
             "existing_leads": len(existing_leads),
-            "leads": created_leads + existing_leads
+            "leads": created_leads + existing_leads,
+            "message": message
         }
