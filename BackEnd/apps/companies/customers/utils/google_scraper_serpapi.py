@@ -6,6 +6,9 @@ import sys
 from typing import Dict, List, Optional, Any, Union
 import django
 import asyncio  # Added for asyncio operations
+from django.core.cache import cache
+import hashlib
+import tenacity
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,12 @@ class GoogleLocalSearchService:
         """Initialize the service with API key from settings"""
         self.api_key = self._get_api_key()
         self.base_url = self._get_base_url()
+        self._http_client = None
+        
+    def _get_cache_key(self, query, location, limit, include_all_pages):
+        """Generate a unique cache key for search params"""
+        key_parts = f"{query}:{location}:{limit}:{include_all_pages}"
+        return f"google_search:{hashlib.sha256(key_parts.encode()).hexdigest()}"
         
     def _get_api_key(self) -> str:
         """
@@ -78,6 +87,22 @@ class GoogleLocalSearchService:
             logger.warning(f"[GOOGLE LOCAL SERVICE ASYNC] - No SerpAPI base URL found, using default: {base_url}")
         return base_url
     
+    def _get_http_client(self):
+        """Get or create a shared HTTP client"""
+        if self.__class__._http_client is None:
+            timeout = httpx.Timeout(30.0, connect=10.0)
+            limits = httpx.Limits(max_connections=10, max_keepalive_connections=5)
+            self.__class__._http_client = httpx.AsyncClient(timeout=timeout, limits=limits)
+        return self.__class__._http_client
+    
+    
+    
+    @tenacity.retry(
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_exponential(multiplier=1, min=2, max=10),
+        retry=tenacity.retry_if_exception_type((httpx.HTTPError, httpx.NetworkError)),
+        reraise=True
+    )
     async def _fetch_page(self, client: httpx.AsyncClient, params: Dict[str, Any], page_num_logging: Union[int, str]) -> Optional[Dict[str, Any]]:
         """ Helper function to fetch a single page asynchronously. """
         try:
@@ -193,6 +218,14 @@ class GoogleLocalSearchService:
         Returns:
             List[Dict]: Processed results with business information
         """
+        # Verify cache first
+        cache_key = self._get_cache_key(query, location, limit, include_all_pages)
+        cached_results = cache.get(cache_key)
+        
+        if cached_results:
+            logger.info(f"[GOOGLE LOCAL SERVICE] - Returning cached results for '{query}' in '{location}'")
+            return cached_results
+        
         try:
             logger.info(f"[GOOGLE LOCAL SERVICE] - Starting synchronous search for '{query}' in '{location}'")
             loop = asyncio.new_event_loop()
@@ -207,6 +240,12 @@ class GoogleLocalSearchService:
             )
             loop.close()
             logger.info(f"[GOOGLE LOCAL SERVICE] - Completed synchronous search with {len(results)} results")
+            
+            # Save results in cache
+            if results:
+                logger.info(f"[GOOGLE LOCAL SERVICE] - Saving results in cache for '{query}' in '{location}'")
+                cache.set(cache_key, results, timeout=3600) # 1 Hour
+            
             return results
         except Exception as e:
             logger.error(f"[GOOGLE LOCAL SERVICE] - Error in synchronous search: {str(e)}")

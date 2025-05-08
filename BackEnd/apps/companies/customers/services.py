@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from .models import Customer, CustomerProjectAddress, CustomerBillingAddress, CustomerLeads
 from .utils.google_scraper_serpapi import GoogleLocalSearchService
 from django.db import transaction
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -342,14 +343,63 @@ class CustomerLeadService:
         existing_leads = []
         
         with transaction.atomic():
+            
+            # Preparação para verificação em massa
+            place_ids = [b.get('place_id') for b in business_data if b.get('place_id')]
+            name_addresses = [(b.get('name'), b.get('address')) for b in business_data 
+                              if b.get('name') and b.get('address')]
+        
+            # Busca eficiente de leads existentes
+            existing_by_place_id = {
+                lead.place_id: lead for lead in 
+                CustomerLeads.objects.filter(
+                    place_id__in=place_ids,
+                    companie=user.employeer.companie
+                )
+            }
+        
+            # Busca por nome+endereço para os que não têm place_id
+            name_address_filter = Q()
+            for name, address in name_addresses:
+                name_address_filter |= Q(name=name, address=address)
+        
+            existing_by_name_address = {}
+            if name_address_filter:
+                for lead in CustomerLeads.objects.filter(
+                    name_address_filter,
+                    companie=user.employeer.companie
+                ):
+                    existing_by_name_address[(lead.name, lead.address)] = lead
+        
+            # Constantes para comparações
+            info_placeholders = ["", None, "INFO NOT INCLUDED", "NO RATING FOUND", 
+                            "NO REVIEWS FOUND", "NO PHONE FOUND", "NO WEBSITE FOUND"]
+        
+            # Preparar listas para bulk create e update
+            leads_to_create = []
+            leads_to_update = []
+            
+            
+            
+            
+            
+            
+            
             for business in business_data:
                 # Check if lead already exists by place_id or name+address
                 existing_lead = None
-                if business.get('place_id'):
-                    existing_lead = CustomerLeads.objects.filter(
-                        place_id=business['place_id'],
-                        companie=user.employeer.companie
-                    ).first()
+                if business.get('place_id') and business['place_id'] in existing_by_place_id:
+                    existing_lead = existing_by_place_id[business['place_id']]
+                    
+                    
+                    # existing_lead = CustomerLeads.objects.filter(
+                        # place_id=business['place_id'],
+                        # companie=user.employeer.companie
+                    # ).first()
+                    
+                elif business.get('name') and business.get('address'):
+                    key = (business['name'], business['address'])
+                    existing_lead = existing_by_name_address.get(key)
                 
                 if not existing_lead and business.get('name') and business.get('address'):
                     existing_lead = CustomerLeads.objects.filter(
