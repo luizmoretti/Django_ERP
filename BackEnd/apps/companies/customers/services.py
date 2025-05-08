@@ -322,7 +322,7 @@ class CustomerLeadService:
         self.validator.validate_search_query(query, location)
         
         # Get business data from Google Local Search
-        business_data = self.scraper.search_local_businesses(
+        business_data = self.scraper.search_local_businesses_sync(
             query=query,
             location=location,
             limit=limit,
