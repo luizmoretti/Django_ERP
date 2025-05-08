@@ -921,13 +921,13 @@ class GenerateLeadsView(BaseLeadsView, CreateAPIView):
         parameters=[
             OpenApiParameter(
                 name="status",
-                description="Filter leads by status (e.g., 'new', 'contacted', 'converted')",
+                description="Filter leads by status (e.g., 'New', 'Contacted', 'Converted')",
                 required=False,
                 type=OpenApiTypes.STR,
                 enum=[
-                    'new',
-                    'contacted',
-                    'converted'
+                    'New',
+                    'Contacted',
+                    'Converted'
                 ]
             ),
             OpenApiParameter(
@@ -947,32 +947,30 @@ class ListLeadsView(BaseLeadsView, ListAPIView):
     View for listing customer leads.
     
     This view returns a paginated list of all customer leads associated with
-    the user's company, sorted by creation date (newest first) and status.
-    
-    Attributes:
-        serializer_class: Serializer class for lead objects
-        
-    Methods:
-        get_queryset: Optimizes the queryset with proper ordering and prefetching
-        list: Handle GET requests to list leads with performance optimizations
+    the user's company, sorted by creation date (newest first).
     """
     serializer_class = CustomerLeadsSerializer
     
     def get_queryset(self):
         """
         Get optimized queryset with proper ordering and prefetching.
-        
+
         Returns:
             QuerySet: Optimized CustomerLeads queryset
         """
         # Get base queryset from parent class (with company filtering)
         queryset = super().get_queryset()
         
-        # Optimize with select_related for foreign keys
+        # Optimize with select_related for foreign keys, but only select necessary fields
         queryset = queryset.select_related(
             'companie',       # Pre-fetch company data
             'created_by',     # Pre-fetch user who created the lead
             'updated_by'      # Pre-fetch user who last updated the lead
+        ).only(
+            'id', 'name', 'status', 'created_at', 'updated_at',
+            'companie__id', 'companie__name',
+            'created_by__id', 'created_by__name', 
+            'updated_by__id', 'updated_by__name'
         )
         
         # Apply filters if provided in query params
@@ -985,46 +983,22 @@ class ListLeadsView(BaseLeadsView, ListAPIView):
         if search:
             queryset = queryset.filter(name__icontains=search)
             
-        # Order by newest first, then by status
-        return queryset.order_by('-created_at', 'status')
+        # Order by newest first
+        return queryset.order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         """
         List all customer leads for the user's company with optimized performance.
-        
-        Args:
-            request: HTTP request
-            
-        Returns:
-            Response: JSON response with lead data
-            
-        Raises:
-            Exception: Any errors during retrieval
         """
         try:
             # Get the queryset and apply filters
             queryset = self.filter_queryset(self.get_queryset())
             
-            # Only calculate count if debug level logging is enabled
-            # This avoids unnecessary DB queries in production
-            count = None
-            
-            # Apply pagination
+            # Apply standard pagination
             page = self.paginate_queryset(queryset)
             
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
-                
-                # Only calculate count for debug level logging
-                if logger.isEnabledFor(logging.DEBUG):
-                    count = queryset.count()
-                    logger.debug(
-                        f"[CUSTOMER LEADS VIEW] - Total lead count: {count}",
-                        extra={
-                            'requester_id': request.user.id,
-                            'page_size': len(page)
-                        }
-                    )
                 
                 logger.info(
                     "[CUSTOMER LEADS VIEW] - Customer leads listed successfully",
@@ -1032,17 +1006,9 @@ class ListLeadsView(BaseLeadsView, ListAPIView):
                 )
                 return self.get_paginated_response(serializer.data)
             
-            # If pagination is not required
+            # If pagination is not required (which should be rare)
             serializer = self.get_serializer(queryset, many=True)
             
-            # Log count only at debug level
-            if logger.isEnabledFor(logging.DEBUG):
-                count = count or queryset.count()
-                logger.debug(
-                    f"[CUSTOMER LEADS VIEW] - Total lead count: {count}",
-                    extra={'requester_id': request.user.id}
-                )
-                
             logger.info(
                 "[CUSTOMER LEADS VIEW] - Customer leads listed successfully",
                 extra={'requester_id': request.user.id}

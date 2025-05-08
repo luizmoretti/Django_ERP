@@ -327,7 +327,10 @@ class CustomerLeads(BaseModel):
     class Meta:
         verbose_name = "Customer Lead"
         verbose_name_plural = "Customer Leads"
-        ordering = ['-created_at', 'status']
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at'])
+        ]
     
     def __str__(self):
         return f"[{self.status}] {self.name}"
