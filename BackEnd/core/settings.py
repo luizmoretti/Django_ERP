@@ -587,7 +587,7 @@ REST_FRAMEWORK = {
     # Standardized datetime formats
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
-    'DATETIME_INPUT_FORMATS': ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S'],
+    'DATETIME_INPUT_FORMATS': ['%Y-%m-%dT%H:%M:%S'],
     'DATE_INPUT_FORMATS': ['%Y-%m-%d'],
     
     # Optional performance enhancement for production
