@@ -670,28 +670,28 @@ class BaseLeadsView:
     
     def get_queryset(self):
         """
-        Filter queryset to only show leads from the user's company.
+        Filter queryset to only show leads from the user's companie.
         
         Returns:
             QuerySet: Filtered CustomerLeads queryset
         """
         user = self.request.user
         
-        # Ensure user has a valid employeer with company association
+        # Ensure user has a valid employeer with companie association
         if not hasattr(user, 'employeer') or not user.employeer or not user.employeer.companie:
             logger.warning(
-                "[CUSTOMER LEADS VIEW] - User without valid company association attempted to access leads",
+                "[CUSTOMER LEADS VIEW] - User without valid companie association attempted to access leads",
                 extra={'user_id': user.id}
             )
             return CustomerLeads.objects.none()
         
-        # Filter by company
+        # Filter by companie
         queryset = CustomerLeads.objects.filter(companie=user.employeer.companie)
         
         logger.debug(
-            f"[CUSTOMER LEADS VIEW] - Filtered queryset by company",
+            f"[CUSTOMER LEADS VIEW] - Filtered queryset by companie",
             extra={
-                'company_id': str(user.employeer.companie.id),
+                'companie_id': str(user.employeer.companie.id),
                 'lead_count': queryset.count(),
                 'user_id': user.id
             }
@@ -911,12 +911,12 @@ class GenerateLeadsView(BaseLeadsView, CreateAPIView):
     get=extend_schema(
         tags=["Customers - Leads"],
         operation_id="list_customer_leads",
-        description="""List all customer leads associated with the user's company.
+        description="""List all customer leads associated with the user's companie.
         
         Supports filtering by status and searching by name.
         
         Returns:
-            List[CustomerLeads]: List of customer leads associated with the user's company.
+            List[CustomerLeads]: List of customer leads associated with the user's companie.
         """,
         parameters=[
             OpenApiParameter(
@@ -947,7 +947,7 @@ class ListLeadsView(BaseLeadsView, ListAPIView):
     View for listing customer leads.
     
     This view returns a paginated list of all customer leads associated with
-    the user's company, sorted by creation date (newest first).
+    the user's companie, sorted by creation date (newest first).
     """
     serializer_class = CustomerLeadsSerializer
     
@@ -958,12 +958,12 @@ class ListLeadsView(BaseLeadsView, ListAPIView):
         Returns:
             QuerySet: Optimized CustomerLeads queryset
         """
-        # Get base queryset from parent class (with company filtering)
+        # Get base queryset from parent class (with companie filtering)
         queryset = super().get_queryset()
         
         # Optimize with select_related for foreign keys, but only select necessary fields
         queryset = queryset.select_related(
-            'companie',       # Pre-fetch company data
+            'companie',       # Pre-fetch companie data
             'created_by',     # Pre-fetch user who created the lead
             'updated_by'      # Pre-fetch user who last updated the lead
         ).only(

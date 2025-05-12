@@ -21,12 +21,12 @@ class CustomerService:
                 - id (str): Customer UUID
                 - first_name (str): Customer's first name
                 - last_name (str): Customer's last name
-                - company_id (str): UUID of the company
+                - companie_id (str): UUID of the companie
                 
         Returns:
             Union[Optional[Customer], List[Customer]]: 
             - Single Customer instance if searching by id or full name
-            - List of Customer instances if searching by company_id
+            - List of Customer instances if searching by companie_id
             - None if no match found for single customer search
         """
         try:
@@ -45,20 +45,20 @@ class CustomerService:
                 logger.info(f'[SERVICES] Customer {customer.full_name()} retrieved')
                 return customer
                 
-            # Case 3: Search by company ID
-            elif 'company_id' in kwargs:
-                customers = Customer.objects.filter(company_id=kwargs['company_id'])
-                logger.info(f'[SERVICES] Found {customers.count()} customers for company {kwargs["company_id"]}')
+            # Case 3: Search by companie ID
+            elif 'companie_id' in kwargs:
+                customers = Customer.objects.filter(companie_id=kwargs['companie_id'])
+                logger.info(f'[SERVICES] Found {customers.count()} customers for companie {kwargs["companie_id"]}')
                 return list(customers)
                 
             else:
                 logger.error('[SERVICES] Invalid search criteria provided')
-                raise ValueError('[SERVICES] Invalid search criteria. Must provide either id, full name, or company_id')
+                raise ValueError('[SERVICES] Invalid search criteria. Must provide either id, full name, or companie_id')
                 
         except ObjectDoesNotExist:
             search_criteria = ' '.join(f'{k}={v}' for k, v in kwargs.items())
             logger.error(f'[SERVICES] Customer not found with criteria: {search_criteria}')
-            return None if 'company_id' not in kwargs else []
+            return None if 'companie_id' not in kwargs else []
     
     @staticmethod
     def create_customer(customer_data: dict) -> Optional[Customer]:
@@ -106,22 +106,22 @@ class CustomerLeadBusinessValidator:
     
     def validate_company_access(self, data_or_instance, user):
         """Validate that user has access to company resources"""
-        if hasattr(data_or_instance, 'company'):
+        if hasattr(data_or_instance, 'companie'):
             # Instance case
-            if data_or_instance.company != user.employeer.company:
+            if data_or_instance.companie != user.employeer.companie:
                 logger.error(
-                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
-                    extra={'user_id': user.id, 'company_id': data_or_instance.company.id}
+                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to companie",
+                    extra={'user_id': user.id, 'companie_id': data_or_instance.companie.id}
                 )
-                raise ValidationError(_("You don't have access to this company's resources"))
-        elif isinstance(data_or_instance, dict) and 'company' in data_or_instance:
-            # Data dict case with company specified
-            if data_or_instance['company'] != user.employeer.company:
+                raise ValidationError(_("You don't have access to this companie's resources"))
+        elif isinstance(data_or_instance, dict) and 'companie' in data_or_instance:
+            # Data dict case with companie specified
+            if data_or_instance['companie'] != user.employeer.companie:
                 logger.error(
-                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to company",
-                    extra={'user_id': user.id, 'company_id': data_or_instance['company'].id}
+                    f"[CUSTOMER LEAD VALIDATOR] - User does not have access to companie",
+                    extra={'user_id': user.id, 'companie_id': data_or_instance['companie'].id}
                 )
-                raise ValidationError(_("You don't have access to this company's resources"))
+                raise ValidationError(_("You don't have access to this companie's resources"))
 
     def validate_lead_data(self, data):
         """Validate lead data for creation or update"""
@@ -188,7 +188,7 @@ class CustomerLeadService:
         # Validate business rules
         self.validator.validate_lead_data(data)
         
-        # Create lead - BaseModel will automatically set company, created_by, and updated_by
+        # Create lead - BaseModel will automatically set companie, created_by, and updated_by
         lead = CustomerLeads.objects.create(**data)
         
         # Pass user to save method to ensure proper audit field values
@@ -224,7 +224,7 @@ class CustomerLeadService:
         
         # Update fields
         for field, value in data.items():
-            if field not in ['company', 'created_at', 'updated_at', 'created_by', 'updated_by']:  # Skip audit fields
+            if field not in ['companie', 'created_at', 'updated_at', 'created_by', 'updated_by']:  # Skip audit fields
                 setattr(instance, field, value)
         
         instance.save(user=user)
@@ -274,7 +274,7 @@ class CustomerLeadService:
             ValidationError: If validation fails
         """
         try:
-            lead = CustomerLeads.objects.get(id=lead_id, company=user.employeer.company)
+            lead = CustomerLeads.objects.get(id=lead_id, companie=user.employeer.companie)
         except CustomerLeads.DoesNotExist:
             logger.error(
                 f"[CUSTOMER LEAD SERVICE] - Lead not found",
