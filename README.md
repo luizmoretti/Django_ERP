@@ -21,7 +21,7 @@
 <img src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&logo=Redis&logoColor=white" alt="Redis">
 <!-- <img src="https://img.shields.io/badge/Cookiecutter-D4AA00.svg?style=flat&logo=Cookiecutter&logoColor=white" alt="Cookiecutter"> -->
 <!-- <img src="https://img.shields.io/badge/Rich-FAE742.svg?style=flat&logo=Rich&logoColor=black" alt="Rich"> -->
-<!-- <img src="https://img.shields.io/badge/Ruff-D7FF64.svg?style=flat&logo=Ruff&logoColor=black" alt="Ruff"> -->
+<img src="https://img.shields.io/badge/Ruff-D7FF64.svg?style=flat&logo=Ruff&logoColor=black" alt="Ruff">
 <img src="https://img.shields.io/badge/Selenium-43B02A.svg?style=flat&logo=Selenium&logoColor=white" alt="Selenium">
 <br>
 <img src="https://img.shields.io/badge/Celery-37814A.svg?style=flat&logo=Celery&logoColor=white" alt="Celery">
