@@ -34,7 +34,7 @@ class DeliveryCheckpointSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'timestamp', 'status_display']
         
-    def get_status_display(self, obj):
+    def get_status_display(self, obj) -> str:
         """Returns the human-readable status value."""
         return obj.get_status_display()
 

@@ -25,6 +25,9 @@ urlpatterns = [
     path('user/', include('apps.accounts.urls')),
     path('profiles/', include('apps.accounts.profiles.urls')),
     
+    # Companies endpoints
+    path('companies/', include('apps.companies.urls', namespace='companies')),
+    
     # Customer endpoints
     path('customers/', include('apps.companies.customers.urls')),
     

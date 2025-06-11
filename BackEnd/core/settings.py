@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Security
-    'axes',  # Proteção contra força bruta
+    'axes',  # Brute force protection
     
     # WebSockets
     'channels',
@@ -295,10 +295,7 @@ elif DB_NAME and DB_USER:
     }
 else:
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "db.sqlite3",
-        }
+        "default": dict(ENGINE="django.db.backends.sqlite3", NAME="db.sqlite3")
     }
 
 ################################
@@ -570,7 +567,7 @@ REST_FRAMEWORK = {
     
     # Optimized pagination settings
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 10,
     
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_VERSIONING_CLASS': None,
@@ -590,7 +587,7 @@ REST_FRAMEWORK = {
     # Standardized datetime formats
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
-    'DATETIME_INPUT_FORMATS': ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S'],
+    'DATETIME_INPUT_FORMATS': ['%Y-%m-%dT%H:%M:%S'],
     'DATE_INPUT_FORMATS': ['%Y-%m-%d'],
     
     # Optional performance enhancement for production
@@ -619,7 +616,7 @@ USE_I18N = True
 USE_TZ = False
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-DATETIME_INPUT_FORMATS = ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S']
+DATETIME_INPUT_FORMATS = ['%Y-%m-%dT%H:%M:%S']
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_INPUT_FORMATS = ['%Y-%m-%d']
@@ -781,7 +778,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SPECTACULAR_SETTINGS = {
     'TITLE': 'DryWall WareHouse API',
     'DESCRIPTION': 'API Documentation for DryWall WareHouse System',
-    'VERSION': '0.0.1',
+    'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': True,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
     
@@ -844,6 +841,9 @@ SPECTACULAR_SETTINGS = {
         # Customers
         {'name': 'Companies - Customers', 'description': 'Customer management endpoints'},
         
+        # Leads
+        {'name': 'Customers - Leads', 'description': 'Lead management endpoints'},
+        
         # Accounts Management
         {'name': 'Accounts - Authentication', 'description': 'Authentication endpoints'},
         {'name': 'Accounts - Management', 'description': 'User management endpoints'},
@@ -851,10 +851,12 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Accounts - Password Reset', 'description': 'Password reset endpoint'},
         
         # Companies
+        {'name': 'Companie', 'description': 'Company management endpoints'},
         {'name': 'Companies - Employees', 'description': 'Employee management endpoints'},
         {'name': 'Companies - Attendance', 'description': 'Attendance management endpoints'},
         
-        {'name': 'Scheduler', 'description': 'Scheduler management endpoints'},
+        # Scheduller
+        {'name': 'Scheduller', 'description': 'Scheduller management endpoints'},
     ]
 }
 

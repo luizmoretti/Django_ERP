@@ -6,41 +6,48 @@
 Enterprise management system specialized for Drywall sector companies, offering inventory management, human resources, and business administration functionalities.
 
 #### 1.2 Technical Stack
-- **Backend Framework**: Django 5.1.4 + Django REST Framework 3.15.2
-- **Database**: PostgreSQL
-- **Cache**: Redis
-- **Task Queue**: Celery 5.4.0
-- **Authentication**: JWT (djangorestframework-simplejwt)
-- **Documentation**: DRF Spectacular
-- **Payment Processing**: Stripe
-- **File Handling**: Pillow
+- **Backend Framework**: Django 5.2 + Django REST Framework 3.16.0
+- **Database**: PostgreSQL 3.2.6
+- **Cache**: Redis 5.2.1
+- **Task Queue**: Celery 5.5.1
+- **Channels**: Django Channels 4.2.2 + Daphne 4.1.2
+- **Authentication**: JWT (djangorestframework-simplejwt 5.5.0)
+- **API Documentation**: DRF Spectacular 0.28.0
+- **Payment Processing**: Stripe 12.0.0
+- **File Handling**: Pillow 11.2.1
+- **Security**: Django-Axes 7.0.2 (proteção contra força bruta)
+- **Maps Integration**: Google Maps API 4.10.0
+- **Testing**: Factory Boy 3.3.3, Faker 37.1.0
 
 ### 2. System Architecture
 
 #### 2.1 Core Components
 ```
-DryWallWareHouse/
+Django_ERP/
 ├── api/                    # API endpoints centralization
 ├── apps/                   # Main application modules
 │   ├── accounts/          # User management and authentication
 │   │   ├── management/    # Custom management commands
-│   │   └── notifications/ # User-related notifications
+│   │   └── profiles/      # User profile management
+│   │       ├── services/  # Profile business logic services
+│   │       └── notifications/ # Profile-related notifications
 │   │
 │   ├── companies/         # Company and HR management
 │   │   ├── attendance/    # Employee attendance tracking
 │   │   ├── customers/     # Customer relationship management
-│   │   ├── employeers/    # Employee management
-│   │   └── notifications/ # Company-related notifications
+│   │   └── employeers/    # Employee management
 │   │
-│   ├── deliveries/        # Delivery management and tracking
-│   │   ├── vehicles/      # Vehicle fleet management
-│   │   └── notifications/ # Delivery-related notifications
+│   ├── delivery/          # Delivery management and tracking
+│   │   ├── services/      # Delivery business logic
+│   │   ├── notifications/ # Delivery-related notifications
+│   │   └── tasks/         # Asynchronous delivery tasks
 │   │
 │   ├── inventory/         # Stock and product management
 │   │   ├── brand/        # Product brand management
 │   │   ├── categories/   # Product categorization
 │   │   ├── inflows/      # Stock receiving management
 │   │   ├── load_order/   # Loading order management
+│   │   ├── movements/    # Base movement management
 │   │   ├── outflows/     # Stock dispatch management
 │   │   ├── product/      # Product catalog management
 │   │   ├── purchase_order/ # Purchase order processing
@@ -48,16 +55,26 @@ DryWallWareHouse/
 │   │   ├── transfer/     # Stock transfer between warehouses
 │   │   └── warehouse/    # Warehouse management
 │   │
-│   └── notifications/     # Centralized notification system
-│       ├── base.py       # Base notification handler
-│       ├── consumers.py  # WebSocket consumers
-│       ├── middleware.py # Notification middleware
-│       ├── routing.py    # WebSocket routing
-│       └── utils.py      # Notification utilities
+│   ├── notifications/     # Centralized notification system
+│   │   ├── base.py       # Base notification handler
+│   │   ├── consumers.py  # WebSocket consumers
+│   │   ├── middleware.py # Notification middleware
+│   │   ├── routing.py    # WebSocket routing
+│   │   └── utils.py      # Notification utilities
+│   │
+│   ├── scheduller/        # Scheduling and task management
+│   │   └── services/     # Scheduler business logic
+│   │
+│   └── vehicle/           # Vehicle fleet management
+│       └── services/      # Vehicle business logic services
+│
+├── basemodels/            # Base model definitions
 ├── core/                  # Project settings and configurations
-├── static/                # Static files
+├── custom_settings/       # Environment-specific settings
+├── logs/                  # System logs
 ├── media/                 # User-uploaded files
-└── logs/                  # System logs
+├── static/                # Static files
+└── templates/             # HTML templates
 ```
 
 #### 2.2 Module Structure
@@ -85,7 +102,31 @@ module_name/
 
 ### 3. Design Patterns & Standards
 
-#### 3.1 API Design
+#### 3.1 Service Pattern
+- **Separação de Responsabilidades**:
+  - **Views**: Gerenciamento de requisições e respostas HTTP
+  - **Services**: Encapsulamento da lógica de negócio
+  - **Validators**: Validação de regras de negócio
+  - **Serializers**: Transformação e validação de dados
+
+- **Estrutura de Services**:
+  ```python
+  class XxxService:
+      def __init__(self):
+          self.validator = XxxBusinessValidator()
+          
+      def create_xxx(self, data, user):
+          # Validação de regras de negócio
+          self.validator.validate_company_access(data, user)
+          
+          # Operações em transação atômica
+          with transaction.atomic():
+              # Implementação...
+              
+          return instance
+  ```
+
+#### 3.2 API Design
 - **URL Structure**: `/api/v1/{app_name}/{resource}/`
 - **HTTP Methods**:
   - GET: List/Retrieve
@@ -100,6 +141,18 @@ module_name/
     "message": "string",
     "errors": []
   }
+  ```
+
+- **Documentação com drf-spectacular**:
+  ```python
+  @extend_schema_view(
+      HTTPMethod=extend_schema(
+          tags=['Módulo - Submódulo'],
+          operation_id='operation_name',
+          summary='Descrição da operação',
+          responses={200: XxxSerializer}
+      )
+  )
   ```
 
 #### 3.2 Authentication & Authorization
@@ -119,28 +172,55 @@ module_name/
 ### 4. Module Specifications
 
 #### 4.1 Accounts Module
-- Custom user model (NormalUser)
-- Authentication endpoints
+- Custom user model (User)
+  - Email-based authentication (replacing username)
+  - User type classification (employee, customer, supplier)
+  - IP tracking for security audit
+- Authentication system
+  - JWT token-based authentication
+  - Password reset workflow with secure tokens
+  - Login attempt tracking and protection
+  - Session-based authentication option
 - User profile management
-- Permission management
-- Role-based access control
+  - Comprehensive profile data with contact information
+  - Profile services for business logic separation
+  - Profile-specific notifications
+- Role and permission system
+  - Fine-grained permission control
+  - Dynamic URL redirection based on user type
 
 #### 4.2 Companies Module
 - Company profile management
-- HR management
-- Department organization
-- Employee records
-- Payroll processing
-- Company-specific settings
+  - Company details and contact information
+- Customer relationship management
+  - Multiple address types (billing, shipping, project)
+  - Customer contact information
+- Employee management
+  - Employee profiles and contact details
+  - Employment history (hire/termination dates)
+- Attendance tracking
+  - Time tracking for hourly and daily employees
+  - Payroll calculations and processing
 
 #### 4.3 Inventory Module
-- Product management
-- Stock control
-- Order processing
-- Supplier management
-- Inventory tracking
-- Purchase order system
+- Product catalog management
+  - Product details and specifications
+  - Product categorization
+  - Brand management
+- Inventory movement system
+  - Inflows: Supplier to warehouse with approval workflow
+  - Outflows: Warehouse to customer with validation
+  - Transfers: Inter-warehouse stock movement
+  - Movement status tracking (pending, approved, rejected)
 - Warehouse management
+  - Multiple warehouse support
+  - Stock level tracking per location
+- Purchase order processing
+  - Order lifecycle management (draft → pending → approved/rejected)
+  - Order item management
+  - Supplier integration
+- Load order management
+  - Logistics preparation for deliveries
 
 ### 5. Security Standards
 
@@ -278,7 +358,7 @@ module_name/
   - Owner & CEO: Full access
   - Admin: Full access to assigned company
   - Manager: Department-level access
-  - Stock Controller: Limited inventory access
+  - Stocker: Limited inventory access
   - Employee: View-only access
 - Custom model permissions
 - Company-specific access
@@ -393,7 +473,7 @@ module_name/
 
 ## Versioning
 - Version: 1.0
-- Last Updated: 2025-02-12
+- Last Updated: 2025-04-19
 - Status: Active
 
 ## Contact

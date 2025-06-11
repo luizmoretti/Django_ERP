@@ -3,7 +3,7 @@ from django.conf import settings
 from basemodels.models import BaseAddressWithBaseModel
 from django.utils.translation import gettext
 from core.constants.choices import COUNTRY_CHOICES, STATE_CHOICES, PROFILE_POSITION_CHOICES, PROFILE_DEPARTMENT_CHOICES
-
+from typing import Optional
 
 
 class Profile(BaseAddressWithBaseModel):
@@ -97,12 +97,12 @@ class Profile(BaseAddressWithBaseModel):
     def __str__(self):
         return f"Profile of {self.user.get_full_name() or self.user.email}"
 
-    def get_full_name(self):
+    def get_full_name(self) -> str:
         """Returns user's full name or email if name not set."""
         return self.user.get_full_name() or self.user.email
 
     @property
-    def age(self):
+    def age(self) -> Optional[int]:
         """Calculate age based on birth_date."""
         if self.birth_date:
             from datetime import date
@@ -111,12 +111,12 @@ class Profile(BaseAddressWithBaseModel):
                 (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
             )
         return None
-
-    def get_social_link(self, platform):
+    
+    def get_social_link(self, platform: str) -> Optional[str]:
         """Get social media link for specific platform."""
         return self.social_links.get(platform)
-
-    def set_social_link(self, platform, url):
+    
+    def set_social_link(self, platform: str, url: str) -> None:
         """Set social media link for specific platform."""
         if not self.social_links:
             self.social_links = {}

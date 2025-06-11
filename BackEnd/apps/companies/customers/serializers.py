@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.companies.customers.models import Customer, CustomerBillingAddress, CustomerProjectAddress
+from apps.companies.customers.models import Customer, CustomerBillingAddress, CustomerProjectAddress, CustomerLeads
 from rest_framework.exceptions import ValidationError
 
 class CustomerBillingAddressSerializer(serializers.ModelSerializer):
@@ -280,3 +280,138 @@ class CustomerSerializer(serializers.ModelSerializer):
                 shipping_addr.save()
         
         return instance
+    
+class CustomerLeadsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for CustomerLeads model.
+    
+    This serializer handles operations related to business leads gathered from 
+    external sources such as Google Local Search. It manages both the display
+    of lead information and the creation/updating of lead records.
+    
+    Attributes:
+        id (UUIDField): Read-only lead identifier
+        name (CharField): Required business name
+        address (CharField): Business address
+        phone (CharField): Business phone number
+        website (CharField): Business website URL
+        hours (CharField): Business operating hours
+        rating (CharField): Business rating 
+        reviews (CharField): Number of reviews
+        category (CharField): Business category or type
+        place_id (CharField): Google Maps place ID
+        notes (CharField): Additional notes or observations
+        status (CharField): Lead status (choices from LEAD_STATUS_CHOICES)
+        created_by (SerializerMethodField): Creator's name
+        updated_by (SerializerMethodField): Last updater's name
+        companie (SerializerMethodField): Company name
+        created_at (DateTimeField): Creation timestamp
+        updated_at (DateTimeField): Last update timestamp
+    """
+    # Basic fields are handled by ModelSerializer
+    
+    # Audit fields
+    created_by = serializers.SerializerMethodField()
+    updated_by = serializers.SerializerMethodField()
+    companie = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
+    updated_at = serializers.DateTimeField(read_only=True, format="%Y-%m-%d %H:%M:%S")
+    
+    class Meta:
+        model = CustomerLeads
+        fields = [
+            'id',
+            'name',
+            'address',
+            'phone',
+            'website',
+            'hours',
+            'rating',
+            'reviews',
+            'category',
+            'place_id',
+            'notes',
+            'status',
+            'created_by',
+            'updated_by',
+            'companie',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = [
+            'id',
+            'created_by',
+            'updated_by',
+            'companie',
+            'created_at',
+            'updated_at'
+        ]
+    
+    def get_created_by(self, obj) -> str:
+        """Returns the human-readable created_by name."""
+        if obj.created_by:
+            return obj.created_by.user.get_full_name()
+        return "Created by system"
+    
+    def get_updated_by(self, obj) -> str:
+        """Returns the human-readable updated_by name."""
+        if obj.updated_by:
+            return obj.updated_by.user.get_full_name()
+        return "Created by system"
+    
+    def get_companie(self, obj):
+        """
+        Returns the name of the company the lead belongs to.
+        
+        Args:
+            obj: The CustomerLeads instance
+            
+        Returns:
+            str: Company name or None if not available
+        """
+        if obj.companie:
+            return f"[{obj.companie.type}] {obj.companie.name}"
+        return None
+    
+    def validate_status(self, value):
+        """
+        Validates the status value against allowed choices.
+        
+        Args:
+            value: The status value to validate
+            
+        Returns:
+            str: The validated status value
+            
+        Raises:
+            ValidationError: If status is invalid
+        """
+        from django.apps import apps
+        model = apps.get_model('customers', 'CustomerLeads')
+        valid_choices = [choice[0] for choice in model._meta.get_field('status').choices]
+        
+        if value not in valid_choices:
+            raise ValidationError(f"Invalid status. Must be one of: {', '.join(valid_choices)}")
+        
+        return value
+    
+    def validate(self, data):
+        """
+        Performs complete validation of the lead data.
+        
+        Args:
+            data: The data to validate
+            
+        Returns:
+            dict: The validated data
+            
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Name is required
+        if not data.get('name'):
+            raise ValidationError({'name': 'Business name is required'})
+            
+        # Additional validations can be added here
+        
+        return data

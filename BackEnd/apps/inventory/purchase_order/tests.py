@@ -42,7 +42,7 @@ class PurchaseOrderModelTests(TestCase):
             email='stock@test.com',
             first_name='Stock',
             last_name='Controller',
-            user_type='Stock_Controller'
+            user_type='Stocker'
         )
         
         self.employee = User.objects.create_user(
@@ -79,7 +79,7 @@ class PurchaseOrderModelTests(TestCase):
         
         # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
-        stock_group = Group.objects.get(name='Stock_Controller')
+        stock_group = Group.objects.get(name='Stocker')
         employee_group = Group.objects.get(name='Employee')
         
         self.admin_user.groups.add(admin_group)
@@ -159,7 +159,7 @@ class PurchaseOrderServiceTests(TestCase):
             email='stock@test.com',
             first_name='Stock',
             last_name='Controller',
-            user_type='Stock_Controller'
+            user_type='Stocker'
         )
         
         self.employee = User.objects.create_user(
@@ -196,7 +196,7 @@ class PurchaseOrderServiceTests(TestCase):
         
         # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
-        stock_group = Group.objects.get(name='Stock_Controller')
+        stock_group = Group.objects.get(name='Stocker')
         employee_group = Group.objects.get(name='Employee')
         
         self.admin_user.groups.add(admin_group)
@@ -234,23 +234,20 @@ class PurchaseOrderServiceTests(TestCase):
                 f"Admin should have {perm} permission"
             )
         
-        # Stock_Controller should have basic permissions
-        basic_perms = ['can_add_item', 'can_update_item', 'can_remove_item']
-        for perm in basic_perms:
-            self.assertTrue(
-                self.stock_controller.has_perm(f'purchase_order.{perm}'),
-                f"Stock Controller should have {perm} permission"
-            )
+        # Stock_Controller should NOT have ANY purchase_order permissions
+        all_perms = [
+            'can_approve_order', 'can_reject_order', 'can_cancel_order',
+            'can_add_item', 'can_update_item', 'can_remove_item',
+            'add_purchaseorder', 'change_purchaseorder', 'delete_purchaseorder', 'view_purchaseorder'
+        ]
         
-        # Stock_Controller should not have approval permissions
-        approval_perms = ['can_approve_order', 'can_reject_order', 'can_cancel_order']
-        for perm in approval_perms:
+        for perm in all_perms:
             self.assertFalse(
                 self.stock_controller.has_perm(f'purchase_order.{perm}'),
-                f"Stock Controller should not have {perm} permission"
+                f"Stock Controller should not have any purchase_order permissions, including {perm}"
             )
         
-        # Employee should have view permission only
+        # Employee should have view permission only - no special permissions
         for perm in expected_admin_perms:
             self.assertFalse(
                 self.employee.has_perm(f'purchase_order.{perm}'),
@@ -259,6 +256,25 @@ class PurchaseOrderServiceTests(TestCase):
 
     def test_approve_order(self):
         """Test order approval"""
+        # Adiciona um item ao pedido para satisfazer a validação
+        product = Product.objects.create(
+            name='Test Product',
+            companie=self.company,
+            created_by=self.admin_employee,
+            updated_by=self.admin_employee
+        )
+        
+        # Cria um item para o pedido
+        PurchaseOrderItem.objects.create(
+            purchase_order=self.order,
+            product=product,
+            quantity=10,
+            unit_price=Decimal('15.00'),
+            companie=self.company,
+            created_by=self.admin_employee,
+            updated_by=self.admin_employee
+        )
+        
         # Admin should be able to approve order
         updated_order = PurchaseOrderService.approve_order(
             self.order,
@@ -322,7 +338,7 @@ class PurchaseOrderAPITests(APITestCase):
             email='stock@test.com',
             first_name='Stock',
             last_name='Controller',
-            user_type='Stock_Controller'
+            user_type='Stocker'
         )
         
         self.employee = User.objects.create_user(
@@ -359,7 +375,7 @@ class PurchaseOrderAPITests(APITestCase):
         
         # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
-        stock_group = Group.objects.get(name='Stock_Controller')
+        stock_group = Group.objects.get(name='Stocker')
         employee_group = Group.objects.get(name='Employee')
         
         self.admin_user.groups.add(admin_group)
@@ -491,7 +507,7 @@ class NotificationTests(TestCase):
             email='stock@test.com',
             first_name='Stock',
             last_name='Controller',
-            user_type='Stock_Controller'
+            user_type='Stocker'
         )
         
         self.employee = User.objects.create_user(
@@ -528,7 +544,7 @@ class NotificationTests(TestCase):
         
         # Add users to appropriate groups
         admin_group = Group.objects.get(name='Admin')
-        stock_group = Group.objects.get(name='Stock_Controller')
+        stock_group = Group.objects.get(name='Stocker')
         employee_group = Group.objects.get(name='Employee')
         
         self.admin_user.groups.add(admin_group)

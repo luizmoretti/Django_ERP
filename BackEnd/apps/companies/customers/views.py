@@ -1,10 +1,9 @@
-from django.shortcuts import render
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import (
     ListAPIView, CreateAPIView, RetrieveAPIView,
-    UpdateAPIView, DestroyAPIView
+    UpdateAPIView, DestroyAPIView, GenericAPIView
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -12,10 +11,11 @@ from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
     OpenApiParameter, OpenApiTypes
 )
-from apps.companies.customers.services import CustomerService
-from apps.companies.customers.models import Customer
+from apps.companies.customers.services import CustomerService, CustomerLeadService
+from apps.companies.customers.models import Customer, CustomerLeads
 from apps.companies.customers.serializers import (
-    CustomerSerializer
+    CustomerSerializer,
+    CustomerLeadsSerializer
 )
 import logging
 
@@ -649,6 +649,376 @@ class CustomerListView(BaseCustomerView, ListAPIView):
         except Exception as e:
             logger.error(
                 f"Error retrieving customer list: {str(e)}",
+                extra={'requester_id': request.user.id},
+                exc_info=True
+            )
+            raise
+
+
+
+class BaseLeadsView:
+    """
+    Base view for CustomerLeads operations.
+    
+    This class provides common functionality for all lead-related views,
+    including permission checking, queryset filtering, and logging.
+    
+    Attributes:
+        permission_classes (list): List of permission classes requiring authentication
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Filter queryset to only show leads from the user's companie.
+        
+        Returns:
+            QuerySet: Filtered CustomerLeads queryset
+        """
+        user = self.request.user
+        
+        # Ensure user has a valid employeer with companie association
+        if not hasattr(user, 'employeer') or not user.employeer or not user.employeer.companie:
+            logger.warning(
+                "[CUSTOMER LEADS VIEW] - User without valid companie association attempted to access leads",
+                extra={'user_id': user.id}
+            )
+            return CustomerLeads.objects.none()
+        
+        # Filter by companie
+        queryset = CustomerLeads.objects.filter(companie=user.employeer.companie)
+        
+        logger.debug(
+            f"[CUSTOMER LEADS VIEW] - Filtered queryset by companie",
+            extra={
+                'companie_id': str(user.employeer.companie.id),
+                'lead_count': queryset.count(),
+                'user_id': user.id
+            }
+        )
+        
+        return queryset
+
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Customers - Leads"],
+        operation_id="generate_customer_leads",
+        summary="Generate customer leads from Google Local Search",
+        description="""
+        Generates leads by searching for businesses through Google Local Search API.
+        
+        This endpoint queries Google Local Search via SerpAPI to find businesses matching
+        the specified search criteria. Results are automatically converted to CustomerLeads
+        records in the system, with duplicate detection to prevent creating duplicate leads.
+        
+        The search supports filtering by location and can retrieve either a single page of
+        results or all available pages (which may take longer but provides more comprehensive results).
+        """,
+        parameters=[
+            OpenApiParameter(
+                name='query',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Search term for businesses (e.g., "plumbers", "restaurants")',
+                required=True
+            ),
+            OpenApiParameter(
+                name='location',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Geographic location to focus search (e.g., "Miami, FL")',
+                required=False
+            ),
+            OpenApiParameter(
+                name='limit',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Maximum number of results to return per page',
+                required=False
+            ),
+            OpenApiParameter(
+                name='include_all_pages',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Whether to retrieve results from all pages (may increase response time)',
+                required=False
+            )
+        ],
+        responses={
+            200: {
+                'description': 'Leads generated successfully',
+                'type': 'object',
+                'properties': {
+                    'total_results': {
+                        'type': 'integer',
+                        'description': 'Total number of business results found'
+                    },
+                    'new_leads': {
+                        'type': 'integer',
+                        'description': 'Number of new leads created'
+                    },
+                    'existing_leads': {
+                        'type': 'integer',
+                        'description': 'Number of existing leads updated'
+                    },
+                    'message': {
+                        'type': 'string',
+                        'description': 'Summary message about the operation',
+                        'examples': [
+                            'Successfully generated 5 new leads.',
+                            'No new leads were generated.'
+                        ]
+                    }
+                }
+            },
+            400: {
+                'description': 'Bad request',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'description': 'Error message explaining the validation failure'
+                    }
+                }
+            },
+            401: {
+                'description': 'Authentication credentials not provided or invalid'
+            },
+            403: {
+                'description': 'Insufficient permissions to perform this operation'
+            },
+            500: {
+                'description': 'Server error',
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'description': 'Error message'
+                    }
+                }
+            }
+        }
+    )
+)
+class GenerateLeadsView(BaseLeadsView, CreateAPIView):
+    """
+    View for generating leads from Google Local search results.
+    
+    This view processes customer search queries to fetch detailed business information
+    from Google Local using SerpAPI. It then populates the customer records with this data.
+    
+    Attributes:
+        permission_classes (list): List of permission classes requiring authentication
+        
+    Methods:
+        post(self, request, *args, **kwargs): Handles the generation of leads by processing search queries
+        
+    Note:
+        The view requires authentication and proper configuration of SerpAPI credentials.
+        
+    Inherits:
+        BaseCustomerView{
+            permission_classes: List of permission classes requiring authentication
+        }
+    """
+    serializer_class = None # Not used in this view
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Generate leads from Google Local search results.
+        
+        Args:
+            request: HTTP request object containing search parameters
+            
+        Returns:
+            Response: JSON response with summary of generated leads
+            
+        Raises:
+            ValidationError: If required parameters are missing or invalid
+        """
+        try:
+            # Extract parameters from request data
+            query = request.query_params.get('query')
+            location = request.query_params.get('location', '')
+            limit = request.query_params.get('limit')
+            include_all_pages = request.query_params.get('include_all_pages', False)
+            
+            # Validate required parameters
+            if not query:
+                logger.error(
+                    "[CUSTOMER LEADS VIEW] - Missing required parameter: query",
+                    extra={'requester_id': request.user.id}
+                )
+                return Response(
+                    {"error": "Search query is required"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Initialize lead service
+            lead_service = CustomerLeadService()
+            
+            # Generate leads using the service
+            result = lead_service.generate_leads_from_search(
+                query=query,
+                location=location,
+                user=request.user,
+                limit=limit,
+                include_all_pages=include_all_pages
+            )
+            
+            # Log success
+            logger.info(
+                f"[CUSTOMER LEADS VIEW] - Generated leads successfully: {result['new_leads']} new, {result['existing_leads']} existing",
+                extra={
+                    'requester_id': request.user.id,
+                    'total_results': result['total_results']
+                }
+            )
+            
+            # Return result summary (excluding actual lead objects for performance)
+            return Response({
+                "total_results": result['total_results'],
+                "new_leads": result['new_leads'],
+                "existing_leads": result['existing_leads'],
+                "message": result['message']
+            })
+            
+        except ValidationError as e:
+            logger.error(
+                f"[CUSTOMER LEADS VIEW] - Validation error generating leads: {str(e)}",
+                extra={'requester_id': request.user.id},
+                exc_info=True
+            )
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(
+                f"[CUSTOMER LEADS VIEW] - Error generating leads: {str(e)}",
+                extra={'requester_id': request.user.id},
+                exc_info=True
+            )
+            return Response(
+                {"error": "An unexpected error occurred while generating leads"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+            
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Customers - Leads"],
+        operation_id="list_customer_leads",
+        description="""List all customer leads associated with the user's companie.
+        
+        Supports filtering by status and searching by name.
+        
+        Returns:
+            List[CustomerLeads]: List of customer leads associated with the user's companie.
+        """,
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                description="Filter leads by status (e.g., 'New', 'Contacted', 'Converted')",
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=[
+                    'New',
+                    'Contacted',
+                    'Converted'
+                ]
+            ),
+            OpenApiParameter(
+                name="search",
+                description="Search leads by name (case insensitive partial match)",
+                required=False,
+                type=OpenApiTypes.STR
+            )
+        ],
+        responses={
+            200: CustomerLeadsSerializer(many=True)
+        }
+    )
+)
+class ListLeadsView(BaseLeadsView, ListAPIView):
+    """
+    View for listing customer leads.
+    
+    This view returns a paginated list of all customer leads associated with
+    the user's companie, sorted by creation date (newest first).
+    """
+    serializer_class = CustomerLeadsSerializer
+    
+    def get_queryset(self):
+        """
+        Get optimized queryset with proper ordering and prefetching.
+
+        Returns:
+            QuerySet: Optimized CustomerLeads queryset
+        """
+        # Get base queryset from parent class (with companie filtering)
+        queryset = super().get_queryset()
+        
+        # Optimize with select_related for foreign keys, but only select necessary fields
+        queryset = queryset.select_related(
+            'companie',       # Pre-fetch companie data
+            'created_by',     # Pre-fetch user who created the lead
+            'updated_by'      # Pre-fetch user who last updated the lead
+        ).only(
+            'id', 'name', 'status', 'created_at', 'updated_at',
+            'companie__id', 'companie__name',
+            'created_by__id', 'created_by__name', 
+            'updated_by__id', 'updated_by__name'
+        )
+        
+        # Apply filters if provided in query params
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+            
+        # Allow search by name
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+            
+        # Order by newest first
+        return queryset.order_by('-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """
+        List all customer leads for the user's company with optimized performance.
+        """
+        try:
+            # Get the queryset and apply filters
+            queryset = self.filter_queryset(self.get_queryset())
+            
+            # Apply standard pagination
+            page = self.paginate_queryset(queryset)
+            
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                
+                logger.info(
+                    "[CUSTOMER LEADS VIEW] - Customer leads listed successfully",
+                    extra={'requester_id': request.user.id}
+                )
+                return self.get_paginated_response(serializer.data)
+            
+            # If pagination is not required (which should be rare)
+            serializer = self.get_serializer(queryset, many=True)
+            
+            logger.info(
+                "[CUSTOMER LEADS VIEW] - Customer leads listed successfully",
+                extra={'requester_id': request.user.id}
+            )
+            
+            return Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(
+                f"[CUSTOMER LEADS VIEW] - Error listing leads: {str(e)}",
                 extra={'requester_id': request.user.id},
                 exc_info=True
             )
