@@ -3,7 +3,7 @@
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="Django_ERP.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
+<img src="django_erp.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
 # DJANGO_ERP
 
