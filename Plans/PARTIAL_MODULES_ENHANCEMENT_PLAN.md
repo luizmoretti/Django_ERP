@@ -1,30 +1,30 @@
-# Plano de Melhorias - Módulos Parcialmente Implementados
+# Partial Modules Enhancement Plan
 
-## Visão Geral
+## Overview
 
-Este documento detalha as melhorias necessárias nos módulos existentes do Django ERP para alinhar com os requisitos completos do sistema drywall especificados em `requisitos_sistema_drywall_us.md`.
+This document details the enhancements needed in the existing modules of the Django ERP to align with the complete requirements of the drywall system specified in `requisitos_sistema_drywall_us.md`.
 
 ## 1. Customer Management Module (apps/companies/customers/)
 
-### Estado Atual
-- ✅ Cadastro básico de clientes
-- ✅ Informações de contato e endereço
-- ✅ Campos para classificação
+### Current State
+- ✅ Basic customer registration
+- ✅ Contact and address information
+- ✅ Classification fields
 
-### Funcionalidades Ausentes
+### Missing Functionalities
 
-#### 1.1 Gestão de Projetos por Cliente
-**Prioridade:** Alta
+#### 1.1 Project Management by Customer
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- [ ] Associação de projetos a clientes
-- [ ] Histórico completo de projetos
-- [ ] Status de execução por projeto
-- [ ] Cronograma de projetos
-- [ ] Documentação técnica por projeto
-- [ ] Fotos antes/depois por projeto
+**Required Functionalities:**
+- [ ] Association of projects to customers
+- [ ] Complete project history
+- [ ] Project execution status
+- [ ] Project schedule
+- [ ] Technical documentation per project
+- [ ] Before/after photos per project
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 # Em apps/companies/customers/models.py
 class CustomerProject(BaseModel):
@@ -49,19 +49,19 @@ class CustomerProjectPhoto(BaseModel):
     description = models.CharField(max_length=200, blank=True)
 ```
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-#### 1.2 Oportunidades de Negócio e Follow-up
-**Prioridade:** Média
+#### 1.2 Business Opportunities and Follow-up
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- [ ] Registro de oportunidades de negócio
-- [ ] Sistema de follow-up com lembretes
-- [ ] Histórico de interações
-- [ ] Classificação de leads (frio, morno, quente)
-- [ ] Pesquisas de satisfação
+**Required Functionalities:**
+- [ ] Business opportunity registration
+- [ ] Follow-up system with reminders
+- [ ] Interaction history
+- [ ] Lead classification (cold, warm, hot)
+- [ ] Satisfaction surveys
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class BusinessOpportunity(BaseModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -87,23 +87,23 @@ class CustomerSatisfactionSurvey(BaseModel):
     comments = models.TextField(blank=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
-#### 1.3 Melhorias no Cadastro de Clientes
-**Prioridade:** Média
+#### 1.3 Improvements in Customer Registration
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- [ ] Suporte a múltiplos idiomas (English, Spanish, Portuguese)
-- [ ] Campos específicos para drywall (tipo de construção, frequência de projetos)
-- [ ] Sistema de classificação mais detalhado
-- [ ] Limite de crédito e termos comerciais
-- [ ] Pessoa de contato para empresas
+**Required Functionalities:**
+- [ ] Support for multiple languages (English, Spanish, Portuguese)
+- [ ] Fields specific to drywall (construction type, project frequency)
+- [ ] Detailed classification system
+- [ ] Credit limit and commercial terms
+- [ ] Contact person for companies
 
-**Modificações Necessárias:**
+**Required Modifications:**
 ```python
-# Adicionar em apps/companies/customers/models.py
+# Add to apps/companies/customers/models.py
 class Customer(BaseAddressWithBaseModel):
-    # Campos existentes...
+    # Existing fields...
     
     # Novos campos necessários
     preferred_language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, default='en')
@@ -117,28 +117,28 @@ class Customer(BaseAddressWithBaseModel):
     average_project_frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, blank=True)
 ```
 
-**Estimativa:** 1 semana
+**Estimated Time:** 1 week
 
 ## 2. Employee Management Module (apps/companies/employeers/)
 
-### Estado Atual
-- ✅ Cadastro básico de funcionários
-- ✅ Dados pessoais e profissionais
-- ✅ Controle básico de presença (attendance)
+### Current State
+- ✅ Basic employee registration
+- ✅ Personal and professional data
+- ✅ Basic attendance control
 
-### Funcionalidades Ausentes
+### Missing Functionalities
 
-#### 2.1 Sistema de Equipes
-**Prioridade:** Alta
+#### 2.1 Team System
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- [ ] Formação de equipes de trabalho
-- [ ] Especialização por tipo de serviço
-- [ ] Líder de equipe
-- [ ] Disponibilidade de membros
-- [ ] Histórico de equipes por projeto
+**Required Functionalities:**
+- [ ] Team formation
+- [ ] Specialization by service type
+- [ ] Team leader
+- [ ] Member availability
+- [ ] Team history by project
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 # Criar apps/companies/teams/models.py
 class WorkTeam(BaseModel):
@@ -157,19 +157,19 @@ class TeamMember(BaseModel):
     is_active = models.BooleanField(default=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
-#### 2.2 Métricas de Produtividade
-**Prioridade:** Média
+#### 2.2 Productivity Metrics
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- [ ] Tracking de produtividade por funcionário
-- [ ] Métricas por equipe
-- [ ] Comparação de performance
-- [ ] Metas individuais e de equipe
-- [ ] Relatórios de produtividade
+**Required Functionalities:**
+- [ ] Tracking of productivity by employee
+- [ ] Metrics by team
+- [ ] Performance comparison
+- [ ] Individual and team targets
+- [ ] Productivity reports
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class ProductivityMetric(BaseModel):
     employee = models.ForeignKey(Employeer, on_delete=models.CASCADE)
@@ -190,19 +190,19 @@ class ProductivityTarget(BaseModel):
     target_square_feet = models.DecimalField(max_digits=10, decimal_places=2, null=True)
 ```
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-#### 2.3 Sistema de Avaliação
-**Prioridade:** Baixa
+#### 2.3 Evaluation System
+**Priority:** Low
 
-**Funcionalidades Requeridas:**
-- [ ] Avaliações periódicas de desempenho
-- [ ] Autoavaliação
-- [ ] Feedback 360 graus
-- [ ] Planos de desenvolvimento
-- [ ] Histórico de avaliações
+**Required Functionalities:**
+- [ ] Periodic performance evaluations
+- [ ] Self-evaluation
+- [ ] 360-degree feedback
+- [ ] Development plans
+- [ ] Evaluation history
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class PerformanceEvaluation(BaseModel):
     employee = models.ForeignKey(Employeer, on_delete=models.CASCADE)
@@ -218,29 +218,29 @@ class PerformanceEvaluation(BaseModel):
     development_plan = models.TextField(blank=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
 ## 3. Delivery Management Module (apps/delivery/)
 
-### Estado Atual
-- ✅ Gestão básica de entregas
-- ✅ Associação com veículos
+### Current State
+- ✅ Basic delivery management
+- ✅ Vehicle association
 
-### Funcionalidades Ausentes
+### Missing Functionalities
 
-#### 3.1 Rastreamento em Tempo Real
-**Prioridade:** Alta
+#### 3.1 Real-time Tracking
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- [ ] Link único de rastreamento por entrega
-- [ ] Notificação automática ao cliente (email/SMS)
-- [ ] Interface para cliente acompanhar entrega
-- [ ] Tempo estimado de chegada atualizado
-- [ ] Informações do entregador (nome, foto, contato)
+**Required Functionalities:**
+- [ ] Unique tracking link per delivery
+- [ ] Automatic notification to client (email/SMS)
+- [ ] Interface for client to track delivery
+- [ ] Updated estimated arrival time
+- [ ] Delivery driver information (name, photo, contact)
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/delivery/models.py
+# Add to apps/delivery/models.py
 class DeliveryTracking(BaseModel):
     delivery = models.OneToOneField('Delivery', on_delete=models.CASCADE)
     tracking_code = models.CharField(max_length=50, unique=True)
@@ -266,20 +266,20 @@ class DeliveryStatusHistory(BaseModel):
     notes = models.TextField(blank=True)
 ```
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-#### 3.2 Gestão de Instalação
-**Prioridade:** Alta
+#### 3.2 Installation Management
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- [ ] Agendamento de instalação
-- [ ] Equipes de instalação
-- [ ] Checklist de instalação
-- [ ] Registro de problemas
-- [ ] Aprovação/assinatura do cliente
-- [ ] Fotos do trabalho concluído
+**Required Functionalities:**
+- [ ] Installation scheduling
+- [ ] Installation teams
+- [ ] Installation checklist
+- [ ] Problem registration
+- [ ] Client approval/signature
+- [ ] Photos of the finished job
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class Installation(BaseModel):
     delivery = models.OneToOneField('Delivery', on_delete=models.CASCADE)
@@ -315,78 +315,78 @@ class InstallationPhoto(BaseModel):
     description = models.CharField(max_length=200, blank=True)
 ```
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-## 4. Melhorias Gerais de Performance e UX
+## 4. General Performance and UX Improvements
 
-### 4.1 Sistema de Notificações Aprimorado
-**Prioridade:** Média
+### 4.1 Enhanced Notification System
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- [ ] Notificações push em tempo real
-- [ ] Preferências de notificação por usuário
-- [ ] Templates personalizáveis
-- [ ] Múltiplos canais (email, SMS, push)
-- [ ] Histórico de notificações
+**Required Functionalities:**
+- [ ] Real-time push notifications
+- [ ] User notification preferences
+- [ ] Customizable templates
+- [ ] Multiple channels (email, SMS, push)
+- [ ] Notification history
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
-### 4.2 Dashboard Executivo
-**Prioridade:** Média
+### 4.2 Executive Dashboard
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- [ ] KPIs principais em tempo real
-- [ ] Gráficos de performance
-- [ ] Alertas automáticos
-- [ ] Relatórios executivos
-- [ ] Comparações períodos anteriores
+**Required Functionalities:**
+- [ ] Key KPIs in real time
+- [ ] Performance charts
+- [ ] Automatic alerts
+- [ ] Executive reports
+- [ ] Period comparison
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-## Cronograma de Implementação Sugerido
+## Suggested Implementation Timeline
 
-### Fase 1 - Prioridade Alta (6-8 semanas)
-1. Customer Project Management (2-3 semanas)
-2. Employee Teams System (2 semanas)
-3. Real-time Delivery Tracking (3-4 semanas)
+### Phase 1 - High Priority (6-8 weeks)
+1. Customer Project Management (2-3 weeks)
+2. Employee Teams System (2 weeks)
+3. Real-time Delivery Tracking (3-4 weeks)
 
-### Fase 2 - Prioridade Média (6-8 semanas)
-1. Installation Management (3-4 semanas)
-2. Employee Productivity Metrics (2-3 semanas)
-3. Business Opportunities & Follow-up (2 semanas)
+### Phase 2 - Medium Priority (6-8 weeks)
+1. Installation Management (3-4 weeks)
+2. Employee Productivity Metrics (2-3 weeks)
+3. Business Opportunities & Follow-up (2 weeks)
 
-### Fase 3 - Melhorias Gerais (4-5 semanas)
-1. Enhanced Notifications (2 semanas)
-2. Executive Dashboard (2-3 semanas)
-3. Customer Enhancements (1 semana)
+### Phase 3 - General Improvements (4-5 weeks)
+1. Enhanced Notifications (2 weeks)
+2. Executive Dashboard (2-3 weeks)
+3. Customer Enhancements (1 week)
 
-## Considerações de Implementação
+## Implementation Considerations
 
-### Migrações de Banco de Dados
-- Planejamento cuidadoso das migrações para evitar downtime
-- Backup completo antes de cada migração major
-- Testes em ambiente de staging
+### Database Migrations
+- Careful planning of migrations to avoid downtime
+- Complete backup before major migrations
+- Testing in staging environment
 
-### Integrações Existentes
-- Verificar impacto nas integrações atuais
-- Atualizar APIs conforme necessário
-- Manter backward compatibility onde possível
+### Existing Integrations
+- Verify impact on existing integrations
+- Update APIs as necessary
+- Maintain backward compatibility where possible
 
-### Testes
-- Testes de regressão para funcionalidades existentes
-- Testes de performance para novas funcionalidades
-- Testes de integração entre módulos
+### Testing
+- Regression tests for existing features
+- Performance tests for new features
+- Integration tests between modules
 
-## Recursos Necessários
+## Required Resources
 
-- **Desenvolvedores:** 2 desenvolvedores Django experientes
-- **Tempo Total:** 16-21 semanas
-- **Designer UX/UI:** Para interfaces de cliente e dashboards
-- **Testador:** Para testes de regressão e novos features
+- **Developers:** 2 experienced Django developers
+- **Total Time:** 16-21 weeks
+- **UX/UI Designer:** For client interfaces and dashboards
+- **Tester:** For regression and new feature testing
 
-## Riscos
+## Risks
 
-- Impacto em funcionalidades existentes
-- Mudanças nos padrões estabelecidos
-- Performance com volume de dados crescente
-- Complexidade das integrações em tempo real
+- Impact on existing features
+- Changes to established standards
+- Performance with increasing data volume
+- Complexity of real-time integrations

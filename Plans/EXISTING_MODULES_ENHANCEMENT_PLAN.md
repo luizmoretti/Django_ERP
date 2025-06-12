@@ -1,33 +1,33 @@
-# Plano de Melhorias - Módulos Existentes
+# Existing Modules Enhancement Plan
 
-## Visão Geral
+## Overview
 
-Este documento detalha as melhorias necessárias nos módulos existentes do Django ERP que estão funcionais mas precisam ser aprimorados para atender completamente aos requisitos do sistema drywall especificados em `requisitos_sistema_drywall_us.md`.
+This document details the necessary improvements for existing modules in the Django ERP that are functional but need to be enhanced to fully meet the drywall system requirements specified in `requisitos_sistema_drywall_us.md`.
 
 ## 1. Inventory Module Enhancements
 
 ### 1.1 Product Management (apps/inventory/product/)
 
-#### Estado Atual
-- Cadastro básico de produtos
-- Categorização e marcas
-- Controle de preços
+#### Current State
+- Basic product registration
+- Categorization and brands
+- Price control
 
-#### Melhorias Necessárias
+#### Required Improvements
 
-##### 1.1.1 Cálculo Automático de Materiais por Área
-**Prioridade:** Alta
+##### 1.1.1 Automatic Material Calculation by Area
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- Fórmulas de cálculo por tipo de produto
-- Configuração de fatores de perda
-- Cálculo automático baseado em área (m²/ft²)
-- Sugestão de materiais complementares
-- Templates de cálculo por tipo de projeto
+**Required Functionalities:**
+- Calculation formulas by product type
+- Loss factor configuration
+- Automatic calculation based on area (m²/ft²)
+- Suggested complementary materials
+- Calculation templates by project type
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/inventory/product/models.py
+# Add to apps/inventory/product/models.py
 class ProductCalculationFormula(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     formula_type = models.CharField(max_length=20, choices=[
@@ -57,19 +57,19 @@ class ProductBundleItem(BaseModel):
     is_optional = models.BooleanField(default=False)
 ```
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-##### 1.1.2 Especificações Técnicas
-**Prioridade:** Média
+##### 1.1.2 Technical Specifications
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- Upload de especificações técnicas (PDF)
-- Fichas técnicas estruturadas
-- Certificações e normas
-- Instruções de instalação
-- Compatibilidade entre produtos
+**Required Functionalities:**
+- Technical specifications upload (PDF)
+- Structured technical sheets
+- Certifications and standards
+- Installation instructions
+- Product compatibility
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class ProductSpecification(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -95,30 +95,30 @@ class ProductCompatibility(BaseModel):
     notes = models.TextField(blank=True)
 ```
 
-**Estimativa:** 1-2 semanas
+**Estimated Time:** 1-2 weeks
 
 ### 1.2 Warehouse Management (apps/inventory/warehouse/)
 
-#### Estado Atual
-- Gestão básica de armazéns
-- Controle de quantidades
-- Movimentações básicas
+#### Current State
+- Basic warehouse management
+- Quantity control
+- Basic movements
 
-#### Melhorias Necessárias
+#### Required Improvements
 
-##### 1.2.1 Inventário Físico e Contagem Cíclica
-**Prioridade:** Alta
+##### 1.2.1 Physical Inventory and Cyclical Counting
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- Planejamento de inventário físico
-- Contagem cíclica por categoria
-- Registro de discrepâncias
-- Ajustes automáticos
-- Relatórios de acuracidade
+**Required Functionalities:**
+- Inventory physical planning
+- Cyclical counting by category
+- Discrepancy registration
+- Automatic adjustments
+- Accuracy reports
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/inventory/warehouse/models.py
+# Add to apps/inventory/warehouse/models.py
 class PhysicalInventory(BaseModel):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     inventory_type = models.CharField(max_length=20, choices=[
@@ -158,19 +158,19 @@ class InventoryAdjustment(BaseModel):
     applied_date = models.DateTimeField(null=True)
 ```
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-##### 1.2.2 Sugestão Automática de Reabastecimento
-**Prioridade:** Média
+##### 1.2.2 Automatic Replenishment Suggestion
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- Algoritmo de reabastecimento baseado em histórico
-- Consideração de sazonalidade
-- Lead time de fornecedores
-- Análise ABC de produtos
-- Alertas automáticos
+**Required Functionalities:**
+- Replenishment algorithm based on history
+- Consideration of seasonality
+- Lead time of suppliers
+- ABC product analysis
+- Automatic alerts
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class ReplenishmentRule(BaseModel):
     product = models.ForeignKey('inventory.Product', on_delete=models.CASCADE)
@@ -199,25 +199,25 @@ class ReplenishmentSuggestion(BaseModel):
 
 ### 1.3 Supplier Management (apps/inventory/supplier/)
 
-#### Estado Atual
-- Cadastro básico de fornecedores
-- Informações de contato
+#### Current State
+- Basic supplier registration
+- Contact information
 
-#### Melhorias Necessárias
+#### Required Improvements
 
-##### 1.3.1 Sistema de Avaliação de Fornecedores
-**Prioridade:** Média
+##### 1.3.1 Supplier Evaluation System
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- Avaliação de desempenho
-- Histórico de entregas
-- Qualidade dos produtos
-- Conformidade com prazos
-- Avaliação de preços
+**Required Functionalities:**
+- Performance evaluation
+- Delivery history
+- Product quality
+- Compliance with deadlines
+- Price evaluation
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/inventory/supplier/models.py
+# Add to apps/inventory/supplier/models.py
 class SupplierEvaluation(BaseModel):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     evaluation_period_start = models.DateField()
@@ -246,19 +246,19 @@ class SupplierDeliveryHistory(BaseModel):
     delivery_notes = models.TextField(blank=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
-##### 1.3.2 Termos Comerciais e Histórico de Preços
-**Prioridade:** Média
+##### 1.3.2 Commercial Terms and Price History
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- Termos de pagamento por fornecedor
-- Histórico de preços por produto
-- Contratos e acordos
-- Descontos e promoções
-- Análise de variação de preços
+**Required Functionalities:**
+- Payment terms by supplier
+- Price history by product
+- Contracts and agreements
+- Discounts and promotions
+- Price variation analysis
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
 class SupplierContract(BaseModel):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
@@ -279,29 +279,29 @@ class SupplierProductPrice(BaseModel):
     currency = models.CharField(max_length=3, default='USD')
 ```
 
-**Estimativa:** 1-2 semanas
+**Estimated Time:** 1-2 weeks
 
 ## 2. Notification System Enhancements (apps/notifications/)
 
-### Estado Atual
-- Sistema básico de notificações
-- Integração com módulos existentes
+### Current State
+- Basic notification system
+- Integration with existing modules
 
-### Melhorias Necessárias
+### Required Improvements
 
-#### 2.1 Notificações Multi-Canal
-**Prioridade:** Alta
+#### 2.1 Multi-Channel Notifications
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- Notificações por email
-- Notificações por SMS
-- Notificações push (navegador)
-- Preferências por usuário
-- Templates personalizáveis
+**Required Functionalities:**
+- Email notifications
+- SMS notifications
+- Push notifications (browser)
+- User preferences
+- Customizable templates
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/notifications/models.py
+# Add to apps/notifications/models.py
 class NotificationChannel(BaseModel):
     name = models.CharField(max_length=50)
     channel_type = models.CharField(max_length=20, choices=[
@@ -330,29 +330,29 @@ class NotificationTemplate(BaseModel):
     variables = models.JSONField(default=list)  # Available template variables
 ```
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
 ## 3. Scheduler Module Enhancements (apps/scheduller/)
 
-### Estado Atual
-- Sistema básico de agendamento
-- Tipos de trabalho
+### Current State
+- Basic scheduling system
+- Job types
 
-### Melhorias Necessárias
+### Required Improvements
 
-#### 3.1 Integração com Projetos e Equipes
-**Prioridade:** Alta
+#### 3.1 Integration with Projects and Teams
+**Priority:** High
 
-**Funcionalidades Requeridas:**
-- Vinculação com projetos de clientes
-- Atribuição automática de equipes
-- Verificação de disponibilidade
-- Conflitos de agenda
-- Notificações automáticas
+**Required Functionalities:**
+- Project binding
+- Automatic team assignment
+- Availability verification
+- Conflict resolution
+- Automatic notifications
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/scheduller/models.py
+# Add to apps/scheduller/models.py
 class SchedullerProject(BaseModel):
     scheduller = models.ForeignKey(Scheduller, on_delete=models.CASCADE)
     customer_project = models.ForeignKey('companies.CustomerProject', on_delete=models.CASCADE)
@@ -381,29 +381,29 @@ class SchedullerConflict(BaseModel):
     resolution_notes = models.TextField(blank=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
 ## 4. Vehicle Module Enhancements (apps/vehicle/)
 
-### Estado Atual
-- Cadastro de veículos
-- Atribuição básica de motoristas
+### Current State
+- Vehicle registration
+- Basic driver assignment
 
-### Melhorias Necessárias
+### Required Improvements
 
-#### 4.1 Manutenção e Controle de Frota
-**Prioridade:** Média
+#### 4.1 Vehicle Maintenance and Fleet Control
+**Priority:** Medium
 
-**Funcionalidades Requeridas:**
-- Agendamento de manutenção
-- Controle de combustível
-- Histórico de reparos
-- Inspeções periódicas
-- Alertas de vencimento
+**Required Functionalities:**
+- Maintenance scheduling
+- Fuel control
+- Repair history
+- Periodic inspections
+- Expiration alerts
 
-**Modelos Necessários:**
+**Required Models:**
 ```python
-# Adicionar em apps/vehicle/models.py
+# Add to apps/vehicle/models.py
 class VehicleMaintenance(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
     maintenance_type = models.CharField(max_length=30, choices=[
@@ -430,67 +430,67 @@ class VehicleFuelLog(BaseModel):
     driver = models.ForeignKey('companies.Employeer', on_delete=models.SET_NULL, null=True)
 ```
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
-## Cronograma de Implementação Sugerido
+## Suggested Implementation Timeline
 
-### Fase 1 - Funcionalidades Críticas (6-8 semanas)
-1. Product Calculation Formulas (2-3 semanas)
-2. Physical Inventory System (2-3 semanas)
-3. Multi-Channel Notifications (2-3 semanas)
+### Phase 1 - Critical Functionalities (6-8 weeks)
+1. Product Calculation Formulas (2-3 weeks)
+2. Physical Inventory System (2-3 weeks)
+3. Multi-Channel Notifications (2-3 weeks)
 
-### Fase 2 - Melhorias Operacionais (4-6 semanas)
-1. Supplier Evaluation System (2 semanas)
-2. Scheduler Enhancements (2 semanas)
-3. Replenishment Suggestions (2 semanas)
+### Phase 2 - Operational Improvements (4-6 weeks)
+1. Supplier Evaluation System (2 weeks)
+2. Scheduler Enhancements (2 weeks)
+3. Replenishment Suggestions (2 weeks)
 
-### Fase 3 - Funcionalidades Complementares (3-4 semanas)
-1. Technical Specifications (1-2 semanas)
-2. Vehicle Maintenance (2 semanas)
-3. Supplier Commercial Terms (1-2 semanas)
+### Phase 3 - Additional Functionalities (3-4 weeks)
+1. Technical Specifications (1-2 weeks)
+2. Vehicle Maintenance (2 weeks)
+3. Supplier Commercial Terms (1-2 weeks)
 
-## Considerações Técnicas
+## Technical Considerations
 
-### Migração de Dados
-- Backup completo antes de cada migração
-- Scripts de migração testados em ambiente de desenvolvimento
-- Plano de rollback para cada migração
+### Data Migration
+- Complete backup before each migration
+- Migration scripts tested in development environment
+- Rollback plan for each migration
 
 ### Performance
-- Índices de banco de dados para novas consultas
-- Cache para cálculos complexos
-- Otimização de queries com select_related/prefetch_related
+- Database indexes for new queries
+- Cache for complex calculations
+- Optimization of queries with select_related/prefetch_related
 
-### Integração com Módulos Existentes
-- Manter compatibilidade com APIs existentes
-- Versionamento de APIs quando necessário
-- Testes de regressão abrangentes
+### Integration with Existing Modules
+- Maintain compatibility with existing APIs
+- API versioning when necessary
+- Comprehensive regression tests
 
-## Recursos Necessários
+## Required Resources
 
-- **Desenvolvedores:** 2 desenvolvedores Django experientes
-- **Tempo Total:** 13-18 semanas
-- **Testador:** 1 QA para testes de regressão
-- **DBA:** Para otimização de consultas e índices
+- **Developers:** 2 experienced Django developers
+- **Total Time:** 13-18 weeks
+- **QA:** 1 QA for regression testing
+- **DBA:** For query and index optimization
 
-## Riscos e Mitigações
+## Risks and Mitigations
 
-### Riscos
-- Impacto na performance do sistema
-- Quebra de funcionalidades existentes
-- Complexidade das fórmulas de cálculo
+### Risks
+- Impact on system performance
+- Breaking existing functionality
+- Complexity of calculation formulas
 
-### Mitigações
-- Desenvolvimento incremental
-- Testes automatizados extensivos
-- Monitoramento de performance
-- Documentação detalhada das mudanças
+### Mitigations
+- Incremental development
+- Extensive automated tests
+- Performance monitoring
+- Detailed documentation of changes
 
-## Benefícios Esperados
+## Expected Benefits
 
-- Automação de cálculos de materiais
-- Melhor controle de inventário
-- Comunicação aprimorada com clientes
-- Gestão eficiente de fornecedores
-- Redução de erros operacionais
-- Melhoria na experiência do usuário
+- Material calculation automation
+- Better inventory control
+- Improved communication with clients
+- Efficient supplier management
+- Reduced operational errors
+- Improved user experience
