@@ -1,192 +1,192 @@
-# Plano de Implementação - Módulos Ausentes no Django ERP
+# Missing Modules Implementation Plan
 
-## Visão Geral
+## Overview
 
-Este documento detalha os módulos completamente ausentes no sistema Django ERP atual quando comparado aos requisitos do sistema drywall especificados em `requisitos_sistema_drywall_us.md`.
+This document details the missing modules in the current Django ERP system when compared to the drywall system requirements specified in `requisitos_sistema_drywall_us.md`.
 
 ## 1. Sales Management Module
 
-### 1.1 Módulo de Cotações (Quotes)
-**Localização:** `apps/sales/quotes/`
+### 1.1 Quotes Module
+**Location:** `apps/sales/quotes/`
 
-**Funcionalidades Requeridas:**
-- [ ] Criação de cotações detalhadas
-- [ ] Inclusão de produtos e serviços
-- [ ] Cálculo automático de materiais por área
-- [ ] Sistema de descontos
-- [ ] Termos de pagamento configuráveis
-- [ ] Prazos de entrega e execução
-- [ ] Validade das cotações
-- [ ] Aprovação do cliente (assinatura digital)
-- [ ] Conversão para pedido/projeto
+**Required Functionalities:**
+- [ ] Detailed quote creation
+- [ ] Product and service inclusion
+- [ ] Automatic material calculation by area
+- [ ] Discount system
+- [ ] Payment terms configuration
+- [ ] Delivery and execution deadlines
+- [ ] Quote validity
+- [ ] Client approval (digital signature)
+- [ ] Conversion to order/project
 
-**Modelos Necessários:**
+**Required Models:**
 - `Quote`
 - `QuoteItem`
 - `QuoteService`
 - `QuoteDiscount`
 - `QuoteApproval`
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-### 1.2 Módulo de Pedidos de Venda (Sales Orders)
-**Localização:** `apps/sales/orders/`
+### 1.2 Sales Orders Module
+**Location:** `apps/sales/orders/`
 
-**Funcionalidades Requeridas:**
-- [ ] Geração a partir de cotações ou direta
-- [ ] Reserva automática de inventário
-- [ ] Status de processamento
-- [ ] Faturamento
+**Required Functionalities:**
+- [ ] Generation from quotes or directly
+- [ ] Automatic inventory reservation
+- [ ] Processing status
+- [ ] Invoicing
 - [ ] Picking
-- [ ] Entrega
-- [ ] Instalação
-- [ ] Finalização
+- [ ] Delivery
+- [ ] Installation
+- [ ] Finalization
 
-**Modelos Necessários:**
+**Required Models:**
 - `SalesOrder`
 - `SalesOrderItem`
 - `SalesOrderStatus`
 - `InventoryReservation`
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
-### 1.3 Módulo de Faturamento (Invoicing)
-**Localização:** `apps/sales/invoicing/`
+### 1.3 Invoicing Module
+**Location:** `apps/sales/invoicing/`
 
-**Funcionalidades Requeridas:**
-- [ ] Emissão de notas fiscais
-- [ ] Integração com sistema fiscal
-- [ ] Processamento de pagamentos
-- [ ] Recibos
-- [ ] Controle de impostos
-- [ ] Devoluções e cancelamentos
+**Required Functionalities:**
+- [ ] Invoice issuance
+- [ ] Integration with tax system
+- [ ] Payment processing
+- [ ] Receipts
+- [ ] Tax control
+- [ ] Returns and cancellations
 
-**Modelos Necessários:**
+**Required Models:**
 - `Invoice`
 - `InvoiceItem`
 - `Payment`
 - `TaxCalculation`
 - `Return`
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-### 1.4 Gestão de Comissões
-**Localização:** `apps/sales/commissions/`
+### 1.4 Commissions Management Module
+**Location:** `apps/sales/commissions/`
 
-**Funcionalidades Requeridas:**
-- [ ] Cálculo de comissões por vendedor
-- [ ] Metas de vendas
-- [ ] Ranking de vendedores
-- [ ] Relatórios de performance de vendas
+**Required Functionalities:**
+- [ ] Commission calculation by seller
+- [ ] Sales targets
+- [ ] Seller ranking
+- [ ] Sales performance reports
 
-**Modelos Necessários:**
+**Required Models:**
 - `Commission`
 - `SalesTarget`
 - `SalesPerformance`
 
-**Estimativa:** 2 semanas
+**Estimated Time:** 2 weeks
 
 ## 2. Financial/Cash Flow Module
 
-### 2.1 Contas a Pagar
-**Localização:** `apps/financial/payable/`
+### 2.1 Accounts Payable Module
+**Location:** `apps/financial/payable/`
 
-**Funcionalidades Requeridas:**
-- [ ] Cadastro de contas a pagar
-- [ ] Categorização de despesas
-- [ ] Pagamentos recorrentes
-- [ ] Fornecedores vinculados
-- [ ] Aprovação de pagamentos
-- [ ] Métodos de pagamento
-- [ ] Comprovantes (upload)
-- [ ] Conciliação bancária
-- [ ] Alertas de vencimento
+**Required Functionalities:**
+- [ ] Accounts payable registration
+- [ ] Expense categorization
+- [ ] Recurring payments
+- [ ] Suppliers linked
+- [ ] Payment approval
+- [ ] Payment methods
+- [ ] Receipts (upload)
+- [ ] Bank reconciliation
+- [ ] Payment reminders
 
-**Modelos Necessários:**
+**Required Models:**
 - `AccountsPayable`
 - `ExpenseCategory`
 - `RecurringPayment`
 - `PaymentMethod`
 - `PaymentVoucher`
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-### 2.2 Contas a Receber
-**Localização:** `apps/financial/receivable/`
+### 2.2 Accounts Receivable Module
+**Location:** `apps/financial/receivable/`
 
-**Funcionalidades Requeridas:**
-- [ ] Cadastro de contas a receber
-- [ ] Vinculação com vendas/projetos
-- [ ] Planos de parcelamento
-- [ ] Formas de recebimento
-- [ ] Baixa automática e manual
-- [ ] Comprovantes
-- [ ] Controle de inadimplência
-- [ ] Notificações automáticas de cobrança
+**Required Functionalities:**
+- [ ] Accounts receivable registration
+- [ ] Sales/projects binding
+- [ ] Installment plans
+- [ ] Payment methods
+- [ ] Automatic and manual write-off
+- [ ] Receipts
+- [ ] Delinquency control
+- [ ] Payment reminders
 
-**Modelos Necessários:**
+**Required Models:**
 - `AccountsReceivable`
 - `InstallmentPlan`
 - `ReceivablePayment`
 - `DelinquencyControl`
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-### 2.3 Fluxo de Caixa
-**Localização:** `apps/financial/cashflow/`
+### 2.3 Cash Flow Module
+**Location:** `apps/financial/cashflow/`
 
-**Funcionalidades Requeridas:**
-- [ ] Projeção de fluxo de caixa (diário, semanal, mensal)
-- [ ] Saldos bancários
-- [ ] Movimentações entre contas
-- [ ] Conciliação bancária
-- [ ] Relatórios gerenciais
-- [ ] Dashboard financeiro
-- [ ] Análise de lucratividade por projeto/cliente
+**Required Functionalities:**
+- [ ] Cash flow projection (daily, weekly, monthly)
+- [ ] Bank account balances
+- [ ] Account movements
+- [ ] Bank reconciliation
+- [ ] Management reports
+- [ ] Financial dashboard
+- [ ] Profitability analysis by project/client
 
-**Modelos Necessários:**
+**Required Models:**
 - `CashFlowProjection`
 - `BankAccount`
 - `BankMovement`
 - `FinancialReport`
 
-**Estimativa:** 4-5 semanas
+**Estimated Time:** 4-5 weeks
 
-### 2.4 Resumo Financeiro Diário
-**Localização:** `apps/financial/daily_summary/`
+### 2.4 Daily Financial Summary Module
+**Location:** `apps/financial/daily_summary/`
 
-**Funcionalidades Requeridas:**
-- [ ] Dashboard de cálculo diário
-- [ ] Total de ganhos brutos, custos totais, margem líquida
-- [ ] Filtro por intervalo de datas
-- [ ] Detalhamento por trabalho/pedido
-- [ ] Detalhamento de materiais por trabalho
-- [ ] Funcionalidade de exportação (CSV/PDF)
+**Required Functionalities:**
+- [ ] Daily calculation dashboard
+- [ ] Total of gross earnings, total costs, net margin
+- [ ] Date range filter
+- [ ] Detail by job/order
+- [ ] Material detail by job
+- [ ] Export functionality (CSV/PDF)
 
-**Modelos Necessários:**
+**Required Models:**
 - `DailySummary`
 - `JobCost`
 - `MaterialCost`
 
-**Estimativa:** 2-3 semanas
+**Estimated Time:** 2-3 weeks
 
 ## 3. Projects Module
 
-### 3.1 Gestão de Projetos
-**Localização:** `apps/projects/`
+### 3.1 Projects Management Module
+**Location:** `apps/projects/`
 
-**Funcionalidades Requeridas:**
-- [ ] Cadastro de projetos
-- [ ] Cronograma de execução
-- [ ] Cotações vinculadas
-- [ ] Equipes alocadas
-- [ ] Materiais utilizados
-- [ ] Acompanhamento de status
-- [ ] Registro de problemas e soluções
-- [ ] Fotos antes/depois
-- [ ] Documentação técnica
+**Required Functionalities:**
+- [ ] Project registration
+- [ ] Execution schedule
+- [ ] Quotes linked
+- [ ] Teams allocated
+- [ ] Materials used
+- [ ] Status tracking
+- [ ] Problem registration and solutions
+- [ ] Before/after photos
+- [ ] Technical documentation
 
-**Modelos Necessários:**
+**Required Models:**
 - `Project`
 - `ProjectTimeline`
 - `ProjectTeam`
@@ -195,23 +195,23 @@ Este documento detalha os módulos completamente ausentes no sistema Django ERP 
 - `ProjectDocument`
 - `ProjectPhoto`
 
-**Estimativa:** 4-5 semanas
+**Estimated Time:** 4-5 weeks
 
 ## 4. Installation Teams Module
 
-### 4.1 Gestão de Equipes de Instalação
-**Localização:** `apps/installation_teams/`
+### 4.1 Installation Teams Management Module
+**Location:** `apps/installation_teams/`
 
-**Funcionalidades Requeridas:**
-- [ ] Formação de equipes de instalação
-- [ ] Alocação de projetos
-- [ ] Métricas de produtividade
-- [ ] Avaliação de desempenho
-- [ ] Histórico de projetos concluídos
-- [ ] Comissões (quando aplicável)
-- [ ] Treinamentos concluídos
+**Required Functionalities:**
+- [ ] Team formation
+- [ ] Project allocation
+- [ ] Productivity metrics
+- [ ] Performance evaluation
+- [ ] Project history
+- [ ] Commissions (when applicable)
+- [ ] Completed trainings
 
-**Modelos Necessários:**
+**Required Models:**
 - `InstallationTeam`
 - `TeamMember`
 - `TeamProject`
@@ -219,58 +219,58 @@ Este documento detalha os módulos completamente ausentes no sistema Django ERP 
 - `PerformanceEvaluation`
 - `TeamTraining`
 
-**Estimativa:** 3-4 semanas
+**Estimated Time:** 3-4 weeks
 
-## Cronograma de Implementação Sugerido
+## Suggested Implementation Timeline
 
-### Fase 1 (8-10 semanas)
+### Phase 1 (8-10 weeks)
 1. Sales Management Module (Quotes + Orders)
 2. Financial Module (Payable + Receivable)
 
-### Fase 2 (6-8 semanas)
+### Phase 2 (6-8 weeks)
 1. Projects Module
 2. Installation Teams Module
 
-### Fase 3 (4-6 semanas)
+### Phase 3 (4-6 weeks)
 1. Invoicing + Commissions
 2. Cash Flow + Daily Summary
 
-## Considerações Técnicas
+## Technical Considerations
 
-### Padrões Arquiteturais
-- Seguir o Service Pattern estabelecido no projeto
-- Implementar BaseModel para auditoria e multi-tenant
-- Utilizar transações atômicas
-- Implementar validadores de negócio
-- Seguir padrão de documentação com drf-spectacular
+### Architectural Standards
+- Follow the Service Pattern established in the project
+- Implement BaseModel for audit and multi-tenant
+- Use atomic transactions
+- Implement business validators
+- Follow documentation standard with drf-spectacular
 
-### Integrações Necessárias
-- Módulo Sales com Inventory (reservas automáticas)
-- Módulo Financial com Sales (faturamento)
-- Módulo Projects com Teams (alocação)
-- Módulo Financial com Delivery (confirmação de entrega)
+### Required Integrations
+- Sales Module with Inventory (automatic reservations)
+- Financial Module with Sales (billing)
+- Projects Module with Teams (allocation)
+- Financial Module with Delivery (delivery confirmation)
 
-### Testes
-- Implementar testes unitários para cada módulo
-- Testes de integração entre módulos
-- Testes de performance para relatórios
+### Tests
+- Implement unit tests for each module
+- Integration tests between modules
+- Performance tests for reports
 
-## Recursos Necessários
+## Required Resources
 
-- **Desenvolvedores:** 2-3 desenvolvedores Django experientes
-- **Tempo Total:** 18-24 semanas
-- **Revisor Técnico:** 1 arquiteto de software para revisão dos padrões
-- **Testador:** 1 QA para testes de integração
+- **Developers:** 2-3 experienced Django developers
+- **Total Time:** 18-24 weeks
+- **Technical Reviewer:** 1 software architect for review of standards
+- **QA:** 1 QA for integration tests
 
-## Riscos e Mitigações
+## Risks and Mitigations
 
-### Riscos
-- Complexidade das integrações entre módulos
-- Impacto nos módulos existentes
-- Requisitos de performance para relatórios financeiros
+### Risks
+- Complexity of integrations between modules
+- Impact on existing modules
+- Performance requirements for financial reports
 
-### Mitigações
-- Desenvolvimento incremental com testes contínuos
-- Revisões de código frequentes
-- Implementação de cache para relatórios pesados
-- Documentação detalhada das APIs
+### Mitigations
+- Incremental development with continuous testing
+- Frequent code reviews
+- Implementation of cache for heavy reports
+- Detailed API documentation
