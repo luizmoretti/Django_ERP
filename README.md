@@ -52,12 +52,12 @@
 
 Django_ERP is a comprehensive enterprise resource planning system designed to streamline and automate complex business operations through a modular, developer-friendly architecture. The core features include:
 
-- 🧩 **🔧 Puzzle Piece:** Modular design supporting inventory, sales, delivery, and more for flexible customization.
-- 🌐 **🌍 Globe:** Extensive REST API with versioning, enabling seamless integration across systems.
-- ⚡ **🚀 Rocket:** Real-time updates via WebSocket, ensuring instant communication for delivery and notifications.
-- 🔄 **🔔 Bell:** Signals and event-driven automation for inventory, purchase orders, and employee workflows.
-- 🛠️ **🧰 Toolbox:** Robust serializers, permissions, and multi-tenant support for scalable, secure development.
-- 📚 **📖 Book:** Comprehensive documentation and schema support to accelerate onboarding and development.
+- 🧩 **🔧 :** Modular design supporting inventory, sales, delivery, and more for flexible customization.
+- 🌐 **🌍 :** Extensive REST API with versioning, enabling seamless integration across systems.
+- ⚡ **🚀 :** Real-time updates via WebSocket, ensuring instant communication for delivery and notifications.
+- 🔄 **🔔 :** Signals and event-driven automation for inventory, purchase orders, and employee workflows.
+- 🛠️ **🧰 :** Robust serializers, permissions, and multi-tenant support for scalable, secure development.
+- 📚 **📖 :** Comprehensive documentation and schema support to accelerate onboarding and development.
 
 ---
 
