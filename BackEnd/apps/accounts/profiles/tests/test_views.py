@@ -118,23 +118,50 @@ class ProfileViewsTest(TestCase):
         
     def test_profile_create(self):
         """Test profile creation endpoint"""
+        # Create a new user specifically for this test
+        new_test_user = User.objects.create_user(
+            email='new_test_user@example.com',
+            password='test123',
+            first_name='Test',
+            last_name='User',
+            user_type='Employee'
+        )
+        
+        # Important: Delete the profile that was automatically created by the signal
+        # This is needed because we want to test the manual creation through the API
+        Profile.objects.filter(user=new_test_user).delete()
+        
+        # Verify the profile was deleted
+        self.assertFalse(Profile.objects.filter(user=new_test_user).exists())
+        
+        # Get initial count of profiles
+        initial_count = Profile.objects.count()
+        
+        # Create profile through API
         url = reverse('profiles:profile-create')
         data = {
-            'user': self.stock_user.id,
+            'user': new_test_user.id,
             'companie': self.company.id,
             'bio': 'Test bio',
-            'position': PROFILE_POSITION_CHOICES[0][0],  # First position choice
-            'department': PROFILE_DEPARTMENT_CHOICES[0][0],  # First department choice
+            'position': PROFILE_POSITION_CHOICES[0][0],
+            'department': PROFILE_DEPARTMENT_CHOICES[0][0],
             'phone': '1234567890',
-            'email': 'new@example.com',
+            'email': 'new_test@example.com',
             'address': 'Test Address',
             'city': 'Test City',
-            'state': STATE_CHOICES[0][0],  # First state choice
-            'country': COUNTRY_CHOICES[0][0]  # First country choice
+            'state': STATE_CHOICES[0][0],
+            'country': COUNTRY_CHOICES[0][0]
         }
+        
+        # Make the API call
         response = self.client.post(url, data, format='json')
+        
+        # Check that it was successful and that exactly one new profile was created
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Profile.objects.count(), 2)
+        self.assertEqual(Profile.objects.count(), initial_count + 1)
+        
+        # Verify the profile was created for the correct user
+        self.assertTrue(Profile.objects.filter(user=new_test_user).exists())
         
     def test_profile_update(self):
         """Test profile update endpoint"""
