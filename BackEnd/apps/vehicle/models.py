@@ -90,4 +90,4 @@ class Vehicle(BaseModel):
     @property
     def full_name(self) -> str:
         """Returns the full name/description of the vehicle"""
-        return f"{self.nickname} - {self.plate_number}"
+        return f"[{self.vehicle_type}] {self.nickname}-{self.plate_number}"
