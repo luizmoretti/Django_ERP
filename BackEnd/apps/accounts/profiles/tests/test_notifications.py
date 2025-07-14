@@ -77,12 +77,16 @@ class ProfileNotificationTest(TestCase):
     def setUp(self):
         """Set up data for each test method"""
         self.notification_handler = ProfileNotificationHandler()
-        self.profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company,
-            bio='Test bio',
-            position='Developer'
-        )
+        
+        
+        # self.profile = Profile.objects.create(
+        #     user=self.employee,
+        #     companie=self.company,
+        #     bio='Test bio',
+        #     position='Developer'
+        # )
+        
+        self.profile = self.employee.profile
         
     @patch('apps.notifications.base.send_notification')
     def test_profile_created_notification(self, mock_send):
