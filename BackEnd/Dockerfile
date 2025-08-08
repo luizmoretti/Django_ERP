@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app/static /app/media
 USER appuser
 
 # App code
