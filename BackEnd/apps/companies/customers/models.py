@@ -322,7 +322,7 @@ class CustomerLeads(BaseModel):
     category = models.CharField(max_length=100, blank=True, null=True)
     place_id = models.CharField(max_length=255, blank=True, null=True)
     notes = models.CharField(max_length=500, blank=True, null=True)
-    status = models.CharField(max_length=50, choices=LEAD_STATUS_CHOICES, default="New")
+    status = models.CharField(max_length=50, choices=LEAD_STATUS_CHOICES, default="new")
     
     class Meta:
         verbose_name = "Customer Lead"
