@@ -75,6 +75,12 @@ class ProfileModelTest(TestCase):
         
     def test_profile_creation(self):
         """Test profile creation with valid data"""
+        
+        # Delete self-created profile to simulate "zero" creation
+        existing_profile = self.employee.profile
+        existing_profile.delete()
+        
+        # Creation should now work without uniqueness error
         profile = Profile.objects.create(
             user=self.employee,
             companie=self.company,
@@ -95,19 +101,19 @@ class ProfileModelTest(TestCase):
         
     def test_profile_str_representation(self):
         """Test profile string representation"""
-        profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company
-        )
+        
+        # Use self-created profile
+        profile = self.employee.profile  # Recupera o existente
+        
         expected_str = f'Profile of {self.employee.get_full_name()}'
         self.assertEqual(str(profile), expected_str)
         
     def test_profile_avatar_upload(self):
         """Test profile avatar upload"""
-        profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company
-        )
+        
+        # Use self-created profile
+        profile = self.employee.profile
+        
         avatar = SimpleUploadedFile(
             "test_avatar.jpg",
             b"file_content",
@@ -121,10 +127,10 @@ class ProfileModelTest(TestCase):
         
     def test_profile_full_name(self):
         """Test profile full name method"""
-        profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company
-        )
+        
+        # Use self-created profile
+        profile = self.employee.profile
+        
         expected_name = f'{self.employee.first_name} {self.employee.last_name}'
         self.assertEqual(profile.get_full_name(), expected_name)
         
@@ -134,11 +140,12 @@ class ProfileModelTest(TestCase):
             'linkedin': 'https://linkedin.com/test',
             'github': 'https://github.com/test'
         }
-        profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company,
-            social_links=social_links
-        )
+        
+        # Use self-created profile
+        profile = self.employee.profile
+        profile.social_links = social_links
+        profile.save()
+        
         self.assertEqual(profile.social_links, social_links)
         
     def test_profile_preferences(self):
@@ -147,9 +154,10 @@ class ProfileModelTest(TestCase):
             'theme': 'dark',
             'notifications': True
         }
-        profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company,
-            preferences=preferences
-        )
+        
+        # Use self-created profile
+        profile = self.employee.profile
+        profile.preferences = preferences
+        profile.save()
+        
         self.assertEqual(profile.preferences, preferences)

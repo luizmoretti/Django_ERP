@@ -44,6 +44,23 @@ jobs:
       matrix:
         python-version: [3.12]
 
+    defaults:
+      run:
+        working-directory: ./BackEnd
+
+    env:
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+      DJANGO_SECRET_KEY: "github-actions-test-key"
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DATABASE_NAME: "erp_test"
+      DATABASE_USER: "postgres"
+      DATABASE_PASSWORD: "postgres"
+      DATABASE_HOST: "localhost"
+      DATABASE_PORT: "5432"
+
     steps:
     - uses: actions/checkout@v4
     
@@ -54,36 +71,12 @@ jobs:
         cache: 'pip'
     
     - name: Install Dependencies
-      working-directory: ./BackEnd
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install flake8 black isort coverage
-    
-    - name: Lint with flake8
-      working-directory: ./BackEnd
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    
-    - name: Lint with isort and black
-      working-directory: ./BackEnd
-      run: |
-        isort .
-        black .
-    
-    - name: Check code formatting with Black
-      working-directory: ./BackEnd
-      run: |
-        black --check .
-    
-    - name: Check imports formatting with isort
-      working-directory: ./BackEnd
-      continue-on-error: true
-      run: |
-        isort --check-only --diff --profile black .
-    
+
     - name: Create pyproject.toml for isort configuration
-      working-directory: ./BackEnd
       run: |
         echo "[tool.isort]" > pyproject.toml
         echo "profile = \"black\"" >> pyproject.toml
@@ -93,37 +86,32 @@ jobs:
         echo "known_rest_framework = \"rest_framework\"" >> pyproject.toml
         echo "sections = \"FUTURE,STDLIB,DJANGO,REST_FRAMEWORK,THIRDPARTY,FIRSTPARTY,LOCALFOLDER\"" >> pyproject.toml
     
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Lint with black
+      run: |
+        black .
+    
+    - name: Check code formatting with Black
+      run: |
+        black --check .
+
+    - name: Lint with isort
+      run: |
+        isort .
+    
+    - name: Check imports formatting with isort
+      continue-on-error: true
+      run: |
+        isort --check-only --diff .
+
     - name: Run Migrations
-      working-directory: ./BackEnd
       run: |
         python manage.py migrate
-      env:
-        REDIS_URL: redis://localhost:6379/0
-        CELERY_BROKER_URL: redis://localhost:6379/1
-        CELERY_RESULT_BACKEND: redis://localhost:6379/2
-        DJANGO_SECRET_KEY: "github-actions-test-key"
-        DJANGO_DEBUG: "1"
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-        DATABASE_NAME: "erp_test"
-        DATABASE_USER: "postgres"
-        DATABASE_PASSWORD: "postgres"
-        DATABASE_HOST: "localhost"
-        DATABASE_PORT: "5432"
     
     - name: Run Coverage Report
-      working-directory: ./BackEnd
       run: |
         coverage run --source='.' manage.py test
         coverage report
-      env:
-        REDIS_URL: redis://localhost:6379/0
-        CELERY_BROKER_URL: redis://localhost:6379/1
-        CELERY_RESULT_BACKEND: redis://localhost:6379/2
-        DJANGO_SECRET_KEY: "github-actions-test-key"
-        DJANGO_DEBUG: "1"
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-        DATABASE_NAME: "erp_test"
-        DATABASE_USER: "postgres"
-        DATABASE_PASSWORD: "postgres"
-        DATABASE_HOST: "localhost"
-        DATABASE_PORT: "5432"

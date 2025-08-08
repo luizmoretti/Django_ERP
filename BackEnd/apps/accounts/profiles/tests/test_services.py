@@ -85,13 +85,8 @@ class ProfileServiceTest(TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.temp_dir)
         
-        # Create test profile
-        self.profile = Profile.objects.create(
-            user=self.employee,
-            companie=self.company,
-            bio='Test bio',
-            position='Developer'
-        )
+        # Recover auto created profile
+        self.profile = self.employee.profile
     
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_get_profile_detail(self):

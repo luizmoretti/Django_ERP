@@ -31,17 +31,16 @@ class ProfileFilterTest(TestCase):
         self.yesterday = datetime.now() - timedelta(days=1)
         self.today = datetime.now()
         
-        self.profile1 = Profile.objects.create(
-            user=self.user1,
-            companie=self.companie,
-            created_at=self.yesterday
-        )
+        # Nova: Recupere perfis auto-criados em vez de criar novos
+        self.profile1 = self.user1.profile
+        self.profile2 = self.user2.profile
         
-        self.profile2 = Profile.objects.create(
-            user=self.user2,
-            companie=self.companie,
-            created_at=self.today
-        )
+        # Atualize datas para testar filtros (sem criar novos registros)
+        self.profile1.created_at = self.yesterday
+        self.profile1.save(update_fields=['created_at'])
+        
+        self.profile2.created_at = self.today
+        self.profile2.save(update_fields=['created_at'])
         
     def test_search_filter(self):
         """Test search filter"""

@@ -2,11 +2,11 @@
 Django Signals for User Profile Management
 
 This module provides signal handlers for operations related to user profiles:
-1. Automatic profile creation when a new user is registered
+1. Automatic profile creation when a new user is registered (excluding external users)
 2. Synchronization of basic data between user and profile
 
 Key Features:
-- Automatic profile creation
+- Automatic profile creation for internal users only
 - Maintenance of data consistency
 - Integration with the audit system
 """
@@ -31,6 +31,10 @@ def create_user_profile(sender, instance, created, **kwargs):
     This handler checks if the user is new and creates a profile associated with the user.
     The profile inherits basic user information, such as name and email.
     
+    NOTE: Profiles are only created for internal users (employees), not for external 
+    users like Customers and Suppliers, to maintain consistency with the Employee 
+    creation logic.
+    
     Args:
         sender: A class of the model (User)
         instance: An instance of the user
@@ -39,6 +43,12 @@ def create_user_profile(sender, instance, created, **kwargs):
     """
     # Skip if not a new user or if the user already has a profile
     if not created:
+        return
+        
+    # Skip profile creation for external users (Customer, Supplier)
+    # This maintains consistency with the Employee creation logic
+    if instance.user_type in ['Customer', 'Supplier']:
+        logger.info(f"Skipping profile creation for external user type: {instance.user_type} ({instance.email})")
         return
         
     # Check if the profile already exists to avoid duplicates
