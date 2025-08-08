@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key-change-this')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', False) if os.getenv('DJANGO_DEBUG') == '0' else True
+DEBUG = os.getenv('DJANGO_DEBUG', '0').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1').split(',')
 
@@ -126,10 +126,6 @@ MIDDLEWARE = [
     'custom_settings.custom_middlewares.middleware.JSONResponse404Middleware',
     'custom_settings.custom_middlewares.middleware.AnonymousUserMiddleware',
 ]
-
-# Add SecurityMiddleware in production only
-if not DEBUG:
-    MIDDLEWARE.insert(0, 'django.middleware.security.SecurityMiddleware')
 
 ################################
 ########## SECURITY ############

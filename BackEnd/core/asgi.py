@@ -23,12 +23,17 @@ django_asgi_app = get_asgi_application()
 websocket_urlpatterns = notification_websocket_urlpatterns + delivery_websocket_urlpatterns
 
 # For development, we'll skip the AllowedHostsOriginValidator
+# Enable it automatically in production based on DJANGO_DEBUG
+use_allowed_hosts = not (os.environ.get('DJANGO_DEBUG', '0').lower() in ('1', 'true', 'yes'))
+
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": UnifiedAuthMiddlewareStack(
-        URLRouter(
-            websocket_urlpatterns
-        )
+    "websocket": (
+        AllowedHostsOriginValidator(
+            UnifiedAuthMiddlewareStack(
+                URLRouter(websocket_urlpatterns)
+            )
+        ) if use_allowed_hosts else UnifiedAuthMiddlewareStack(URLRouter(websocket_urlpatterns))
     ),
 })
 
