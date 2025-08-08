@@ -1,3 +1,14 @@
+## [1.0.0-dev.2](https://github.com/luizmoretti/Django_ERP/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2025-08-08)
+
+### Features
+
+* **docker:** Updates configuration of Docker and docker-compose ([815f91b](https://github.com/luizmoretti/Django_ERP/commit/815f91bea750fc50c1cc252f37699fb070855274))
+* **migrations:** Adds migrations to update country fields. ([98584ad](https://github.com/luizmoretti/Django_ERP/commit/98584ad790b109a566ecdc911af494207b6e9c17))
+
+### Bug Fixes
+
+* **docker:** Updates directory permissions in Dockerfile ([ded4851](https://github.com/luizmoretti/Django_ERP/commit/ded4851db7a960912dcc83b3522cd900226e1051))
+
 ## 1.0.0-dev.1 (2025-08-08)
 
 ### Features
