@@ -1,8 +1,7 @@
 services:
   web:
     build: .
-    command: >
-      sh -c "sleep 10 && python manage.py migrate --noinput \ && python manage.py collectstatic --noinput \ && python manage.py setup_permission_groups \ && daphne -b 0.0.0.0 -p 8000 core.asgi:application"
+    command: [ "sh", "-c", "sleep 10 && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py setup_permission_groups && daphne -b 0.0.0.0 -p 8000 core.asgi:application" ]
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
@@ -70,8 +69,9 @@ services:
 
   celery:
     build: .
-    command: sh -c "sleep 15 && celery -A core worker -l INFO"
-    volumes: []
+    command: [ "sh", "-c", "sleep 15 && celery -A core worker -l INFO" ]
+    volumes:
+      - celery_data:/app/celery_data
     environment:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_DEBUG=${DJANGO_DEBUG}
@@ -94,8 +94,9 @@ services:
 
   celery-beat:
     build: .
-    command: sh -c "sleep 20 && celery -A core beat -l INFO"
-    volumes: []
+    command: [ "sh", "-c", "sleep 20 && celery -A core beat -l INFO" ]
+    volumes:
+      - celery_beat_data:/app/celery_beat_data
     environment:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_DEBUG=${DJANGO_DEBUG}
@@ -133,3 +134,5 @@ volumes:
   redis_data:
   static_volume:
   media_volume:
+  celery_data:
+  celery_beat_data:
