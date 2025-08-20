@@ -13,9 +13,6 @@ import { Button } from '@/components/ui';
 import { 
   Building2, 
   Package, 
-  Users, 
-  TrendingUp,
-  Shield,
   Truck,
   ShoppingCart,
   BarChart3,
@@ -59,11 +56,11 @@ export default function HomePage() {
             
             <div className="flex items-center space-x-4">
               <Link href="/auth/login">
-                <Button variant="outline">Sign In</Button>
+                <Button>Login</Button>
               </Link>
-              <Link href="/auth/register">
+              {/* <Link href="/auth/register">
                 <Button>Get Started</Button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -87,22 +84,22 @@ export default function HomePage() {
                     Sales, inventory, employees, deliveries, fleet management, reporting and much more 
                     in one unified and powerful system.
                   </p>
-                  <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                    <div className="rounded-md shadow">
-                      <Link href="/auth/register">
-                        <Button size="lg" className="w-full">
-                          Start Free Trial
-                        </Button>
-                      </Link>
-                    </div>
-                    <div className="mt-3 sm:mt-0 sm:ml-3">
-                      <Link href="/auth/login">
-                        <Button variant="outline" size="lg" className="w-full">
-                          Sign In
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+                  {/* <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start"> */}
+                    {/* <div className="rounded-md shadow"> */}
+                      {/* <Link href="/auth/register"> */}
+                        {/* <Button size="lg" className="w-full"> */}
+                          {/* Register */}
+                        {/* </Button> */}
+                      {/* </Link> */}
+                    {/* </div> */}
+                    {/* <div className="mt-3 sm:mt-0 sm:ml-3"> */}
+                      {/* <Link href="/auth/login"> */}
+                        {/* <Button size="lg" className="w-full"> */}
+                          {/* Login */}
+                        {/* </Button> */}
+                      {/* </Link> */}
+                    {/* </div> */}
+                  {/* </div> */}
                 </div>
               </div>
             </div>
@@ -216,7 +213,7 @@ export default function HomePage() {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-blue-600">
+        {/* <div className="bg-blue-600">
           <div className="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
               <span className="block">Ready to get started?</span>
@@ -238,7 +235,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
+        </div> */}
       </main>
 
       {/* Footer */}
