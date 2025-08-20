@@ -3,7 +3,7 @@
  * Handles JWT token storage, validation, and refresh logic
  */
 
-import Cookies from '../../../node_modules/@types/js-cookie';
+import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 import config from '../config';
 
@@ -12,7 +12,7 @@ interface JWTPayload {
   iat: number;
   user_id: string;
   email: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean;
 }
 
 class TokenManager {

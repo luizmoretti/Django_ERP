@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Define protected routes and their requirements
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const protectedRoutes = [
   { path: '/dashboard', roles: ['CEO', 'Owner', 'Admin', 'Manager', 'Employee'] },
   { path: '/admin', roles: ['CEO', 'Owner', 'Admin'] },

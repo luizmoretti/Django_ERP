@@ -3,7 +3,7 @@
  * Custom hook for route protection and access control
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserType } from '@/types';
@@ -32,6 +32,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     requireAuth = true,
   } = options;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { authState, hasRole, hasPermission, isUserType } = useAuth();
   const router = useRouter();
   const [state, setState] = useState<ProtectedRouteState>({
@@ -40,11 +41,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     error: null,
   });
 
-  useEffect(() => {
-    checkAccess();
-  }, [authState.isAuthenticated, authState.user, authState.isLoading]);
-
-  const checkAccess = async () => {
+  const checkAccess = useCallback(async () => {
     // Wait for auth to finish loading
     if (authState.isLoading) {
       setState(prev => ({ ...prev, isLoading: true }));
@@ -111,7 +108,11 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       hasAccess: true,
       error: null,
     });
-  };
+  }, [authState.isAuthenticated, authState.user, authState.isLoading, requireAuth, requiredRoles, requiredPermissions, redirectTo, router, hasPermission, isUserType]);
+
+  useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
 
   return state;
 };
