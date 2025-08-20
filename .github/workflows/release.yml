@@ -1,8 +1,16 @@
 name: Release
 
 on:
-  push:
-    branches: [ "main", "Dev" ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release from'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - Dev
 
 permissions:
   contents: write
@@ -16,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.branch }}
 
       - name: Configure Git for CI
         run: |
