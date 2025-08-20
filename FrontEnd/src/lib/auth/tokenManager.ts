@@ -12,20 +12,20 @@ interface JWTPayload {
   iat: number;
   user_id: string;
   email: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean;
 }
 
 class TokenManager {
   private accessTokenKey = config.auth.tokenStorageKey;
   private refreshTokenKey = config.auth.refreshTokenKey;
-  private refreshPromise: Promise<string> | null = null;
+  private refreshPromise: Promise<string | null> | null = null;
 
   /**
    * Store access token securely
    */
   setAccessToken(token: string): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       // Store in httpOnly cookie for security
       Cookies.set(this.accessTokenKey, token, {
@@ -34,7 +34,7 @@ class TokenManager {
         sameSite: 'strict',
         expires: 1, // 1 day
       });
-      
+
       // Also store in sessionStorage for quick access
       sessionStorage.setItem(this.accessTokenKey, token);
     } catch (error) {
@@ -47,11 +47,11 @@ class TokenManager {
    */
   getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    
+
     try {
       // Try sessionStorage first (faster)
       let token = sessionStorage.getItem(this.accessTokenKey);
-      
+
       // Fallback to cookie
       if (!token) {
         token = Cookies.get(this.accessTokenKey) || null;
@@ -60,7 +60,7 @@ class TokenManager {
           sessionStorage.setItem(this.accessTokenKey, token);
         }
       }
-      
+
       return token;
     } catch (error) {
       console.error('Failed to retrieve access token:', error);
@@ -73,7 +73,7 @@ class TokenManager {
    */
   setRefreshToken(token: string): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       // Store in httpOnly cookie (more secure for refresh tokens)
       Cookies.set(this.refreshTokenKey, token, {
@@ -92,7 +92,7 @@ class TokenManager {
    */
   getRefreshToken(): string | null {
     if (typeof window === 'undefined') return null;
-    
+
     try {
       return Cookies.get(this.refreshTokenKey) || null;
     } catch (error) {
@@ -106,15 +106,15 @@ class TokenManager {
    */
   clearTokens(): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       // Clear from cookies
       Cookies.remove(this.accessTokenKey);
       Cookies.remove(this.refreshTokenKey);
-      
+
       // Clear from sessionStorage
       sessionStorage.removeItem(this.accessTokenKey);
-      
+
       // Clear from localStorage (just in case)
       localStorage.removeItem(this.accessTokenKey);
       localStorage.removeItem(this.refreshTokenKey);
@@ -142,7 +142,7 @@ class TokenManager {
     try {
       const decoded = this.decodeToken(token);
       if (!decoded) return true;
-      
+
       const currentTime = Date.now() / 1000;
       return decoded.exp < currentTime;
     } catch (error) {
@@ -158,10 +158,10 @@ class TokenManager {
     try {
       const decoded = this.decodeToken(token);
       if (!decoded) return true;
-      
+
       const currentTime = Date.now() / 1000;
       const threshold = config.auth.tokenRefreshThreshold / 1000; // Convert to seconds
-      
+
       return decoded.exp < (currentTime + threshold);
     } catch (error) {
       console.error('Failed to check token expiration:', error);
@@ -176,7 +176,7 @@ class TokenManager {
     try {
       const decoded = this.decodeToken(token);
       if (!decoded) return null;
-      
+
       return new Date(decoded.exp * 1000);
     } catch (error) {
       console.error('Failed to get token expiration:', error);
@@ -191,10 +191,10 @@ class TokenManager {
     try {
       const tokenToUse = token || this.getAccessToken();
       if (!tokenToUse) return null;
-      
+
       const decoded = this.decodeToken(tokenToUse);
       if (!decoded) return null;
-      
+
       return {
         id: decoded.user_id,
         email: decoded.email,
@@ -220,7 +220,7 @@ class TokenManager {
     }
 
     this.refreshPromise = this.performTokenRefresh(refreshToken);
-    
+
     try {
       const newToken = await this.refreshPromise;
       return newToken;
@@ -269,7 +269,7 @@ class TokenManager {
    */
   async ensureValidToken(): Promise<string | null> {
     const currentToken = this.getAccessToken();
-    
+
     if (!currentToken) {
       return null;
     }
@@ -315,7 +315,7 @@ class TokenManager {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) return false;
-      
+
       // Try to decode the payload
       const payload = this.decodeToken(token);
       return payload !== null && typeof payload.exp === 'number';
@@ -331,13 +331,13 @@ class TokenManager {
     try {
       const tokenToUse = token || this.getAccessToken();
       if (!tokenToUse) return null;
-      
+
       const decoded = this.decodeToken(tokenToUse);
       if (!decoded) return null;
-      
+
       const currentTime = Date.now() / 1000;
       const timeUntilExp = decoded.exp - currentTime;
-      
+
       return timeUntilExp > 0 ? timeUntilExp * 1000 : 0; // Convert to milliseconds
     } catch (error) {
       console.error('Failed to get time until expiration:', error);

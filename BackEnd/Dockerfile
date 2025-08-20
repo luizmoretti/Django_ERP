@@ -1,36 +1,40 @@
-FROM python:3.14-rc-alpine3.20
+FROM python:3.12-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PATH="/home/appuser/.local/bin:${PATH}"
+# Environment
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set work directory
+# Workdir
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     gcc \
-    postgresql-client \
     curl \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and switch to non-root user
+# Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Non-root user (will be used at runtime via entrypoint)
 RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
 
-# Install Python dependencies
-COPY --chown=appuser:appuser requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+# App code
+COPY . .
 
-# Copy project
-COPY --chown=appuser:appuser . .
+# Runtime dirs
+RUN mkdir -p /app/media /app/static /app/celery_data /app/celery_beat_data /app/logs
 
-# Create media and static directories
-RUN mkdir -p /app/media /app/static
+# Entrypoint com gosu para dropar privilégios sem senha
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Command to run on container start
+# Necessário root para ajustar permissões em runtime antes de dropar privilégios
+USER root
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "core.asgi:application"]

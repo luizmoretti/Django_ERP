@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Auth initialization failed:', error);
       // Only show error if it's not a token/authentication issue
-      if (error && (error as any).status !== 401 && (error as any).status !== 403) {
+      if (error && (error as { status?: number | string }).status !== 401 && (error as { status?: number | string }).status !== 403) {
         dispatch({ type: 'AUTH_ERROR', payload: 'Authentication initialization failed' });
       } else {
         // For auth-related errors, just mark as unauthenticated without error message
@@ -188,8 +188,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       return response;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Login failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -208,8 +208,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'AUTH_LOADING', payload: false });
       
       return user;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Registration failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -246,8 +246,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       return newToken;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Token refresh failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Token refresh failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -259,8 +259,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string): Promise<void> => {
     try {
       await authService.requestPasswordReset(email);
-    } catch (error: any) {
-      const errorMessage = error.message || 'Password reset request failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Password reset request failed';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
@@ -276,8 +276,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<void> => {
     try {
       await authService.confirmPasswordReset(uidb64, token, passwords);
-    } catch (error: any) {
-      const errorMessage = error.message || 'Password reset confirmation failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Password reset confirmation failed';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
@@ -291,8 +291,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedUser = await authService.updateProfile(profileData);
       dispatch({ type: 'UPDATE_USER', payload: updatedUser });
       return updatedUser;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Profile update failed';
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || 'Profile update failed';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }

@@ -17,7 +17,6 @@
 
 <em>Built with the tools and technologies:</em>
 
-<img src="https://img.shields.io/badge/Markdown-000000.svg?style=flat&logo=Markdown&logoColor=white" alt="Markdown">
 <img src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&logo=Redis&logoColor=white" alt="Redis">
 <img src="https://img.shields.io/badge/Cookiecutter-D4AA00.svg?style=flat&logo=Cookiecutter&logoColor=white" alt="Cookiecutter">
 <img src="https://img.shields.io/badge/Rich-FAE742.svg?style=flat&logo=Rich&logoColor=black" alt="Rich">
@@ -29,7 +28,14 @@
 <img src="https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white" alt="Docker">
 <img src="https://img.shields.io/badge/Python-3776AB.svg?style=flat&logo=Python&logoColor=white" alt="Python">
 <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=flat&logo=GitHub-Actions&logoColor=white" alt="GitHub%20Actions">
-<img src="https://img.shields.io/badge/Stripe-635BFF.svg?style=flat&logo=Stripe&logoColor=white" alt="Stripe">
+<!-- <img src="https://img.shields.io/badge/Stripe-635BFF.svg?style=flat&logo=Stripe&logoColor=white" alt="Stripe"> -->
+<br>
+<img src="https://img.shields.io/badge/Next.js-000000.svg?style=flat&logo=Next.js&logoColor=white" alt="Next.js">
+<img src="https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black" alt="React">
+<img src="https://img.shields.io/badge/TypeScript-3178C6.svg?style=flat&logo=TypeScript&logoColor=white" alt="TypeScript">
+<img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC.svg?style=flat&logo=Tailwind-CSS&logoColor=white" alt="Tailwind CSS">
+<img src="https://img.shields.io/badge/Axios-5A29E4.svg?style=flat&logo=Axios&logoColor=white" alt="Axios">
+<img src="https://img.shields.io/badge/Zod-FF4085.svg?style=flat&logo=Zod&logoColor=white" alt="Zod">
 
 </div>
 <br>
@@ -41,6 +47,7 @@
 - [Overview](#-overview)
 - [Project Architecture](#-project-architecture)
 - [Core Modules](#-core-modules)
+- [Frontend Architecture](#-frontend-architecture)
 - [Getting Started](#-getting-started)
     - [Prerequisites](#-prerequisites)
     - [Installation](#-installation)
@@ -69,9 +76,15 @@ Django_ERP is a comprehensive enterprise resource planning system designed to st
 
 This project requires the following dependencies:
 
-- **Programming Language:** Python
+**Backend:**
+- **Programming Language:** Python 3.9+
 - **Package Manager:** Pip
 - **Container Runtime:** Docker
+
+**Frontend:**
+- **Runtime:** Node.js 18+
+- **Package Manager:** npm or yarn
+- **Modern Browser:** Chrome, Firefox, Safari, or Edge
 
 ### ⚙️ Installation
 
@@ -91,45 +104,72 @@ Build Django_ERP from the source and install dependencies:
 
 3. **Install the dependencies:**
 
-**Using [docker](https://www.docker.com/):**
+**Backend - Using [docker](https://www.docker.com/):**
 
 ```sh
 ❯ docker build -t luizmoretti/Django_ERP .
 ```
-**Using [pip](https://pypi.org/project/pip/):**
+**Backend - Using [pip](https://pypi.org/project/pip/):**
 
 ```sh
-❯ pip install -r BackEnd/requirements.txt
+❯ cd BackEnd
+❯ pip install -r requirements.txt
+```
+
+**Frontend - Using [npm](https://www.npmjs.com/):**
+
+```sh
+❯ cd frontend
+❯ npm install
 ```
 
 ### 💻 Usage
 
 Run the project with:
 
-**Using [docker](https://www.docker.com/):**
+**Backend - Using [docker](https://www.docker.com/):**
 
 ```sh
 docker run -it luizmoretti/Django_ERP
 ```
-**Using [pip](https://pypi.org/project/pip/):**
+**Backend - Using [pip](https://pypi.org/project/pip/):**
 
 ```sh
-python manage.py runserver
+❯ cd BackEnd
+❯ python manage.py runserver
 ```
+
+**Frontend - Using [npm](https://www.npmjs.com/):**
+
+```sh
+❯ cd frontend
+❯ npm run dev
+```
+
+The backend will be available at `http://localhost:8000` and the frontend at `http://localhost:3000`
 
 ### 🧪 Testing
 
-Django_ERP supports both Django's built-in test framework and pytest. Run the test suite with:
+Django_ERP supports comprehensive testing for both backend and frontend:
 
-**Using [docker](https://www.docker.com/):**
+**Backend - Using [docker](https://www.docker.com/):**
 
 ```sh
 docker exec -it django_erp python manage.py test
 ```
-**Using [pip](https://pypi.org/project/pip/):**
+**Backend - Using [pip](https://pypi.org/project/pip/):**
 
 ```sh
-pytest
+❯ cd BackEnd
+❯ pytest
+```
+
+**Frontend - Using [npm](https://www.npmjs.com/):**
+
+```sh
+❯ cd frontend
+❯ npm run lint
+❯ npm run build  # Validates TypeScript compilation
 ```
 
 ## 🏗️ Project Architecture
@@ -189,11 +229,69 @@ The system implements a comprehensive Service Pattern with clear separation of r
 - **Profiles:** Extended user profiles with role-based permissions
 - **Multi-tenant:** Company-based data isolation throughout the system
 
+### Frontend Application
+
+- **Next.js Architecture:** Modern React application with App Router and TypeScript
+- **Authentication:** JWT-based secure authentication with automatic token refresh
+- **UI Components:** Comprehensive component library with Tailwind CSS styling
+- **State Management:** Context-based state management with type-safe reducers
+- **Form Handling:** Robust form validation using React Hook Form and Zod schemas
+
+---
+
+## 🖥️ Frontend Architecture
+
+Django_ERP features a modern, type-safe frontend built with Next.js 15 and cutting-edge web technologies, providing an intuitive user experience for complex ERP operations.
+
+### Technology Stack
+
+- **Framework:** Next.js 15 with App Router for modern React development
+- **Language:** TypeScript for type safety and developer experience  
+- **Styling:** Tailwind CSS v4 for utility-first responsive design
+- **State Management:** React Context with useReducer for predictable state updates
+- **Form Validation:** React Hook Form with Zod schemas for robust data validation
+- **HTTP Client:** Axios with automatic token management and request/response interceptors
+- **Icons:** Lucide React for consistent, customizable iconography
+
+### Authentication System
+
+The frontend implements a comprehensive authentication system with enterprise-grade security:
+
+- **JWT Token Management:** Secure token storage with automatic refresh capabilities
+- **Role-Based Access Control:** Hierarchical user types from CEO to Customer with granular permissions
+- **Protected Routes:** Server-side and client-side route protection using Next.js middleware
+- **Password Security:** Advanced password validation with strength indicators
+- **Session Management:** Secure token storage in httpOnly cookies and sessionStorage
+
+### Component Architecture
+
+- **Atomic Design:** Hierarchical component structure from basic UI elements to complex pages
+- **Type Safety:** Full TypeScript coverage with strict type checking
+- **Accessibility:** WCAG-compliant components with proper ARIA labels
+- **Responsive Design:** Mobile-first approach with breakpoint-aware layouts
+- **Error Boundaries:** Graceful error handling with user-friendly fallbacks
+
+### API Integration
+
+- **RESTful Integration:** Seamless connection with Django REST Framework backend
+- **Request Interceptors:** Automatic authentication token injection and CSRF protection
+- **Error Handling:** Centralized error transformation and user notification system
+- **Loading States:** Comprehensive loading indicators and skeleton screens
+- **Retry Logic:** Automatic retry for failed requests with exponential backoff
+
+### Performance Features
+
+- **Code Splitting:** Automatic route-based code splitting for optimal loading
+- **Static Generation:** Pre-rendered pages where applicable for improved SEO
+- **Optimized Bundling:** Tree shaking and dead code elimination
+- **Caching Strategy:** Intelligent caching of API responses and static assets
+- **Progressive Enhancement:** Core functionality works without JavaScript
+
 ---
 
 ## 📜 License
 
-Django_erp is protected under the [LICENSE](https://choosealicense.com/licenses) License. For more details, refer to the [LICENSE](https://choosealicense.com/licenses/) file.
+Django_erp is protected under the [LICENSE](http://www.apache.org/licenses/) License. For more details, refer to the [LICENSE](/LICENSE) file.
 
 ---
 
