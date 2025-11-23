@@ -271,7 +271,31 @@ DB_PASS = os.getenv("DATABASE_PASSWORD")
 DB_HOST = os.getenv("DATABASE_HOST")
 DB_PORT = os.getenv("DATABASE_PORT")
 
+def _test_postgres_connection():
+    """Test PostgreSQL connection and return True if successful."""
+    try:
+        import psycopg2
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            connect_timeout=5
+        )
+        conn.close()
+        return True
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"[DATABASE] - PostgreSQL connection failed: {str(e)}. "
+            f"Falling back to SQLite3."
+        )
+        return False
+
 if 'test' in sys.argv:
+    # Test environment: use in-memory SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -279,17 +303,28 @@ if 'test' in sys.argv:
         }
     }
 elif DB_NAME and DB_USER:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql", 
-            "NAME": DB_NAME,
-            "USER": DB_USER,
-            "PASSWORD": DB_PASS,
-            "HOST": DB_HOST,
-            "PORT": DB_PORT,
-        },
-    }
+    # Try PostgreSQL with automatic fallback to SQLite
+    if _test_postgres_connection():
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql", 
+                "NAME": DB_NAME,
+                "USER": DB_USER,
+                "PASSWORD": DB_PASS,
+                "HOST": DB_HOST,
+                "PORT": DB_PORT,
+            },
+        }
+    else:
+        # Fallback to SQLite3
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": "db.sqlite3"
+            }
+        }
 else:
+    # Default: use SQLite3
     DATABASES = {
         "default": dict(ENGINE="django.db.backends.sqlite3", NAME="db.sqlite3")
     }
