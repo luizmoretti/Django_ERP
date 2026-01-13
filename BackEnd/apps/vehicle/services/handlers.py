@@ -48,7 +48,7 @@ class VehicleService:
             vehicle = Vehicle.objects.create(**data)
             
             logger.info(f"[VEHICLE SERVICE] - Vehicle {vehicle.plate_number} created successfully", 
-                       extra={'vehicle_id': str(vehicle.id)})
+                    extra={'vehicle_id': str(vehicle.id)})
             return vehicle
             
         except ValidationError as e:
