@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from apps.inventory.product.models import Product
 from apps.companies.customers.models import Customer
-from apps.deliveries.vehicles.models import Vehicle
+from apps.vehicle.models import Vehicle
 from datetime import date
 import logging
 
